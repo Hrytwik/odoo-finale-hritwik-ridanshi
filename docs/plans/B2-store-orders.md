@@ -1,11 +1,11 @@
 # B2 — Store and Orders (real logic) Implementation Plan
 
 > **Summary:** Replaces the example-data stubs for the yarn store and the order lifecycle with real, tested logic: lot receiving (lot + ledger entry + supplier bill in one transaction), stock from the ledger, yarn issue/return/adjust with row locking, free-stock and "enough yarn?" calculation, order create/confirm/cancel/deadline, order progress and stage, block lot, and live events. API shapes do not change.
-> **Last updated:** 2026-10-10 (Tasks 1-5 done)
+> **Last updated:** 2026-10-10 (Tasks 1-6 done)
 
 ## Status
 
-Tasks 1 to 5 are done and verified (full suite 458 passed, twice; `contracts/` unchanged). Next: Task 6. Decisions taken while building Task 3 (not in the original plan):
+Tasks 1 to 6 are done and verified (full suite 504 passed, twice; `contracts/` unchanged). Next: Task 7 (boundary checks, live check, docs, merge). Decisions taken while building Task 3 (not in the original plan):
 
 - **Boolean guard on every numeric request field.** pydantic reads JSON `true`/`false` as 1.0/0.0 for a float, so `{"qty_kg": true}` was accepted as 1 kg. `NoBool` (in `app/core/schemas.py`) is now part of every numeric input type, written **after** `Field(...)` (`Annotated[float, Field(gt=0), NoBool]`); in the other order pydantic writes `gt`/`le` into the OpenAPI schema and changes the contract. `tests/test_input_numbers.py` scans every `*In`/`*Patch` model, so new numeric fields are covered automatically. Not covered: `true` for integer id fields (reads as 1).
 - **Contract guard:** `tests/test_contract.py::test_committed_contract_matches_the_code` fails if `contracts/openapi.json` differs from what the code produces (after an intended API change run `npm run contracts`).
@@ -13,6 +13,8 @@ Tasks 1 to 5 are done and verified (full suite 458 passed, twice; `contracts/` u
 - Events are published directly after `commit(db)` in the service (`broadcaster.publish`); the `pubsub.py` helper in the file list below was not needed.
 - **Task 5 locking:** every write locks the lot row (`get_lot_or_404(for_update=True)` also re-reads the row, `populate_existing`), proven by mutation: without the lock the two simultaneous-issue and two simultaneous-return tests fail, and a deterministic test (session A holds the lock, B's request must wait and then be refused) fails too. An earlier "issue and adjust at the same moment" test passed with the lock removed because the two paths take different times, so it was replaced by that deterministic one.
 - **True but unstated consequence:** an issue checks that the run is open without locking the run row, so an issue that races with a run being ended (B3) can land on a run that ended a moment earlier. Harmless for stock and need (the kilos are still on the order), but B3's run-end must not assume no issue can arrive after it commits.
+- **Task 6 (orders), built in `orders/service.py`:** progress, stage and yarn check are recomputed on every read from runs, rolls, inspections, dispatches and the stock views; all arithmetic is Decimal and floats appear only when the response is built (`stage` takes the exact progress row, not the float `Progress`). Create, confirm, cancel and deadline each lock or re-read the order row (`get_order_or_404(for_update=True)`); proven by mutation and a deterministic test (a confirm waits for a session that holds the lock, then is refused).
+- **True but unstated consequences of Task 6:** (1) an order whose rolls were all rejected shows stage `dyeing` (the furthest shop-floor stage reached; nothing is left to inspect or ship), which a buyer-facing screen may want to word differently; (2) **B3 must lock the order row when it starts a run** (`get_order_or_404(db, code, for_update=True)`), otherwise a cancel (which refuses when runs exist) and a start-run can pass each other; (3) the order list computes progress per order with a few queries each (fine for a mill's order count, not for thousands); (4) a deadline has a lower bound (today IST) but no upper bound; (5) a draft order's yarn check treats it as if it were confirmed, competing only with the *confirmed* orders.
 - `block_lot(db, user, lot_code, body)` takes the lot code (the plan text above said `(db, user, body)`); `movement_out(db, movement)` re-reads one movement with its run, order, machine and user.
 - A lot's bill is created through the `lot.bill` relationship so lot, receipt and bill go out in one flush and a duplicate challan rolls all three back.
 

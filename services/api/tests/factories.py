@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from app.core.codes import next_code
 
 from app.db.models import (
-    Buyer, Dispatch, FabricRecipeLine, FabricType, Machine, Order, ProductionRun, Roll, RollRun, Shift,
-    Supplier, SupplierBill, User, Worker, YarnLot, YarnMovement, YarnType,
+    Buyer, Dispatch, DispatchItem, FabricRecipeLine, FabricType, Machine, Order, ProductionRun, QcInspection, Roll,
+    RollRun, Shift, Supplier, SupplierBill, User, Worker, YarnLot, YarnMovement, YarnType,
 )
 
 _n = count(1)
@@ -111,3 +111,16 @@ def make_lot(db: Session, yarn_type=None, supplier=None, qty_kg: float = 500, co
 
 def make_dispatch(db: Session, buyer: Buyer, **kw) -> Dispatch:
     return _add(db, Dispatch(**{"code": f"DSP-{next(_n):04d}", "buyer_id": buyer.id, "vehicle_no": "KA01AB1234", **kw}))
+
+
+def make_inspection(db: Session, roll: Roll, verdict: str = "pass", **kw) -> QcInspection:
+    inspector = kw.pop("inspector_worker_id", None) or make_worker(db, role="inspector").id
+    return _add(db, QcInspection(**{"roll_id": roll.id, "inspector_worker_id": inspector, "verdict": verdict, **kw}))
+
+
+def put_on_dispatch(db: Session, roll: Roll, dispatch: Dispatch) -> DispatchItem:
+    return _add(db, DispatchItem(dispatch_id=dispatch.id, roll_id=roll.id))
+
+
+def dye(db: Session, roll: Roll, run: ProductionRun) -> RollRun:
+    return _add(db, RollRun(roll_id=roll.id, run_id=run.id, purpose="dye"))

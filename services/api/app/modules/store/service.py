@@ -11,6 +11,7 @@ from app.core.codes import next_code
 from app.core.errors import AppError, commit
 from app.core.events import broadcaster
 from app.core.money import dec, q_kg, q_money, to_float
+from app.core.validate import exact_positive, invalid, not_found
 from app.db.models import (
     FabricRecipeLine, Machine, Order, ProductionRun, Supplier, SupplierBill, User, YarnLot, YarnMovement, YarnType,
 )
@@ -21,51 +22,33 @@ PHOTO_RE = re.compile(r"uploads/[0-9a-f]{32}\.(jpg|png|webp)")
 BILL_TERMS_DAYS = 30
 
 
-def _not_found(what: str, field: str | None = None) -> AppError:
-    return AppError("NOT_FOUND", f"{what} not found", field=field, status=404)
-
-
-def _invalid(message: str, field: str) -> AppError:
-    return AppError("VALIDATION_ERROR", message, field=field, status=422)
-
-
-def _exact(value, field: str, rounder) -> Decimal:
-    try:
-        d = rounder(dec(value))
-    except ValueError:
-        raise _invalid("Enter a valid number", field) from None
-    if d <= 0:
-        raise _invalid("This rounds to zero; enter a larger number", field)
-    return d
-
-
 def get_lot_or_404(db: Session, lot_code: str, for_update: bool = False) -> YarnLot:
     query = select(YarnLot).where(YarnLot.lot_code == lot_code)
     if for_update:  # take the row lock and re-read the row, so is_blocked and the ledger are what is committed NOW
         query = query.with_for_update().execution_options(populate_existing=True)
     lot = db.scalar(query)
     if lot is None:
-        raise _not_found("Lot", "lot_code")
+        raise not_found("Lot", "lot_code")
     return lot
 
 
 def receive_lot(db: Session, user: User, body: s.LotReceiveIn) -> YarnLot:
     yarn_type = db.get(YarnType, body.yarn_type_id)
     if yarn_type is None:
-        raise _not_found("Yarn type", "yarn_type_id")
+        raise not_found("Yarn type", "yarn_type_id")
     supplier = db.get(Supplier, body.supplier_id)
     if supplier is None:
-        raise _not_found("Supplier", "supplier_id")
+        raise not_found("Supplier", "supplier_id")
     order_id = None
     if body.intended_order_code is not None:
         order_id = db.scalar(select(Order.id).where(Order.code == body.intended_order_code))
         if order_id is None:
-            raise _not_found("Order", "intended_order_code")
+            raise not_found("Order", "intended_order_code")
     photo = body.challan_photo_path
     if photo is not None and PHOTO_RE.fullmatch(photo) is None:
-        raise _invalid("Use a photo uploaded through the app", "challan_photo_path")
-    qty = _exact(body.qty_kg, "qty_kg", q_kg)
-    cost = _exact(body.cost_per_kg, "cost_per_kg", q_money)
+        raise invalid("Use a photo uploaded through the app", "challan_photo_path")
+    qty = exact_positive(body.qty_kg, "qty_kg", q_kg)
+    cost = exact_positive(body.cost_per_kg, "cost_per_kg", q_money)
 
     today = today_ist()
     lot = YarnLot(
@@ -191,7 +174,7 @@ def _announce(lot: YarnLot) -> None:
 def _run_or_404(db: Session, run_id: int) -> ProductionRun:
     run = db.get(ProductionRun, run_id)
     if run is None:
-        raise _not_found("Production run", "run_id")
+        raise not_found("Production run", "run_id")
     return run
 
 
@@ -208,7 +191,7 @@ def _record(db: Session, user: User, lot: YarnLot, kind: str, qty: Decimal, run_
 
 def issue_yarn(db: Session, user: User, body: s.IssueIn) -> YarnMovement:
     lot = get_lot_or_404(db, body.lot_code, for_update=True)
-    qty = _exact(body.qty_kg, "qty_kg", q_kg)
+    qty = exact_positive(body.qty_kg, "qty_kg", q_kg)
     if lot.is_blocked:
         raise AppError("LOT_BLOCKED", "This lot is blocked and cannot be issued", field="lot_code")
     run = _run_or_404(db, body.run_id)
@@ -228,7 +211,7 @@ def issue_yarn(db: Session, user: User, body: s.IssueIn) -> YarnMovement:
 
 def return_yarn(db: Session, user: User, body: s.ReturnIn) -> YarnMovement:
     lot = get_lot_or_404(db, body.lot_code, for_update=True)
-    qty = _exact(body.qty_kg, "qty_kg", q_kg)
+    qty = exact_positive(body.qty_kg, "qty_kg", q_kg)
     run = _run_or_404(db, body.run_id)
     net_issued = -db.scalar(select(func.coalesce(func.sum(YarnMovement.qty_kg), 0)).where(
         YarnMovement.yarn_lot_id == lot.id, YarnMovement.production_run_id == run.id,
@@ -244,9 +227,9 @@ def adjust_stock(db: Session, user: User, body: s.AdjustIn) -> YarnMovement:
     try:
         qty = q_kg(dec(body.qty_kg))
     except ValueError:
-        raise _invalid("Enter a valid number", "qty_kg") from None
+        raise invalid("Enter a valid number", "qty_kg") from None
     if qty == 0:
-        raise _invalid("This rounds to zero; enter a larger number", "qty_kg")
+        raise invalid("This rounds to zero; enter a larger number", "qty_kg")
     available = _on_hand(db, lot)
     if qty < 0 and -qty > available:
         raise AppError("INSUFFICIENT_STOCK", f"Only {available:f} kg of this lot is in stock", field="qty_kg")

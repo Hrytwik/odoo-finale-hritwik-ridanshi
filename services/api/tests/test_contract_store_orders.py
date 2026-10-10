@@ -1,14 +1,7 @@
-import pytest
-
-
-@pytest.mark.parametrize("path", [
-    "/api/lots/L-0017/recall", "/api/stock",
-    "/api/orders", "/api/orders/ORD-0012", "/api/orders/ORD-0012/yarn-check",
-])
-def test_owner_gets_example_data(client, login_as, path):
+def test_recall_is_still_example_data_until_b7(client, login_as):
     login_as("owner")
-    r = client.get(path)
-    assert r.status_code == 200, r.text
+    r = client.get("/api/lots/L-0017/recall")
+    assert r.status_code == 200 and r.json()["lot_code"] == "L-0017"
 
 
 def test_adjustment_of_zero_rejected(client, login_as):
