@@ -306,7 +306,7 @@ def make_app() -> FastAPI:
 
     @app.post("/thing")
     def thing(body: Body):
-        return {"ok": True}
+        return {"ok": True, "name": body.name}
 
     @app.get("/boom")
     def boom():
@@ -354,6 +354,7 @@ def test_every_invalid_field_is_reported():
 def test_text_is_trimmed():
     r = client.post("/thing", json={"name": "  Ravi  ", "qty": 1})
     assert r.status_code == 200
+    assert r.json()["name"] == "Ravi"
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
