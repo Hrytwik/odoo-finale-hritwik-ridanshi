@@ -1,14 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import meshUrl from '@/assets/art/glow-mesh.svg'
 import wovenUrl from '@/assets/art/woven-plaid.svg'
 import { BrandMark } from '@/components/common/BrandMark'
-import { BorderTrail } from '@/components/motion/BorderTrail'
-import { GlowEffect } from '@/components/motion/GlowEffect'
-import { Spotlight } from '@/components/motion/Spotlight'
-import { TextEffect } from '@/components/motion/TextEffect'
+import { Typewriter } from '@/components/motion/Typewriter'
 import { homeFor, safeNext } from '@/lib/nav'
 import { LoginForm } from './LoginForm'
+
+/** The second line of the headline; each is typed, held, deleted, then the next. The first is what screen readers get. */
+const PHRASES = ['from yarn to invoice.', 'from loom to buyer.', 'from scan to payment.']
 
 export function LoginScreen() {
   const navigate = useNavigate()
@@ -17,34 +16,30 @@ export function LoginScreen() {
 
   return (
     <main className="login">
-      <section className="login-art spotlight-host">
+      <section className="login-art">
         <img src={wovenUrl} alt="" />
-        <Spotlight size={360} />
         <div className="login-art-copy">
           <span className="brand" style={{ color: 'var(--color-on-ink)' }}>
             <span className="brand-mark">
-              <BrandMark size={16} />
+              <BrandMark size={18} />
             </span>
             Everest Mills
           </span>
           <div className="stack-sm">
-            <TextEffect as="h2" preset="fade-in-blur" delay={0.2}>
-              Every roll, from yarn to invoice.
-            </TextEffect>
-            <p style={{ color: 'var(--color-on-ink-muted)', maxWidth: '38ch' }}>
-              One place for the store, the floor, quality, dispatch and the books. Scan a roll and see its whole life.
+            <Typewriter before="Every roll," phrases={PHRASES} />
+            <p style={{ maxWidth: '40ch' }}>
+              Store, floor, quality, dispatch and the books in one place. Scan a roll and see its whole life.
             </p>
           </div>
         </div>
       </section>
 
-      <section className="login-panel" style={{ backgroundImage: `url(${meshUrl})` }}>
+      <section className="login-panel">
         <div className="login-wrap">
-          <GlowEffect colors={['#14b8a6', '#0f766e', '#5eead4', '#14b8a6']} blur={36} duration={10} scale={1.05} style={{ opacity: 0.6, borderRadius: 24 }} />
           <div className="login-card">
-            <BorderTrail size={90} duration={7} />
             <div className="card-body stack">
               <div className="stack-sm">
+                <p className="eyebrow">Sign in</p>
                 <h1>Welcome back</h1>
                 <p className="muted text-sm">Log in to continue to Everest Mills.</p>
               </div>

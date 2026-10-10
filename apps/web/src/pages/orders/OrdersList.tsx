@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { EmptyState } from '@/components/common/EmptyState'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
-import { StatusBadge } from '@/components/common/StatusBadge'
+import { StageBar, StageLegend } from '@/components/common/StageBar'
 import { AnimatedBackground } from '@/components/motion/AnimatedBackground'
 import { Reveal } from '@/components/motion/Reveal'
 import { Badge } from '@/components/ui/Badge'
@@ -38,6 +38,7 @@ export default function OrdersList() {
   return (
     <>
       <PageHeader
+        eyebrow="Production"
         title="Orders"
         description="Every buyer order with progress, yarn and delivery status. Updates live."
         actions={
@@ -76,6 +77,7 @@ export default function OrdersList() {
                   ))}
                 </AnimatedBackground>
               </div>
+              <StageLegend />
               <Reveal>
                 <OrdersTable orders={all.filter(MATCH[filter])} />
               </Reveal>
@@ -94,7 +96,6 @@ function OrdersTable({ orders }: { orders: Order[] }) {
       <thead>
         <tr>
           <th>Order</th>
-          <th>Buyer</th>
           <th>Fabric</th>
           <th className="num">Quantity</th>
           <th>Stage</th>
@@ -107,16 +108,18 @@ function OrdersTable({ orders }: { orders: Order[] }) {
         {orders.map((o) => (
           <tr key={o.code}>
             <td>
-              <Link to={`/orders/${o.code}`}>{o.code}</Link>
+              <Link to={`/orders/${o.code}`} className="code">
+                {o.code}
+              </Link>
+              <div className="muted text-sm">{o.buyer.name}</div>
             </td>
-            <td>{o.buyer.name}</td>
             <td>
               {o.fabric_type.name}
               <div className="muted text-sm">{o.colour}</div>
             </td>
             <td className="num">{formatMetres(o.qty_metres)}</td>
             <td>
-              <StatusBadge kind="order" value={o.stage} />
+              <StageBar stage={o.stage} />
             </td>
             <td>
               <ProgressBar label={`${o.code} passed`} value={o.progress.passed_m} max={o.qty_metres} unit="m" />

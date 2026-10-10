@@ -22,9 +22,6 @@ const BOARD = {
   ],
 }
 
-// status words like 'Running' also appear on the machine badges, so find the KPI card by its own label
-const kpi = (label: string) => [...document.querySelectorAll('.kpi')].find((k) => k.querySelector('.kpi-label')?.textContent === label)
-
 beforeEach(() => {
   vi.clearAllMocks()
 })
@@ -67,13 +64,24 @@ describe('FloorBoard', () => {
     expect(screen.getByRole('link', { name: /loom 4/i }).closest('article')).toHaveTextContent('220 m')
   })
 
-  it('counts running, idle and down machines', async () => {
+  it('counts running, idle and down machines in the live strip', async () => {
     mockApi({ GET: { '/api/floor': BOARD } })
     renderPage(<FloorBoard />)
     await screen.findByRole('link', { name: /loom 4/i })
-    expect(kpi('Running')).toHaveTextContent('2')
-    expect(kpi('Idle')).toHaveTextContent('1')
-    expect(kpi('Down')).toHaveTextContent('1')
+    const strip = document.querySelector('.live-strip') as HTMLElement
+    expect(strip).toHaveTextContent('LIVE')
+    expect(strip.querySelectorAll('.live-count')[0]).toHaveTextContent(/2\s*running/)
+    expect(strip.querySelectorAll('.live-count')[1]).toHaveTextContent(/1\s*idle/)
+    expect(strip.querySelectorAll('.live-count')[2]).toHaveTextContent(/1\s*down/)
+  })
+
+  it('shows a speed reading only on running machines', async () => {
+    mockApi({ GET: { '/api/floor': BOARD } })
+    renderPage(<FloorBoard />)
+    const loom4 = (await screen.findByRole('link', { name: /loom 4/i })).closest('article')!
+    expect(within(loom4).getByText('RPM').previousElementSibling).not.toHaveTextContent('—')
+    const loom5 = screen.getByRole('link', { name: /loom 5/i }).closest('article')!
+    expect(loom5.querySelector('.machine-speed strong')).toHaveTextContent('—')
   })
 
   it('groups machines by stage', async () => {

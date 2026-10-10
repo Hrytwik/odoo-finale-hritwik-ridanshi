@@ -2,9 +2,10 @@ import { Suspense, lazy, type ComponentType } from 'react'
 import { createBrowserRouter, type RouteObject } from 'react-router-dom'
 import { LoadingState } from '@/components/common/LoadingState'
 import { RoutePlaceholder } from '@/components/common/RoutePlaceholder'
-import { AppLayout, Home } from '@/pages/AppLayout'
+import { AppLayout } from '@/pages/AppLayout'
 import CameraCheck from '@/pages/dev/CameraCheck'
 import ComponentsPreview from '@/pages/dev/ComponentsPreview'
+import { LandingGate } from '@/pages/landing/LandingPage'
 import { LoginScreen } from '@/pages/login/LoginScreen'
 import { NotFound, RequireRole } from '@/pages/RequireRole'
 import { ROUTES } from './routes'
@@ -32,12 +33,11 @@ const SCREENS: Record<string, ComponentType> = {
 
 /** All routes. Exported separately so tests can mount them in a memory router. */
 export const routeObjects: RouteObject[] = [
+  { path: '/', element: <LandingGate /> },
   { path: '/login', element: <LoginScreen /> },
   {
-    path: '/',
     element: <AppLayout />,
     children: [
-      { index: true, element: <Home /> },
       ...ROUTES.map((r) => {
         const Screen = SCREENS[r.path]
         return {

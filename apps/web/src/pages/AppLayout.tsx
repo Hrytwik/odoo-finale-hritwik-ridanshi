@@ -1,11 +1,10 @@
 import { motion, useReducedMotion } from 'motion/react'
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { ErrorState } from '@/components/common/ErrorState'
 import { LoadingState } from '@/components/common/LoadingState'
 import { AppShell } from '@/components/shell/AppShell'
 import { ApiError } from '@/lib/api'
 import { useMe } from '@/lib/auth'
-import { homeFor } from '@/lib/nav'
 
 /** The session gate: shows the app only for a logged-in user. A 401 is handled globally (redirect to /login). */
 export function AppLayout() {
@@ -42,11 +41,4 @@ export function AppLayout() {
       </motion.div>
     </AppShell>
   )
-}
-
-/** `/` sends each person to their own home page. */
-export function Home() {
-  const me = useMe()
-  if (!me.data) return <LoadingState rows={2} />
-  return <Navigate to={homeFor(me.data.role)} replace />
 }

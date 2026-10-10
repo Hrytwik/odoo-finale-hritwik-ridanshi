@@ -16,7 +16,7 @@ type Props = {
   style?: CSSProperties
 }
 
-const BRAND = ['#14b8a6', '#0f766e', '#f4b942', '#14b8a6']
+const BRAND = ['#658c58', '#31694e', '#bbc863', '#658c58']
 
 /** A soft animated glow behind its parent. The parent needs `position: relative`. */
 export function GlowEffect({ colors = BRAND, mode = 'rotate', blur = 24, duration = 8, scale = 1, transition, style }: Props) {

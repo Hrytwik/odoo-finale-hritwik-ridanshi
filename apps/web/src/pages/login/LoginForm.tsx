@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { ArrowRight } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -43,7 +44,7 @@ export function LoginForm({ onSuccess }: { onSuccess: (me: Me) => void }) {
       </Field>
       {formError && <Alert tone="error">{formError}</Alert>}
       <SubmitButton pending={pending} block>
-        Log in
+        Log in <ArrowRight size={16} aria-hidden />
       </SubmitButton>
     </form>
   )

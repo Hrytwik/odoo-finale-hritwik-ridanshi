@@ -1,5 +1,5 @@
-import { LogOut, Menu } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { LogOut, Menu, Search } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { BrandMark } from '@/components/common/BrandMark'
 import { Button } from '@/components/ui/Button'
@@ -8,16 +8,40 @@ import type { components } from '@/lib/api'
 import { useLogout } from '@/lib/auth'
 import { useLiveEvents } from '@/lib/live'
 import { ROLE_LABEL, homeFor, navFor } from '@/lib/nav'
+import { CommandPalette } from './CommandPalette'
 import { DemoBadge } from './DemoBadge'
 import { NavList } from './NavList'
+import { ThemeToggle } from './ThemeToggle'
 
 type Me = components['schemas']['Me']
 
+/** True when the keyboard focus is somewhere text is typed, so a "/" there is just a slash. */
+function isTyping(el: Element | null): boolean {
+  if (!(el instanceof HTMLElement)) return false
+  return el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)
+}
+
 export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
   const [open, setOpen] = useState(false)
+  const [palette, setPalette] = useState(false)
   const logout = useLogout()
   const items = navFor(me.role)
   useLiveEvents()
+
+  // "/" or Ctrl+K (Cmd+K) opens the search from anywhere
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPalette((p) => !p)
+      } else if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(document.activeElement)) {
+        e.preventDefault()
+        setPalette(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   return (
     <div className="shell">
@@ -27,18 +51,30 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
         </Button>
         <Link to={homeFor(me.role)} className="brand">
           <span className="brand-mark">
-            <BrandMark size={16} />
+            <BrandMark size={18} />
           </span>
           Everest Mills
         </Link>
         <DemoBadge />
-        <div className="shell-user">
-          <span className="muted text-sm shell-user-name">
-            {me.display_name} · {ROLE_LABEL[me.role]}
-          </span>
-          <Button variant="ghost" icon aria-label="Log out" onClick={logout}>
-            <LogOut size={18} aria-hidden />
+        <div className="shell-tools">
+          <button type="button" className="header-search" aria-label="Search rolls, lots, orders" onClick={() => setPalette(true)}>
+            <Search size={15} aria-hidden />
+            <span>Search rolls, lots, orders</span>
+            <kbd>/</kbd>
+          </button>
+          <Button variant="ghost" icon className="header-search-icon header-square" aria-label="Search rolls, lots, orders" onClick={() => setPalette(true)}>
+            <Search size={18} aria-hidden />
           </Button>
+          <ThemeToggle className="header-square" />
+          <div className="shell-user">
+            <span className="shell-user-name">
+              <strong>{me.display_name}</strong>
+              <span>{ROLE_LABEL[me.role]}</span>
+            </span>
+            <Button variant="ghost" icon className="header-square" aria-label="Log out" onClick={logout}>
+              <LogOut size={18} aria-hidden />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -54,6 +90,7 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
           <NavList items={items} onNavigate={() => setOpen(false)} />
         </Dialog>
       </div>
+      <CommandPalette open={palette} onClose={() => setPalette(false)} role={me.role} />
     </div>
   )
 }

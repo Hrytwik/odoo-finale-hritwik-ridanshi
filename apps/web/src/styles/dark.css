@@ -1,0 +1,98 @@
+/* Dark mode: the same forest, sage and lime, on a night-green ground. Switched by the moon button in the header. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-primary: #5a9a73;
+  --color-primary-hover: #6aab83;
+  --color-primary-soft: #1f3a2b;
+  --color-on-primary: #08150e;
+
+  --color-bg: #0e1d15;
+  --color-surface: #15271d;
+  --color-surface-muted: #1b3125;
+  --color-border: #26402f;
+  --color-border-strong: #35553f;
+  --color-text: #eef1dc;
+  --color-text-muted: #a3b8a3;
+  --color-focus: #bbc863;
+  --color-overlay: rgb(0 0 0 / 0.6);
+
+  --tone-green-bg: #1f3a2b;
+  --tone-green-fg: #b7e0b0;
+  --tone-amber-bg: #3a3418;
+  --tone-amber-fg: #f0e491;
+  --tone-red-bg: #3d1f1f;
+  --tone-red-fg: #f5b5b5;
+  --tone-blue-bg: #1b2f3a;
+  --tone-blue-fg: #a8d4ea;
+  --tone-violet-bg: #2c2547;
+  --tone-violet-fg: #cdbdf5;
+  --tone-gray-bg: #243329;
+  --tone-gray-fg: #b5c4b5;
+  --color-danger: #f08a8a;
+  --color-danger-hover: #f5a3a3;
+
+  --color-ink: #0b1811;
+  --color-ink-2: #12241a;
+  --color-ink-line: rgb(255 255 255 / 0.1);
+  --color-on-ink: #e6ecd0;
+  --color-on-ink-muted: #bbc863;
+  --color-accent: #bbc863;
+  --color-accent-soft: #3a3418;
+  --gradient-brand: linear-gradient(135deg, #3f7a58 0%, #5a9a73 100%);
+  --shadow-lg: 0 24px 64px rgb(0 0 0 / 0.5);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 16px rgb(0 0 0 / 0.4);
+}
+
+/* things the stylesheets colour directly rather than through a token */
+:root[data-theme='dark'] .brand-mark {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+:root[data-theme='dark'] .nav-link:hover {
+  background: rgb(255 255 255 / 0.06);
+}
+:root[data-theme='dark'] .nav-link[aria-current='page'] .ab-highlight {
+  background: rgb(255 255 255 / 0.1);
+}
+:root[data-theme='dark'] .machine .badge {
+  border-color: #3f6a52;
+}
+:root[data-theme='dark'] .machine .badge-red {
+  background: #f0e491;
+  border-color: #f0e491;
+  color: #14291f;
+}
+:root[data-theme='dark'] .machine-thread {
+  background: repeating-linear-gradient(90deg, #2a4234 0 4px, transparent 4px 7px);
+}
+:root[data-theme='dark'] .machine-thread i {
+  background: repeating-linear-gradient(90deg, #7fb58a 0 4px, transparent 4px 7px);
+}
+:root[data-theme='dark'] .machine-down .machine-thread {
+  background: repeating-linear-gradient(135deg, #14291f 0 5px, #f0e491 5px 10px);
+  border-color: #f0e491;
+}
+:root[data-theme='dark'] .stage-segments i {
+  border-color: #4a6d57;
+}
+:root[data-theme='dark'] .stage-segments i.is-done {
+  background: #7fb58a;
+  border-color: #7fb58a;
+}
+:root[data-theme='dark'] .page-header h1::after,
+:root[data-theme='dark'] .live-dot {
+  background: #7fb58a;
+}
+:root[data-theme='dark'] .table tbody tr:hover td {
+  background: rgb(127 181 138 / 0.08);
+}
+:root[data-theme='dark'] .login-panel,
+:root[data-theme='dark'] .landing,
+:root[data-theme='dark'] .landing-features {
+  background-color: var(--color-bg);
+}
+:root[data-theme='dark'] .btn-primary {
+  box-shadow: none;
+}

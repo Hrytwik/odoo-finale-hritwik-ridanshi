@@ -4,25 +4,25 @@
 */
 :root {
   /* Brand */
-  --color-primary: #0f766e;
-  --color-primary-hover: #115e59;
-  --color-primary-soft: #ccfbf1;
+  --color-primary: #31694e;
+  --color-primary-hover: #285640;
+  --color-primary-soft: #e8eed0;
   --color-on-primary: #ffffff;
 
   /* Surfaces and text */
-  --color-bg: #f6f7f8;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f1f3f4;
-  --color-border: #d9dde1;
-  --color-border-strong: #b6bcc3;
-  --color-text: #1b1f23;
-  --color-text-muted: #5d6670;
-  --color-focus: #2563eb;
+  --color-bg: #f8f4d9;
+  --color-surface: #fffdf0;
+  --color-surface-muted: #f4f1d8;
+  --color-border: #e3e8d9;
+  --color-border-strong: #d2d1bd;
+  --color-text: #1f2e26;
+  --color-text-muted: #5b715c;
+  --color-focus: #31694e;
   --color-overlay: rgb(15 23 32 / 0.5);
 
   /* Status colours (each has a soft background and a readable text colour) */
-  --tone-green-bg: #dcfce7;
-  --tone-green-fg: #166534;
+  --tone-green-bg: #e4eec4;
+  --tone-green-fg: #2a5a3c;
   --tone-amber-bg: #fef3c7;
   --tone-amber-fg: #92400e;
   --tone-red-bg: #fee2e2;
@@ -50,16 +50,16 @@
   --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
   --font-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
-  /* Premium accents: dark "ink" surfaces (sidebar, hero) and a warm saffron highlight */
-  --color-ink: #071a19;
-  --color-ink-2: #0b2a29;
-  --color-ink-line: rgb(255 255 255 / 0.09);
-  --color-on-ink: #e7f3f1;
-  --color-on-ink-muted: #8fb0ac;
-  --color-accent: #f4b942;
-  --color-accent-soft: #fff3d6;
-  --gradient-brand: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
-  --shadow-lg: 0 24px 64px rgb(7 26 25 / 0.28);
+  /* Premium accents: dark "ink" surfaces (sidebar, hero) and a pale-yellow highlight */
+  --color-ink: #31694e;
+  --color-ink-2: #285640;
+  --color-ink-line: rgb(255 255 255 / 0.14);
+  --color-on-ink: #f1f3de;
+  --color-on-ink-muted: #d9e693;
+  --color-accent: #bbc863;
+  --color-accent-soft: #f0e491;
+  --gradient-brand: linear-gradient(135deg, #31694e 0%, #658c58 100%);
+  --shadow-lg: 0 24px 64px rgb(20 41 31 / 0.28);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -70,12 +70,12 @@
   /* Shape */
   --radius-sm: 4px;
   --radius-md: 8px;
-  --radius-lg: 12px;
-  --shadow-sm: 0 1px 2px rgb(15 23 32 / 0.06);
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 2px rgb(31 46 38 / 0.06);
   --shadow-md: 0 4px 16px rgb(15 23 32 / 0.12);
 
   /* Layout */
   --tap-min: 44px; /* minimum touch target on phones */
   --header-height: 56px;
-  --sidebar-width: 240px;
+  --sidebar-width: 212px;
 }

@@ -438,7 +438,7 @@
   outline-offset: 2px;
 }
 .verdict-pass.is-picked {
-  border-color: #16a34a;
+  border-color: #658c58;
   background: var(--tone-green-bg);
 }
 .verdict-rework.is-picked {
@@ -521,7 +521,7 @@
   box-shadow: var(--shadow-sm);
 }
 .machine-running {
-  border-left-color: #16a34a;
+  border-left-color: #658c58;
 }
 .machine-idle {
   border-left-color: var(--color-accent);
@@ -596,7 +596,7 @@
   background: var(--color-danger);
 }
 .progress-blue {
-  background: #0284c7;
+  background: #658c58;
 }
 .progress-violet {
   background: #7c3aed;

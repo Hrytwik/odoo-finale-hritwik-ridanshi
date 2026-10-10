@@ -18,7 +18,7 @@
 .border-trail-dot {
   position: absolute;
   aspect-ratio: 1;
-  background: radial-gradient(circle, #5eead4, transparent 70%);
+  background: radial-gradient(circle, #bbc863, transparent 70%);
 }
 
 /* GlowEffect: soft animated colour behind the parent. Parent needs position: relative. */
@@ -41,7 +41,7 @@
   position: absolute;
   pointer-events: none;
   border-radius: 50%;
-  background: radial-gradient(circle at center, rgb(20 184 166 / 0.45), transparent 70%);
+  background: radial-gradient(circle at center, rgb(101 140 88 / 0.45), transparent 70%);
   filter: blur(24px);
   opacity: 0;
   transition: opacity 0.25s var(--ease-out);
