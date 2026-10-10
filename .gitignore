@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+*.pem
+*.key
 
 # Python
 __pycache__/
@@ -11,6 +13,10 @@ venv/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
 
 # Node / Next.js
 node_modules/
@@ -18,10 +24,15 @@ node_modules/
 out/
 *.tsbuildinfo
 next-env.d.ts
+coverage/
+playwright-report/
+test-results/
+*.log
 
 # ML artefacts (large files stay out of git)
-services/api/ml/datasets/
-services/api/ml/runs/
+# (YOLO training writes to ./runs and ./datasets wherever it is started)
+datasets/
+runs/
 *.pt
 # the final, small trained model is committed so every laptop can run QC
 !services/api/ml/models/*.pt
@@ -29,7 +40,12 @@ services/api/ml/runs/
 # Uploaded photos (QC images, challans)
 data/uploads/
 
+# Local tools
+caddy.exe
+
 # OS / editors
 .DS_Store
+Thumbs.db
+desktop.ini
 .idea/
 .vscode/
