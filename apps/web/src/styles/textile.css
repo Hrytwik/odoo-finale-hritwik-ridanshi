@@ -1334,3 +1334,36 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   font-weight: 600;
   word-break: break-all;
 }
+
+/* ---------- Month-end: data checks ---------- */
+.data-checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid #d6a13a;
+  border-radius: var(--radius-lg);
+}
+.data-checks-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  color: #b78325;
+}
+.data-checks-title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-text);
+}
+.data-checks-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.data-checks-other {
+  margin: 0;
+}

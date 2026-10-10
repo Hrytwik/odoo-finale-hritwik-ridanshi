@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { MonthSummary } from '@/components/ai/Drafts'
-import { Alert } from '@/components/common/Alert'
 import { EmptyState } from '@/components/common/EmptyState'
 import { KpiCard } from '@/components/common/KpiCard'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -14,6 +13,7 @@ import { api, call, type components } from '@/lib/api'
 import { todayIso } from '@/lib/dates'
 import { formatLakh, formatMoney, formatPercent, formatQty } from '@/lib/format'
 import { machineUse } from '@/lib/ownerReport'
+import { DataChecks } from './DataChecks'
 
 type Report = components['schemas']['MonthReport']
 
@@ -49,16 +49,7 @@ function Report({ report: r, month }: { report: Report; month: string }) {
   const c = r.cash
   return (
     <div className="stack">
-      {r.warnings.length > 0 && (
-        <Alert tone="info">
-          <strong>Check before you rely on these numbers:</strong>
-          <ul className="plain-list">
-            {r.warnings.map((w) => (
-              <li key={w}>{w}</li>
-            ))}
-          </ul>
-        </Alert>
-      )}
+      <DataChecks warnings={r.warnings} />
 
       <AnimatedGroup className="grid-cards">
         <KpiCard label="Net profit" value={p.profit} format={formatLakh} tone={p.profit < 0 ? 'danger' : undefined} hint={`${formatMoney(p.invoiced)} invoiced`} />
