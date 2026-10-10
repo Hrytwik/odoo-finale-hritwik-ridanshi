@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Printer, ScanLine } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { KpiCard } from '@/components/common/KpiCard'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QrScanner } from '@/components/common/QrScanner'
@@ -78,6 +79,7 @@ function Content({ p, isBuyer }: { p: Passport; isBuyer: boolean }) {
         onClose={() => setScanning(false)}
         onCode={(code) => {
           setScanning(false)
+          toast.success(`Scanned roll ${code}. Opening its passport.`)
           navigate(`/r/${code}`)
         }}
       />

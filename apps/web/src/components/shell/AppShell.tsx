@@ -1,5 +1,6 @@
 import { KeyRound, LogOut, Menu, ScanLine, Search } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
+import { toast } from 'sonner'
 import { Link, useNavigate } from 'react-router-dom'
 import { BrandMark } from '@/components/common/BrandMark'
 import { QrScanner } from '@/components/common/QrScanner'
@@ -110,6 +111,7 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
         onClose={() => setScanning(false)}
         onCode={(code) => {
           setScanning(false)
+          toast.success(`Scanned roll ${code}. Opening its passport.`)
           navigate(`/r/${code}`)
         }}
       />
