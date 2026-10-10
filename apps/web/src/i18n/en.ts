@@ -3,6 +3,7 @@
  * not translated yet shows in English. {name} marks a blank filled in when the sentence is shown, and must stay in every translation.
  */
 import { englishOf } from './area'
+import { dispatch } from './areas/dispatch'
 import { store } from './areas/store'
 
 const core = {
@@ -196,6 +197,6 @@ const core = {
 } as const
 
 /** The core sentences plus each screen's own file under `areas/`. Add a screen's area here. */
-export const en = { ...core, ...englishOf(store) }
+export const en = { ...core, ...englishOf(store), ...englishOf(dispatch) }
 
 export type Key = keyof typeof en
