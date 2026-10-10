@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Waypoints } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import meshUrl from '@/assets/art/glow-mesh.svg'
-import wavesUrl from '@/assets/art/waves-teal.svg'
+import wovenUrl from '@/assets/art/woven-plaid.svg'
+import { BrandMark } from '@/components/common/BrandMark'
 import { BorderTrail } from '@/components/motion/BorderTrail'
 import { GlowEffect } from '@/components/motion/GlowEffect'
 import { Spotlight } from '@/components/motion/Spotlight'
@@ -18,12 +18,12 @@ export function LoginScreen() {
   return (
     <main className="login">
       <section className="login-art spotlight-host">
-        <img src={wavesUrl} alt="" />
+        <img src={wovenUrl} alt="" />
         <Spotlight size={360} />
         <div className="login-art-copy">
           <span className="brand" style={{ color: 'var(--color-on-ink)' }}>
             <span className="brand-mark">
-              <Waypoints size={16} aria-hidden />
+              <BrandMark size={16} />
             </span>
             Everest Mills
           </span>

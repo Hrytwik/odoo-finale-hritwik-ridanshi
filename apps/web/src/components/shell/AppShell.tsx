@@ -1,6 +1,7 @@
-import { LogOut, Menu, Waypoints } from 'lucide-react'
+import { LogOut, Menu } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { BrandMark } from '@/components/common/BrandMark'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import type { components } from '@/lib/api'
@@ -26,7 +27,7 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
         </Button>
         <Link to={homeFor(me.role)} className="brand">
           <span className="brand-mark">
-            <Waypoints size={16} aria-hidden />
+            <BrandMark size={16} />
           </span>
           Everest Mills
         </Link>
