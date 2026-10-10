@@ -11,7 +11,7 @@ Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here 
 |---|---|---|
 | B1 | Foundation — API skeleton, all 29 tables, login, uploads, live events, master data, full API contract with example data | done: all 13 tasks, plus the test-database guard (branch `b/foundation`) |
 | BV | Vision spike — cloth photos, labelling, YOLO fine-tune, 3-hour kill criteria (runs in parallel from the start) | in progress: plan `BV-vision-spike.md` written; tooling built and tested (metric, label parser, train and evaluate scripts, smoke test passed on the Apple GPU); waiting on the photo shoot and labelling |
-| B2 | Store & orders — receiving, ledger, stock and yarn-need views, yarn check, order lifecycle | not written |
+| B2 | Store & orders — receiving, ledger, stock and yarn-need views, yarn check, order lifecycle | written: `B2-store-orders.md`; in progress |
 | B3 | Floor — runs, hand-over, roll off, dyeing loads, breakdowns, machine status view, live events | not written |
 | B4 | QC & rolls — inspections, rework, roll status view, passport data | not written |
 | B5 | Dispatch & money — scan-to-load rules, invoices, receivables, payables, payment limits | not written |
