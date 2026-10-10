@@ -291,6 +291,16 @@
     background-position: -200% 0;
   }
 }
+.shortage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
 /* ---------- Progress bar ---------- */
 .progress {
   display: flex;

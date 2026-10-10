@@ -35,7 +35,8 @@ export function mockApi(table: { GET?: Table; POST?: Table; PATCH?: Table; DELET
   }
 }
 
-export function renderPage(ui: ReactElement, opts: { route?: string; path?: string } = {}) {
+/** Renders a page inside a query client and a memory router. `extra` adds other routes (e.g. the page a redirect should reach). */
+export function renderPage(ui: ReactElement, opts: { route?: string; path?: string; extra?: { path: string; element: ReactElement }[] } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const route = opts.route ?? '/'
   return render(
@@ -43,6 +44,7 @@ export function renderPage(ui: ReactElement, opts: { route?: string; path?: stri
       <MemoryRouter initialEntries={[route]}>
         <Routes>
           <Route path={opts.path ?? '*'} element={ui} />
+          {opts.extra?.map((r) => <Route key={r.path} path={r.path} element={r.element} />)}
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,

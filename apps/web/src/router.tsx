@@ -15,6 +15,9 @@ import { ROUTES } from './routes'
  */
 const SCREENS: Record<string, ComponentType> = {
   'store/receive': lazy(() => import('@/pages/store/ReceiveYarn')),
+  'store/stock': lazy(() => import('@/pages/store/YarnStock')),
+  orders: lazy(() => import('@/pages/orders/OrdersList')),
+  'orders/new': lazy(() => import('@/pages/orders/NewOrder')),
 }
 
 /** All routes. Exported separately so tests can mount them in a memory router. */

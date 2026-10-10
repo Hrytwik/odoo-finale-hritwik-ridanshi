@@ -158,6 +158,10 @@
   font-weight: 500;
   cursor: pointer;
 }
+.pill-count {
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
 .pill-tab[data-checked='true'] {
   color: var(--color-on-primary);
 }
