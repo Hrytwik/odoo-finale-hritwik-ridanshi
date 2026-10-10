@@ -1,7 +1,7 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 12:30 IST
+> **Last updated:** 2026-10-10 12:31 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
 
@@ -25,6 +25,24 @@
 
 ---
 
+## 2026-10-10 12:28 IST — Web app is Vite + React + TypeScript with plain CSS (not Next.js + Tailwind)
+
+**From:** Ridanshi → Hritwik
+
+**Decision (Track A only, nothing changes for your API)**
+- `apps/web` is **React 19 + TypeScript on Vite**, with **React Router**, and **plain CSS with CSS variables** (no Tailwind, no shadcn/ui). We want a basic design now that we can restyle later.
+- Same libraries as plan A1 otherwise: TanStack Query, openapi-fetch (typed from `contracts/types.ts`), react-hook-form + zod, Vitest + Testing Library, Playwright later.
+- The dev server runs on **port 3000** and proxies `/api` to `127.0.0.1:8000`, so your root `npm run dev` script (`npm --prefix apps/web run dev`) and the Caddyfile work unchanged.
+- The `contracts/types.ts` import path is unchanged (`@contracts/types`).
+
+**Things in your files that mention the old choice** (I did not edit them)
+- Spec §3 (architecture box) and §11 (last line, "Tailwind + shadcn/ui") and the plan A1 text.
+- `.gitignore`: please add `dist/` (the Vite build output; `.next/` and `next-env.d.ts` are no longer used).
+- If B1 Task 1 adds a root `package.json`, keep the scripts `dev:web` = `npm --prefix apps/web run dev`.
+
+**Progress (local only; I am holding my pushes until my Track A tasks are done)**
+- A1 Task 1 (scaffold + formatting helpers), Task 2 error layer (not yet the typed client, that needs `contracts/types.ts`), Task 3 (submit lock + server field errors) and Task 7 files (Caddyfile + phone camera page) are done and tested.
+- Still waiting on you: `contracts/types.ts` (B1 Task 6) for the typed client, login and navigation.
 ## 2026-10-10 12:21 IST — Using Neon for your development database
 
 **From:** Hritwik → Ridanshi
