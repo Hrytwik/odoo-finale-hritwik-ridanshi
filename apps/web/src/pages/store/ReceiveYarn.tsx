@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Camera, CheckCircle2 } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { Alert } from '@/components/common/Alert'
 import { PageHeader } from '@/components/common/PageHeader'
+import { PhotoInput } from '@/components/common/PhotoInput'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
 import { SubmitButton } from '@/components/common/SubmitButton'
 import { Reveal } from '@/components/motion/Reveal'
@@ -181,13 +182,7 @@ function ReceiveForm({ yarnTypes, suppliers, orders }: FormProps) {
           </div>
 
           <Field label={t('store.receive.photo')} hint={photo ? photo.name : t('store.receive.photoHint')}>
-            {(c) => (
-              <label className="file-pick">
-                <Camera size={18} aria-hidden />
-                <span>{photo ? t('store.receive.photoChange') : t('store.receive.photoTake')}</span>
-                <input {...c} type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
-              </label>
-            )}
+            {(c) => <PhotoInput {...c} onFile={setPhoto} />}
           </Field>
 
           {formError && <Alert tone="error">{formError}</Alert>}

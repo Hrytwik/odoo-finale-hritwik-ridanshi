@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Camera, Plus, ScanSearch, Trash2 } from 'lucide-react'
+import { Plus, ScanSearch, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Alert } from '@/components/common/Alert'
 import { PageHeader } from '@/components/common/PageHeader'
+import { PhotoInput } from '@/components/common/PhotoInput'
 import { PhotoWithBoxes } from '@/components/common/PhotoWithBoxes'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
 import { SubmitButton } from '@/components/common/SubmitButton'
@@ -167,13 +168,7 @@ export function Inspection({ roll, embedded = false, onRecorded }: { roll: compo
         <Card title={t('qc.inspect.step1')}>
           <div className="stack">
             <Field label={t('qc.inspect.photo')} hint={photo ? photo.name : t('qc.inspect.photoHint')}>
-              {(c) => (
-                <label className="file-pick">
-                  <Camera size={18} aria-hidden />
-                  <span>{photo ? t('store.receive.photoChange') : t('store.receive.photoTake')}</span>
-                  <input {...c} type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => choosePhoto(e.target.files?.[0] ?? null)} />
-                </label>
-              )}
+              {(c) => <PhotoInput {...c} onFile={choosePhoto} />}
             </Field>
             {preview && (
               <>

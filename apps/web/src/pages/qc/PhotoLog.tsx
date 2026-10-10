@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { Alert } from '@/components/common/Alert'
 import { EmptyState } from '@/components/common/EmptyState'
 import { KpiCard } from '@/components/common/KpiCard'
+import { PhotoInput } from '@/components/common/PhotoInput'
 import { PhotoWithBoxes } from '@/components/common/PhotoWithBoxes'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
 import { AnimatedGroup } from '@/components/motion/AnimatedGroup'
@@ -321,7 +322,6 @@ function CheckDialog({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
 function TryModel() {
   const { t } = useI18n()
   const label = useDefectLabel()
-  const [photo, setPhoto] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [result, setResult] = useState<components['schemas']['AnalyzeOut'] | null>(null)
   const [busy, setBusy] = useState(false)
@@ -351,23 +351,13 @@ function TryModel() {
       <p className="muted text-sm">{t('log.tryHint')}</p>
       <Field label={t('qc.inspect.photo')}>
         {(c) => (
-          <label className="file-pick">
-            <Camera size={18} aria-hidden />
-            <span>{photo ? t('store.receive.photoChange') : t('store.receive.photoTake')}</span>
-            <input
-              {...c}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="sr-only"
-              onChange={(e) => {
-                const file = e.target.files?.[0] ?? null
-                setPhoto(file)
-                setPreview(file ? URL.createObjectURL(file) : null)
-                if (file) void analyse(file)
-              }}
-            />
-          </label>
+          <PhotoInput
+            {...c}
+            onFile={(file) => {
+              setPreview(file ? URL.createObjectURL(file) : null)
+              if (file) void analyse(file)
+            }}
+          />
         )}
       </Field>
       {preview && <PhotoWithBoxes src={preview} boxes={s?.boxes ?? []} alt={t('qc.inspect.photoAlt')} />}
