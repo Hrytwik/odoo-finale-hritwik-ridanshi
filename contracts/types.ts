@@ -4,6 +4,30 @@
  */
 
 export interface paths {
+    "/api/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Attendance
+         * @description Every worker on the payroll for one shift on one day, with the status already marked (or none).
+         */
+        get: operations["get_attendance_api_attendance_get"];
+        put?: never;
+        /**
+         * Mark Attendance
+         * @description Marks (or corrects) attendance for a shift. Saving again for the same worker and shift changes the earlier mark.
+         */
+        post: operations["mark_attendance_api_attendance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -742,6 +766,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payments/wages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pay Wages
+         * @description Records a wage payment. It cannot be more than the worker is owed for the period (earned minus paid inside it).
+         */
+        post: operations["pay_wages_api_payments_wages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/orders": {
         parameters: {
             query?: never;
@@ -1136,6 +1180,26 @@ export interface paths {
         patch: operations["update_user_api_users__item_id__patch"];
         trace?: never;
     };
+    "/api/wages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Wages
+         * @description Wages earned from attendance, paid so far and still owed, for each worker, for one calendar month.
+         */
+        get: operations["wages_api_wages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workers": {
         parameters: {
             query?: never;
@@ -1243,6 +1307,50 @@ export interface components {
             /** Message */
             message: string | null;
             suggestion: components["schemas"]["AiSuggestion"] | null;
+        };
+        /** AttendanceEntry */
+        AttendanceEntry: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "present" | "half_day" | "absent";
+            /** Worker Id */
+            worker_id: number;
+        };
+        /** AttendanceIn */
+        AttendanceIn: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Entries */
+            entries: components["schemas"]["AttendanceEntry"][];
+            /** Shift Id */
+            shift_id: number;
+        };
+        /** AttendanceRow */
+        AttendanceRow: {
+            /** Status */
+            status: ("present" | "half_day" | "absent") | null;
+            /** Worker Code */
+            worker_code: string;
+            /** Worker Id */
+            worker_id: number;
+            /** Worker Name */
+            worker_name: string;
+        };
+        /** AttendanceSheet */
+        AttendanceSheet: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Rows */
+            rows: components["schemas"]["AttendanceRow"][];
+            shift: components["schemas"]["Ref"];
         };
         /** BlockIn */
         BlockIn: {
@@ -2755,6 +2863,64 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /** WagePaymentIn */
+        WagePaymentIn: {
+            /** Amount */
+            amount: number;
+            /**
+             * Paid At
+             * Format: date
+             */
+            paid_at: string;
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+            /** Worker Id */
+            worker_id: number;
+        };
+        /** WageRow */
+        WageRow: {
+            /** Absent */
+            absent: number;
+            /** Daily Wage */
+            daily_wage: number;
+            /** Earned */
+            earned: number;
+            /** Half Days */
+            half_days: number;
+            /** Owed */
+            owed: number;
+            /** Paid */
+            paid: number;
+            /** Present */
+            present: number;
+            /** Worker Code */
+            worker_code: string;
+            /** Worker Id */
+            worker_id: number;
+            /** Worker Name */
+            worker_name: string;
+        };
+        /** WageSheet */
+        WageSheet: {
+            /** Month */
+            month: string;
+            /** Rows */
+            rows: components["schemas"]["WageRow"][];
+            /** Total Earned */
+            total_earned: number;
+            /** Total Owed */
+            total_owed: number;
+            /** Total Paid */
+            total_paid: number;
+        };
         /** WhatIf */
         WhatIf: {
             /** Days Late */
@@ -2901,6 +3067,71 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    get_attendance_api_attendance_get: {
+        parameters: {
+            query: {
+                date: string;
+                shift_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceSheet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_attendance_api_attendance_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttendanceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceSheet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     login_api_auth_login_post: {
         parameters: {
             query?: never;
@@ -4359,6 +4590,39 @@ export interface operations {
             };
         };
     };
+    pay_wages_api_payments_wages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WagePaymentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WageRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     my_orders_api_portal_orders_get: {
         parameters: {
             query?: never;
@@ -5117,6 +5381,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    wages_api_wages_get: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WageSheet"];
                 };
             };
             /** @description Validation Error */

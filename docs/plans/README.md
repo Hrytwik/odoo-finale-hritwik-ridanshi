@@ -29,7 +29,7 @@ Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here 
 | A3 | Floor screens | **done**: `A3-floor-screens.md` |
 | A4 | QC + Roll Passport screens | **done**: `A4-qc-and-roll-passport.md` |
 | A5 | Dispatch, invoices, money screens | **done**: `A5-dispatch-invoices-money.md` |
-| A6 | People module (API + screens) | not written |
+| A6 | People module (API + screens) | **done**: `A6-people.md` |
 | A7 | Owner dashboard, insights, master-data screens | **done**: `A7-owner-insights-master-data.md` |
 | A8 | Language-model module (adapters, tools, report card) + AI screens | not written |
 | A9 | Buyer portal + end-to-end demo script | not written |

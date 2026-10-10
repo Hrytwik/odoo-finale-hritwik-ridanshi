@@ -828,3 +828,63 @@ h1 {
   border: 1px solid var(--color-accent);
   color: var(--color-text);
 }
+
+/* ---------- Attendance sheet ---------- */
+.roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.roster-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+.segmented {
+  display: inline-flex;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  background: var(--color-surface-muted);
+}
+.segmented label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+.segmented label:has(input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+}
+.segmented label.is-on {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.segmented label.is-on.is-half_day {
+  background: var(--color-accent);
+  color: #1f2e26;
+}
+.segmented label.is-on.is-absent {
+  background: #1f2e26;
+  color: #fffdf0;
+}
+:root[data-theme='dark'] .segmented label.is-on.is-absent {
+  background: #f0e491;
+  color: #14291f;
+}
