@@ -6,25 +6,27 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { ActionDialog } from '@/components/common/ActionDialog'
 import { Field, Input } from '@/components/ui/Field'
+import { useI18n } from '@/i18n/I18nContext'
 import { applyServerErrors, useSubmitLock } from '@/lib/forms'
 import { todayIso } from '@/lib/dates'
 import { formatMoney } from '@/lib/format'
 
 export type PaymentValues = { amount: number; date: string; reference?: string }
 
-const schemaFor = (balance: number) =>
+type T = ReturnType<typeof useI18n>['t']
+const schemaFor = (balance: number, t: T) =>
   z.object({
     amount: z
       .string()
       .trim()
-      .min(1, 'Enter the amount')
-      .refine((v) => Number.isFinite(Number(v)) && Number(v) > 0, 'Enter an amount above zero')
-      .refine((v) => Number(v) <= balance + 0.005, `It cannot be more than the balance of ${formatMoney(balance)}`),
+      .min(1, t('money.enterAmount'))
+      .refine((v) => Number.isFinite(Number(v)) && Number(v) > 0, t('money.amountAboveZero'))
+      .refine((v) => Number(v) <= balance + 0.005, t('money.amountTooMuch', { balance: formatMoney(balance) })),
     date: z
       .string()
-      .min(1, 'Choose the date')
-      .refine((v) => v <= todayIso(), 'The date cannot be in the future'),
-    reference: z.string().trim().max(60, 'Keep it under 60 characters').optional(),
+      .min(1, t('money.chooseDate'))
+      .refine((v) => v <= todayIso(), t('money.dateFuture')),
+    reference: z.string().trim().max(60, t('money.referenceLong')).optional(),
   })
 type Values = z.infer<ReturnType<typeof schemaFor>>
 
@@ -49,8 +51,9 @@ export function PaymentDialog({
   successMessage: (values: PaymentValues) => string
   onClose: () => void
 }) {
+  const { t } = useI18n()
   const form = useForm<Values>({
-    resolver: zodResolver(schemaFor(balance)),
+    resolver: zodResolver(schemaFor(balance, t)),
     defaultValues: { amount: String(Math.round(balance * 100) / 100), date: todayIso(), reference: '' },
   })
   const queryClient = useQueryClient()
@@ -75,17 +78,17 @@ export function PaymentDialog({
   })
 
   return (
-    <ActionDialog open onClose={onClose} title={title} confirmLabel="Record payment" onConfirm={() => void submit()} pending={pending} error={error}>
+    <ActionDialog open onClose={onClose} title={title} confirmLabel={t('money.recordPayment')} onConfirm={() => void submit()} pending={pending} error={error}>
       <p className="muted text-sm">
-        {subject}. Balance {formatMoney(balance)}.
+        {t('money.subject', { subject, balance: formatMoney(balance) })}
       </p>
-      <Field label="Amount (₹)" error={errors.amount?.message}>
+      <Field label={t('money.amountRupees')} error={errors.amount?.message}>
         {(c) => <Input {...c} inputMode="decimal" autoComplete="off" autoFocus {...form.register('amount')} />}
       </Field>
       <Field label={dateLabel} error={errors.date?.message}>
         {(c) => <Input {...c} type="date" max={todayIso()} {...form.register('date')} />}
       </Field>
-      <Field label="Reference (optional)" hint="A cheque, UTR or transfer number" error={errors.reference?.message}>
+      <Field label={t('money.reference')} hint={t('money.referenceHint')} error={errors.reference?.message}>
         {(c) => <Input {...c} autoComplete="off" {...form.register('reference')} />}
       </Field>
     </ActionDialog>
