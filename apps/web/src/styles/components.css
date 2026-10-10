@@ -370,6 +370,52 @@
   gap: var(--space-2);
 }
 
+/* ---------- Dispatch: scan to load ---------- */
+.scan-row {
+  display: grid;
+  gap: var(--space-3);
+  align-items: end;
+  grid-template-columns: 1fr auto auto;
+}
+@media (max-width: 560px) {
+  .scan-row {
+    grid-template-columns: 1fr;
+  }
+}
+.scan-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.scan-log li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+.scan-ok {
+  background: var(--tone-green-bg);
+  color: var(--tone-green-fg);
+}
+.scan-refused {
+  background: var(--tone-red-bg);
+  color: var(--tone-red-fg);
+  font-weight: 600;
+}
+.load-order {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
 /* ---------- QC inspection ---------- */
 .verdicts {
   display: grid;
