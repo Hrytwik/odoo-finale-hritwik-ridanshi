@@ -50,9 +50,13 @@ class ChatTurnIn(BaseModel):
     text: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4000)]
 
 
+Language = Literal["English", "Hindi", "Kannada", "Tamil", "Telugu", "Marathi", "Bengali", "Gujarati", "Malayalam", "Punjabi"]
+
+
 class ChatIn(BaseModel):
     question: Text
     history: Annotated[list[ChatTurnIn], Field(max_length=12)] = []
+    language: Language = "English"  # the language the person reads; a fixed list, so it can never carry instructions
 
 
 class SourceOut(BaseModel):

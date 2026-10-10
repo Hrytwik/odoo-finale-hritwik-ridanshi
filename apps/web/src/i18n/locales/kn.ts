@@ -38,6 +38,8 @@ export const kn: Partial<Record<Key, string>> = {
   'nav.users': 'ಬಳಕೆದಾರರು',
   'nav.myOrders': 'ನನ್ನ ಆರ್ಡರ್‌ಗಳು',
 
+  'header.menuTitle': 'ಮೆನು',
+  'attendance.forShift': 'ಶಿಫ್ಟ್ {shift} ಹಾಜರಾತಿ',
   'header.menu': 'ಮೆನು ತೆರೆಯಿರಿ',
   'header.search': 'ರೋಲ್, ಲಾಟ್, ಆರ್ಡರ್ ಹುಡುಕಿ',
   'header.scan': 'ರೋಲ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ',

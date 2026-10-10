@@ -1,7 +1,9 @@
 import { Bot, Send, Sparkles, User } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Alert } from '@/components/common/Alert'
+import { MicButton, SpeakButton } from '@/components/common/VoiceButtons'
 import { Button } from '@/components/ui/Button'
+import { useI18n } from '@/i18n/I18nContext'
 import { type components, errorMessage } from '@/lib/api'
 import { useSubmitLock } from '@/lib/forms'
 
@@ -35,13 +37,14 @@ export function ChatPanel({
   label,
   fill = false,
 }: {
-  send: (question: string, history: { role: 'user' | 'assistant'; text: string }[]) => Promise<Chat>
+  send: (question: string, history: { role: 'user' | 'assistant'; text: string }[], language: string) => Promise<Chat>
   suggestions: string[]
   placeholder: string
   label: string
   /** use the whole width, and the height of the page, instead of a box */
   fill?: boolean
 }) {
+  const { t, language } = useI18n()
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -61,7 +64,7 @@ export function ChatPanel({
       setMessages((m) => [...m, { role: 'user', text: q }])
       setText('')
       try {
-        const reply = await send(q, history)
+        const reply = await send(q, history, language.english)
         setMessages((m) => [...m, { role: 'assistant', text: reply.answer, sources: reply.sources }])
       } catch (err) {
         // the question stays in the box so it can be sent again once the problem is fixed
@@ -77,7 +80,7 @@ export function ChatPanel({
         {messages.length === 0 && (
           <div className="chat-empty">
             <Sparkles size={22} aria-hidden />
-            <p>Ask in your own words. Every answer shows the figures it came from.</p>
+            <p>{t('chat.empty')}</p>
             <div className="chat-suggestions">
               {suggestions.map((s) => (
                 <button key={s} type="button" className="chat-chip" onClick={() => void ask(s)} disabled={pending}>
@@ -94,13 +97,14 @@ export function ChatPanel({
             </span>
             <div className="chat-body">
               <RichText text={m.text} />
+              {m.role === 'assistant' && <SpeakButton text={m.text} />}
               {m.sources && m.sources.length > 0 && <Sources sources={m.sources} />}
             </div>
           </article>
         ))}
         {pending && (
           <p className="chat-thinking muted" role="status">
-            <span className="spinner" aria-hidden /> Looking it up…
+            <span className="spinner" aria-hidden /> {t('chat.thinking')}
           </p>
         )}
         <div ref={end} />
@@ -114,8 +118,9 @@ export function ChatPanel({
         }}
       >
         <input className="input" aria-label={label} placeholder={placeholder} value={text} maxLength={1000} autoComplete="off" onChange={(e) => setText(e.target.value)} />
+        <MicButton onText={(said) => setText((prev) => (prev ? `${prev} ${said}` : said).slice(0, 1000))} />
         <Button type="submit" disabled={pending || !text.trim()}>
-          <Send size={16} aria-hidden /> Ask
+          <Send size={16} aria-hidden /> {t('chat.ask')}
         </Button>
       </form>
     </section>
@@ -182,10 +187,11 @@ export function RichText({ text }: { text: string }) {
 }
 
 function Sources({ sources }: { sources: Source[] }) {
+  const { t } = useI18n()
   return (
     <details className="chat-sources">
       <summary>
-        Where this came from ({sources.length})
+        {t('chat.sources', { count: sources.length })}
       </summary>
       <ul className="plain-list">
         {sources.map((s, i) => (

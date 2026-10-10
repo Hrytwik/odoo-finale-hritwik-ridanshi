@@ -1,5 +1,5 @@
 import { ChatPanel } from '@/components/ai/ChatPanel'
-import { api, call } from '@/lib/api'
+import { api, call, type components } from '@/lib/api'
 
 const SUGGESTIONS = ['Will my order make its deadline?', 'Where is my order right now?', 'When will it be delivered?']
 
@@ -13,7 +13,7 @@ export function BuyerAssistant() {
         fill
         placeholder="For example: will my order make the 20th?"
         suggestions={SUGGESTIONS}
-        send={(question, history) => call(api.POST('/api/ai/buyer-assistant', { body: { question, history } }))}
+        send={(question, history, language) => call(api.POST('/api/ai/buyer-assistant', { body: { question, history, language: language as components['schemas']['ChatIn']['language'] } }))}
       />
     </section>
   )

@@ -42,6 +42,8 @@ export const en = {
   'nav.myOrders': 'My orders',
 
   // ---- top bar and language
+  'header.menuTitle': 'Menu',
+  'attendance.forShift': 'Attendance for shift {shift}',
   'header.menu': 'Open menu',
   'header.search': 'Search rolls, lots, orders',
   'header.scan': 'Scan a roll',

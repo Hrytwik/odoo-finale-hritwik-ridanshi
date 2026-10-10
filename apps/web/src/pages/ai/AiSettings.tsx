@@ -233,7 +233,7 @@ function TestConnection({ disabled }: { disabled: boolean }) {
     run(async () => {
       setResult(null)
       try {
-        const r = await call(api.POST('/api/ai/copilot', { body: { question: 'Reply with the single word OK.', history: [] } }))
+        const r = await call(api.POST('/api/ai/copilot', { body: { question: 'Reply with the single word OK.', history: [], language: 'English' } }))
         setResult({ ok: true, text: `${r.model} answered: ${r.answer}` })
       } catch (err) {
         setResult({ ok: false, text: errorMessage(err) })

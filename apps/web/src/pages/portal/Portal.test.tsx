@@ -50,7 +50,7 @@ describe('buyer portal home', () => {
     renderPage(<PortalHome />)
     await userEvent.click(await screen.findByRole('button', { name: 'Will my order make its deadline?' }))
     expect(await screen.findByText('Your order is in dyeing.')).toBeInTheDocument()
-    expect(post).toHaveBeenCalledWith('/api/ai/buyer-assistant', { body: { question: 'Will my order make its deadline?', history: [] } })
+    expect(post).toHaveBeenCalledWith('/api/ai/buyer-assistant', { body: { question: 'Will my order make its deadline?', history: [], language: 'English' } })
     expect(screen.getByText('ORD-0001 dyeing')).toBeInTheDocument()
   })
 })

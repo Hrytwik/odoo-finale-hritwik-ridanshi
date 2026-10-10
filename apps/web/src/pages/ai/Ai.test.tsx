@@ -42,7 +42,7 @@ describe('Copilot page', () => {
     await userEvent.type(screen.getByRole('textbox'), 'How much yarn is free?')
     await userEvent.click(screen.getByRole('button', { name: /ask/i }))
     expect(await screen.findByText('170 kg of 30S-COT-RAW is free.')).toBeInTheDocument()
-    expect(post).toHaveBeenCalledWith('/api/ai/copilot', { body: { question: 'How much yarn is free?', history: [] } })
+    expect(post).toHaveBeenCalledWith('/api/ai/copilot', { body: { question: 'How much yarn is free?', history: [], language: 'English' } })
     expect(screen.getByText('Where this came from (1)')).toBeInTheDocument()
     expect(screen.getByText(SOURCE.summary)).toBeInTheDocument()
   })
@@ -52,7 +52,7 @@ describe('Copilot page', () => {
     renderPage(<Copilot />)
     await userEvent.click(screen.getByRole('button', { name: 'Which orders will be late?' }))
     await screen.findByText('170 kg of 30S-COT-RAW is free.')
-    expect(post).toHaveBeenCalledWith('/api/ai/copilot', { body: { question: 'Which orders will be late?', history: [] } })
+    expect(post).toHaveBeenCalledWith('/api/ai/copilot', { body: { question: 'Which orders will be late?', history: [], language: 'English' } })
   })
 
   it('offers the month question to the owner', () => {
@@ -83,6 +83,7 @@ describe('Copilot page', () => {
     expect(post).toHaveBeenLastCalledWith('/api/ai/copilot', {
       body: {
         question: 'Second',
+        language: 'English',
         history: [
           { role: 'user', text: 'First' },
           { role: 'assistant', text: '170 kg of 30S-COT-RAW is free.' },

@@ -38,6 +38,8 @@ export const hi: Partial<Record<Key, string>> = {
   'nav.users': 'उपयोगकर्ता',
   'nav.myOrders': 'मेरे ऑर्डर',
 
+  'header.menuTitle': 'मेनू',
+  'attendance.forShift': 'शिफ्ट {shift} की हाजरी',
   'header.menu': 'मेनू खोलें',
   'header.search': 'रोल, लॉट, ऑर्डर खोजें',
   'header.scan': 'रोल स्कैन करें',

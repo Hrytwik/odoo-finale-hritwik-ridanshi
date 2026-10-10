@@ -1,4 +1,6 @@
 import { Badge } from '@/components/ui/Badge'
+import type { Key } from '@/i18n/en'
+import { useI18n } from '@/i18n/I18nContext'
 import { MACHINE_STATUS, ORDER_STAGE, ROLL_STATUS, type MachineStatus, type OrderStage, type RollStatus, type Style } from './statusMaps'
 
 type Props =
@@ -8,7 +10,8 @@ type Props =
 
 /** A coloured pill with the human label for a machine, roll or order status. Labels live in statusMaps.ts. */
 export function StatusBadge(props: Props) {
+  const { t } = useI18n()
   const style: Style =
     props.kind === 'machine' ? MACHINE_STATUS[props.value] : props.kind === 'roll' ? ROLL_STATUS[props.value] : ORDER_STAGE[props.value]
-  return <Badge tone={style.tone}>{style.label}</Badge>
+  return <Badge tone={style.tone}>{t(`status.${props.kind}.${props.value}` as Key)}</Badge>
 }

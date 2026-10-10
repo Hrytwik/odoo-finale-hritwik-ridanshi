@@ -77,14 +77,16 @@ def _history(body: s.ChatIn) -> list[Turn]:
 @router.post("/copilot", response_model=s.ChatOut)
 def copilot(body: s.ChatIn, db: Session = Depends(get_db), user: User = Depends(managers), rt: LlmRuntime = Depends(get_runtime)) -> s.ChatOut:
     _need_tools(rt)
-    result = engine.run_chat(rt.adapter, engine.COPILOT_SYSTEM, _history(body), body.question, tools_for(user.role, "copilot"), ToolContext(db, user))
+    result = engine.run_chat(rt.adapter, engine.COPILOT_SYSTEM, _history(body), body.question, tools_for(user.role, "copilot"), ToolContext(db, user),
+                             language=body.language)
     return s.ChatOut(answer=result.text, sources=_sources(result), provider=rt.config.provider, model=rt.config.model)
 
 
 @router.post("/buyer-assistant", response_model=s.ChatOut)
 def buyer_assistant(body: s.ChatIn, db: Session = Depends(get_db), user: User = Depends(buyers), rt: LlmRuntime = Depends(get_runtime)) -> s.ChatOut:
     _need_tools(rt)
-    result = engine.run_chat(rt.adapter, engine.BUYER_SYSTEM, _history(body), body.question, tools_for(user.role, "buyer"), ToolContext(db, user))
+    result = engine.run_chat(rt.adapter, engine.BUYER_SYSTEM, _history(body), body.question, tools_for(user.role, "buyer"), ToolContext(db, user),
+                             language=body.language)
     return s.ChatOut(answer=result.text, sources=_sources(result), provider=rt.config.provider, model=rt.config.model)
 
 

@@ -38,6 +38,8 @@ export const te: Partial<Record<Key, string>> = {
   'nav.users': 'వినియోగదారులు',
   'nav.myOrders': 'నా ఆర్డర్లు',
 
+  'header.menuTitle': 'మెనూ',
+  'attendance.forShift': 'షిఫ్ట్ {shift} హాజరు',
   'header.menu': 'మెనూ తెరవండి',
   'header.search': 'రోల్, లాట్, ఆర్డర్ వెతకండి',
   'header.scan': 'రోల్ స్కాన్ చేయండి',

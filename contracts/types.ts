@@ -1851,6 +1851,12 @@ export interface components {
              * @default []
              */
             history: components["schemas"]["ChatTurnIn"][];
+            /**
+             * Language
+             * @default English
+             * @enum {string}
+             */
+            language: "English" | "Hindi" | "Kannada" | "Tamil" | "Telugu" | "Marathi" | "Bengali" | "Gujarati" | "Malayalam" | "Punjabi";
             /** Question */
             question: string;
         };

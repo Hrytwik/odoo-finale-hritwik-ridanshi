@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import wovenUrl from '@/assets/art/woven-plaid.svg'
 import { BrandMark } from '@/components/common/BrandMark'
 import { Typewriter } from '@/components/motion/Typewriter'
+import { LanguageSwitcher } from '@/i18n/LanguageSwitcher'
+import { useI18n } from '@/i18n/I18nContext'
 import { homeFor, safeNext } from '@/lib/nav'
 import { LoginForm } from './LoginForm'
 
@@ -13,6 +15,7 @@ export function LoginScreen() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const queryClient = useQueryClient()
+  const { t } = useI18n()
 
   return (
     <main className="login">
@@ -36,12 +39,15 @@ export function LoginScreen() {
 
       <section className="login-panel">
         <div className="login-wrap">
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <LanguageSwitcher />
+          </div>
           <div className="login-card">
             <div className="card-body stack">
               <div className="stack-sm">
-                <p className="eyebrow">Sign in</p>
-                <h1>Welcome back</h1>
-                <p className="muted text-sm">Log in to continue to Everest Mills.</p>
+                <p className="eyebrow">{t('login.eyebrow')}</p>
+                <h1>{t('login.title')}</h1>
+                <p className="muted text-sm">{t('login.intro')}</p>
               </div>
               <LoginForm
                 onSuccess={(me) => {
@@ -50,7 +56,7 @@ export function LoginScreen() {
                 }}
               />
               <p className="muted text-sm">
-                New buyer? <Link to="/signup">Create your account</Link>
+                {t('login.newBuyer')} <Link to="/signup">{t('login.createAccount')}</Link>
               </p>
             </div>
           </div>

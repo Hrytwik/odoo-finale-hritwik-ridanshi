@@ -38,6 +38,8 @@ export const ta: Partial<Record<Key, string>> = {
   'nav.users': 'பயனர்கள்',
   'nav.myOrders': 'என் ஆர்டர்கள்',
 
+  'header.menuTitle': 'மெனு',
+  'attendance.forShift': 'ஷிப்ட் {shift} வருகைப் பதிவு',
   'header.menu': 'மெனுவைத் திற',
   'header.search': 'ரோல், லாட், ஆர்டர் தேடு',
   'header.scan': 'ரோலை ஸ்கேன் செய்',
@@ -77,7 +79,7 @@ export const ta: Partial<Record<Key, string>> = {
   'status.order.weaving': 'நெசவு',
   'status.order.dyeing': 'சாயமிடுதல்',
   'status.order.quality_check': 'தரப் பரிசோதனை',
-  'status.order.ready_to_ship': 'அனுப்படத் தயார்',
+  'status.order.ready_to_ship': 'அனுப்பத் தயார்',
   'status.order.partly_dispatched': 'ஒரு பகுதி அனுப்பப்பட்டது',
   'status.order.dispatched': 'அனுப்பப்பட்டது',
 
