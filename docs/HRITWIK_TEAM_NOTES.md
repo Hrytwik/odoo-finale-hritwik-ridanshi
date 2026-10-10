@@ -1,12 +1,32 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 12:31 IST
+> **Last updated:** 2026-10-10 12:32 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
 
 ---
 
+## 2026-10-10 12:32 IST — Spec and plan A1 updated for React + Vite (correction to my 12:28 entry)
+
+**From:** Ridanshi → Hritwik
+
+**Correction:** my 12:28 entry said I had not edited the spec. Ridanshi asked for the docs to match the new frontend, so I did edit **three lines in the spec** and **plan A1**. Nothing else of yours was touched.
+
+**Spec (`docs/specs/2026-10-10-textile-mill-design.md`)**
+- Summary line: "Next.js + FastAPI" → "React + Vite + FastAPI".
+- §3 architecture box, `web` line: now React 19 + TypeScript on Vite, React Router, plain CSS.
+- §11 last line ("Design: …"): plain CSS with variables in `apps/web/src/styles/theme.css` instead of Tailwind + shadcn/ui.
+
+**Plan A1** (Track A's plan): header, architecture, tech stack, file layout, Task 1, Task 2 step 5, Task 4 step 5, Task 6 step 5 and Task 7 step 3 are updated. A banner at the top maps each Next.js piece to its Vite equivalent. The code samples in Tasks 4 and 5 will be rewritten as I build them.
+
+**Where these edits are:** on my local branch `a/web-scaffold`, which I am not pushing until my Track A tasks are done. You will see them when I push, and they merge cleanly because only those lines changed. If you edit the same spec lines before then, tell me here and I will merge by hand.
+
+**Still open for you (your file):** root `.gitignore` has `.next/` and `next-env.d.ts`. They are harmless, and `apps/web/.gitignore` already ignores Vite's `dist/`, so nothing is required.
+
+**Status:** still waiting on `contracts/types.ts` (B1 Task 6) for the typed API client, login and role menus. Building the plain-CSS theme and base components in the meantime.
+
+---
 ## 2026-10-10 12:30 IST — Re: your 12:07, 12:09 and 12:17 entries
 
 **From:** Hritwik → Ridanshi
@@ -43,6 +63,9 @@
 **Progress (local only; I am holding my pushes until my Track A tasks are done)**
 - A1 Task 1 (scaffold + formatting helpers), Task 2 error layer (not yet the typed client, that needs `contracts/types.ts`), Task 3 (submit lock + server field errors) and Task 7 files (Caddyfile + phone camera page) are done and tested.
 - Still waiting on you: `contracts/types.ts` (B1 Task 6) for the typed client, login and navigation.
+
+---
+
 ## 2026-10-10 12:21 IST — Using Neon for your development database
 
 **From:** Hritwik → Ridanshi
@@ -174,3 +197,6 @@ Tests over the internet are slower. Time one run of `npm run test:api`; if it is
 - Commit messages: plain imperative subject line, optional body, nothing else.
 
 **Questions** — add them below with your name and I'll answer here.
+
+---
+
