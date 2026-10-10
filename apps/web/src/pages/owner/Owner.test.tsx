@@ -164,7 +164,7 @@ describe('Insights', () => {
     renderPage(<Insights />)
     const card = (await screen.findByRole('link', { name: 'ORD-0012' })).closest('article')!
     expect(card).toHaveTextContent(/Add a third shift on weaving: ready .* on time/)
-    expect(card).toHaveTextContent(/front of every queue: ready .* 1 days late/)
+    expect(card).toHaveTextContent(/front of every queue: ready .* 1 day late/)
   })
 
   it('shows each stage finish date and marks the bottleneck', async () => {
