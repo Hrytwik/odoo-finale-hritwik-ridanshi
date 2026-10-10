@@ -4,8 +4,8 @@ from itertools import count
 from sqlalchemy.orm import Session
 
 from app.db.models import (
-    Buyer, FabricRecipeLine, FabricType, Machine, Order, ProductionRun, Roll, RollRun, Shift, Supplier,
-    User, Worker, YarnType,
+    Buyer, Dispatch, FabricRecipeLine, FabricType, Machine, Order, ProductionRun, Roll, RollRun, Shift,
+    Supplier, SupplierBill, User, Worker, YarnLot, YarnMovement, YarnType,
 )
 
 _n = count(1)
@@ -89,3 +89,23 @@ def make_roll(db: Session, order: Order, weaving_run: ProductionRun, metres: flo
     roll = _add(db, Roll(code=f"R-{next(_n):04d}", order_id=order.id, metres=metres))
     _add(db, RollRun(roll_id=roll.id, run_id=weaving_run.id, purpose="produce"))
     return roll
+
+
+def make_lot(db: Session, yarn_type=None, supplier=None, qty_kg: float = 500, cost_per_kg: float = 250, **kw) -> YarnLot:
+    n = next(_n)
+    supplier = supplier or make_supplier(db)
+    receiver = kw.pop("received_by", None) or make_user(db, role="store").id
+    lot = _add(db, YarnLot(**{
+        "lot_code": f"L-{n:04d}", "yarn_type_id": (yarn_type or make_yarn_type(db)).id,
+        "supplier_id": supplier.id, "cost_per_kg": cost_per_kg, "challan_no": f"CH-{n}",
+        "received_by": receiver, **kw,
+    }))
+    _add(db, YarnMovement(yarn_lot_id=lot.id, kind="receipt", qty_kg=qty_kg, moved_by=receiver))
+    _add(db, SupplierBill(supplier_id=supplier.id, yarn_lot_id=lot.id, bill_no=lot.challan_no,
+                          amount=qty_kg * cost_per_kg, bill_date=dt.date(2026, 10, 1), due_date=dt.date(2026, 10, 31)))
+    db.refresh(lot)
+    return lot
+
+
+def make_dispatch(db: Session, buyer: Buyer, **kw) -> Dispatch:
+    return _add(db, Dispatch(**{"code": f"DSP-{next(_n):04d}", "buyer_id": buyer.id, "vehicle_no": "KA01AB1234", **kw}))
