@@ -122,32 +122,61 @@ export function ChatPanel({
   )
 }
 
-/** Bold (**like this**) and "- " bullet lines, which models write whatever they are asked; nothing else is interpreted. */
+/** Bold (**like this**), "- " bullet lines and simple | tables, which models write whatever they are asked; nothing else is interpreted. */
 export function RichText({ text }: { text: string }) {
   const inline = (line: string) =>
     line.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith('**') && part.endsWith('**') && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : part))
-  const blocks: { bullets: boolean; lines: string[] }[] = []
+  const cells = (line: string) => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim())
+  type Block = { kind: 'text' | 'bullets' | 'table'; lines: string[] }
+  const blocks: Block[] = []
   for (const raw of text.split(String.fromCharCode(10))) {
     const line = raw.trim()
     if (!line) continue
-    const bullet = /^[-*•]\s+/.test(line)
+    const kind: Block['kind'] = line.startsWith('|') ? 'table' : /^[-*•]\s+/.test(line) ? 'bullets' : 'text'
     const last = blocks[blocks.length - 1]
-    if (last && last.bullets === bullet) last.lines.push(bullet ? line.replace(/^[-*•]\s+/, '') : line)
-    else blocks.push({ bullets: bullet, lines: [bullet ? line.replace(/^[-*•]\s+/, '') : line] })
+    const body = kind === 'bullets' ? line.replace(/^[-*•]\s+/, '') : line
+    if (last && last.kind === kind) last.lines.push(body)
+    else blocks.push({ kind, lines: [body] })
   }
   return (
     <div className="chat-text">
-      {blocks.map((b, i) =>
-        b.bullets ? (
-          <ul key={i} className="chat-list">
-            {b.lines.map((l, j) => (
-              <li key={j}>{inline(l)}</li>
-            ))}
-          </ul>
-        ) : (
-          b.lines.map((l, j) => <p key={`${i}-${j}`}>{inline(l)}</p>)
-        ),
-      )}
+      {blocks.map((b, i) => {
+        if (b.kind === 'bullets')
+          return (
+            <ul key={i} className="chat-list">
+              {b.lines.map((l, j) => (
+                <li key={j}>{inline(l)}</li>
+              ))}
+            </ul>
+          )
+        if (b.kind === 'table') {
+          const rows = b.lines.filter((l) => !/^[|\s:-]+$/.test(l)).map(cells)
+          const [head, ...body] = rows
+          return (
+            <div key={i} className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    {head.map((c, j) => (
+                      <th key={j}>{inline(c)}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {body.map((r, j) => (
+                    <tr key={j}>
+                      {r.map((c, k) => (
+                        <td key={k}>{inline(c)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        }
+        return b.lines.map((l, j) => <p key={`${i}-${j}`}>{inline(l)}</p>)
+      })}
     </div>
   )
 }

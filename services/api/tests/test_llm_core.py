@@ -149,7 +149,7 @@ def test_post_json_returns_the_reply(monkeypatch):
     assert adapters.post_json("http://x", {}, {"a": 1}) == {"ok": True}
 
 
-@pytest.mark.parametrize("code,kind", [(401, "auth"), (403, "auth"), (400, "bad_request"), (404, "bad_request"), (429, "bad_request"), (500, "server"), (503, "server")])
+@pytest.mark.parametrize("code,kind", [(401, "auth"), (403, "auth"), (400, "bad_request"), (404, "bad_request"), (429, "rate_limit"), (500, "server"), (503, "server")])
 def test_post_json_says_why_the_provider_refused(monkeypatch, code, kind):
     def boom(req, timeout):
         raise http_error(code, b'{"error": {"message": "model not found"}}')
@@ -483,3 +483,54 @@ def test_a_missing_model_is_reported_with_what_the_provider_said(monkeypatch):
     with pytest.raises(AdapterError) as e:
         adapters.post_json("https://api.example.test/v1/chat/completions", {}, {}, 5)
     assert e.value.kind == "bad_request" and "The model `x` does not exist" in e.value.message and "/v1" in e.value.message
+
+
+# ---------- a provider's per-minute limit ----------
+
+def test_a_rate_limit_waits_as_long_as_the_provider_asked_and_then_answers(monkeypatch):
+    waited = []
+    monkeypatch.setattr(engine, "sleep", waited.append)
+    adapter = Script(AdapterError("rate_limit", "busy", retry_after=7.2), say("Done."))
+    assert engine.run_chat(adapter, "s", [], "q", [], CTX).text == "Done."
+    assert waited == [7.7] and len(adapter.calls) == 2
+
+
+def test_a_rate_limit_that_needs_too_long_a_wait_is_reported_at_once(monkeypatch):
+    waited = []
+    monkeypatch.setattr(engine, "sleep", waited.append)
+    adapter = Script(AdapterError("rate_limit", "The provider's limit for this minute was reached", retry_after=55.0))
+    with pytest.raises(AppError) as e:
+        engine.run_chat(adapter, "s", [], "q", [], CTX)
+    assert "limit for this minute" in e.value.message and waited == [] and len(adapter.calls) == 1
+
+
+def test_a_rate_limit_that_keeps_coming_gives_up_after_three_tries(monkeypatch):
+    monkeypatch.setattr(engine, "sleep", lambda s: None)
+    adapter = Script(*[AdapterError("rate_limit", "busy", retry_after=1.0) for _ in range(3)])
+    with pytest.raises(AppError):
+        engine.run_chat(adapter, "s", [], "q", [], CTX)
+    assert len(adapter.calls) == 3
+
+
+@pytest.mark.parametrize("message,seconds", [
+    ("Rate limit reached. Please try again in 7.2s. Need more tokens?", 7.2),
+    ("Please try again in 350ms.", 0.35),
+    ("Some other text", None)])
+def test_how_long_to_wait_is_read_from_the_providers_message(message, seconds):
+    import io
+    import urllib.error
+    exc = urllib.error.HTTPError("http://x", 429, "Too Many", {}, io.BytesIO(b""))
+    assert adapters._retry_after(exc, message) == seconds
+
+
+def test_a_429_from_the_provider_becomes_a_rate_limit_error(monkeypatch):
+    import io
+    import urllib.error
+
+    def refuse(request, timeout=None):
+        raise urllib.error.HTTPError(request.full_url, 429, "Too Many", {"Retry-After": "4"}, io.BytesIO(b'{"error": {"message": "slow down"}}'))
+
+    monkeypatch.setattr("urllib.request.urlopen", refuse)
+    with pytest.raises(AdapterError) as e:
+        adapters.post_json("https://api.example.test/v1/chat/completions", {}, {}, 5)
+    assert e.value.kind == "rate_limit" and e.value.retry_after == 4.0

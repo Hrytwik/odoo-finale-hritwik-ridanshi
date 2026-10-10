@@ -332,3 +332,17 @@ describe('chat text', () => {
     expect(screen.queryByText(/[*][*]/)).not.toBeInTheDocument()
   })
 })
+
+describe('chat tables', () => {
+  it('shows a table the model wrote as a table', async () => {
+    const nl = String.fromCharCode(10)
+    const answer = ['Workers', '| Code | Name |', '|------|------|', '| W-001 | Ravi Kumar |', '| W-002 | Meena Devi |'].join(nl)
+    mockApi({ POST: { '/api/ai/copilot': { ...CHAT, answer } } })
+    renderPage(<Copilot />)
+    await userEvent.click(screen.getByRole('button', { name: 'Which orders will be late?' }))
+    const table = await screen.findByRole('table')
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Code', 'Name'])
+    expect(within(table).getAllByRole('row')).toHaveLength(3)
+    expect(screen.queryByText(/[|]---/)).not.toBeInTheDocument()
+  })
+})

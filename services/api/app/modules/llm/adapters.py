@@ -3,6 +3,7 @@
 Both adapters speak plain HTTPS JSON through `post_json`, so there is no SDK to install and tests can swap the transport.
 """
 import json
+import re
 import urllib.error
 import urllib.request
 from collections.abc import Callable
@@ -43,6 +44,9 @@ def _send(request: urllib.request.Request, timeout: float) -> dict:
         detail = _error_detail(exc)
         if exc.code in (401, 403):
             raise AdapterError("auth", "The provider refused the API key") from exc
+        if exc.code == 429:
+            raise AdapterError("rate_limit", "The provider's limit for this minute was reached. Wait a few seconds and ask again.",
+                               retry_after=_retry_after(exc, detail)) from exc
         if exc.code == 404:
             said = f" The provider said: {detail}" if detail else ""
             raise AdapterError("bad_request", "The provider found nothing there. Check the model name, and that the address is the API address ending in /v1 (Groq: https://api.groq.com/openai/v1), not a web page." + said) from exc
@@ -55,12 +59,27 @@ def _send(request: urllib.request.Request, timeout: float) -> dict:
         raise AdapterError("server", "The provider sent something unreadable") from exc
 
 
+def _retry_after(exc: urllib.error.HTTPError, detail: str) -> float | None:
+    """How long the provider asked us to wait: its Retry-After header, or "try again in 7.2s" / "in 350ms" in the message."""
+    header = exc.headers.get("Retry-After") if exc.headers else None
+    try:
+        if header:
+            return float(header)
+    except ValueError:
+        pass
+    found = re.search(r"try again in ([\d.]+)\s*(ms|s)\b", detail)
+    if not found:
+        return None
+    seconds = float(found.group(1))
+    return seconds / 1000 if found.group(2) == "ms" else seconds
+
+
 def _error_detail(exc: urllib.error.HTTPError) -> str:
     try:
         body = json.loads(exc.read().decode())
         err = body.get("error")
         message = err.get("message") if isinstance(err, dict) else err
-        return str(message)[:200] if message else ""
+        return str(message)[:500] if message else ""
     except (ValueError, AttributeError, OSError):
         return ""
 

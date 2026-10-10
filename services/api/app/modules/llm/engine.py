@@ -5,6 +5,7 @@ each tool call is kept as a source so the screen can show where an answer came f
 """
 import datetime as dt
 import json
+import time
 from dataclasses import dataclass, field
 
 from pydantic import ValidationError
@@ -23,7 +24,8 @@ SUMMARY_LIMIT = 280
 COPILOT_SYSTEM = (
     "You are the assistant for the owner and managers of Everest Textile Mills, a textile mill. "
     "Answer only from the results of the tools you call. Never calculate, estimate or guess a number: copy numbers exactly as the tools give them. "
-    "If the tools do not give the answer, say you do not have that information. "
+    "You have tools for orders, fabric and yarn types, machines and the floor, yarn lots, rolls, quality checks, dispatches, money owed each way, wages, buyers, suppliers and workers: for any question about the mill, call the tool that fits, and try another if the first does not answer it. "
+    "Only if no tool can give the answer, say you do not have that information. "
     "Money is in Indian rupees. Dates are in India time. Keep answers short, plain and specific."
 )
 BUYER_SYSTEM = (
@@ -77,15 +79,27 @@ def run_chat(adapter: LlmAdapter, system: str, history: list[Turn], question: st
     return ChatResult(text="I could not finish looking that up. Please ask a narrower question.", sources=sources)
 
 
+MAX_WAIT = 20.0  # seconds: the longest we will wait for a provider's per-minute limit before giving up
+sleep = time.sleep  # replaced in tests
+
+
 def _complete(adapter: LlmAdapter, system: str, turns: list[Turn], specs, options) -> Completion:
     try:
-        try:
-            return adapter.complete(system, turns, specs, options)
-        except AdapterError as exc:
-            if exc.kind != "bad_request":
+        for attempt in range(3):
+            try:
+                return adapter.complete(system, turns, specs, options)
+            except AdapterError as exc:
+                if attempt == 2:
+                    raise
+                if exc.kind == "bad_request" and attempt == 0:
+                    # some models now and then write a tool call the provider rejects; the same request usually works again
+                    continue
+                if exc.kind == "rate_limit" and (exc.retry_after or 0) <= MAX_WAIT:
+                    # a per-minute limit: wait as long as the provider asks, plus a moment, then try again
+                    sleep((exc.retry_after or 3.0) + 0.5)
+                    continue
                 raise
-            # some models now and then write a tool call the provider rejects; the same request usually works again
-            return adapter.complete(system, turns, specs, options)
+        raise AssertionError("unreachable")
     except AdapterError as exc:
         raise ai_unavailable(exc) from exc
 

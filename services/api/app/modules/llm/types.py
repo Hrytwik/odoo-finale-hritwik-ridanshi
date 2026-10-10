@@ -43,7 +43,9 @@ class Completion:
 class AdapterError(Exception):
     """The provider could not answer. `kind` says why, in terms the settings page can act on."""
 
-    def __init__(self, kind: Literal["unreachable", "auth", "bad_request", "server"], message: str):
+    def __init__(self, kind: Literal["unreachable", "auth", "bad_request", "server", "rate_limit"], message: str,
+                 retry_after: float | None = None):
         super().__init__(message)
         self.kind = kind
         self.message = message
+        self.retry_after = retry_after  # seconds the provider asked us to wait, when it said
