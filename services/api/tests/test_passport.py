@@ -67,7 +67,7 @@ def test_a_full_life_in_order(client, db, owner):
     assert [(l["lot_code"], l["yarn_type"], l["supplier"], l["is_blocked"]) for l in p["yarn_lots"]] == [
         (life.lot.lot_code, "30s cotton", "Vardhman Yarns", False)]
     assert [i["verdict"] for i in p["inspections"]] == ["rework", "pass"]
-    assert p["cost"] is None and p["dispatch"] is None
+    assert p["cost"]["roll_code"] == life.roll.code and p["dispatch"] is None       # an owner sees the real cost (R18)
 
 
 def test_the_yarn_trace_counts_net_issues_only(client, db, owner):
@@ -177,8 +177,8 @@ def test_staff_get_404_for_an_unknown_roll_and_anonymous_gets_401(client, db, lo
 
 
 def test_buyer_view_removes_cost_even_when_a_passport_has_one():
-    """The passport's cost is empty until costing (B6), so the endpoint tests cannot see a leak yet. The projection must
-    already strip it: this passport (the example one) carries a cost, lots, runs, inspector names, photo and AI output."""
+    """The endpoint tests (tests/test_costing_api.py) show a buyer's raw response carries no cost. This pins the
+    projection itself: the example passport carries a cost, lots, runs, inspector names, photo and AI output."""
     from app.modules.passport.examples import PASSPORT
     from app.modules.passport.service import buyer_view
 

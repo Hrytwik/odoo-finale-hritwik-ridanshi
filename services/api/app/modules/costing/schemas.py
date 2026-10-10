@@ -39,6 +39,7 @@ class ProfitPanel(Out):
     yarn_issued: float
     wages_earned: float
     idle_labour: float
+    support_staff: float
     machine_running_cost: float
     stock_writeoffs: float
     profit: float

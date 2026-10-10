@@ -1,7 +1,7 @@
 # Everest Textile Mills — System Design
 
 > **Summary:** Full design for the textile mill platform: architecture (React + Vite + FastAPI + Postgres), 29-table data model, business rules, per-roll costing, delay/shortage/root-cause engines, vision QC, provider-agnostic LLM layer, screens, API surface, two-track split, testing and demo.
-> **Last updated:** 2026-10-10
+> **Last updated:** 2026-10-10 23:46 IST (§7 costing and §8 intelligence built and live-checked)
 > **Status:** Draft for team review
 
 ---
@@ -175,76 +175,144 @@ Every rule is enforced in the API inside one database transaction; the ones mark
 | R15 | **Buyer scoping:** every buyer-facing query filters by the buyer in the token; another buyer's order returns 404, not 403. |
 | R16 | **Attendance:** unique per worker/date/shift **DB**; no future dates [`FUTURE_DATE`]. |
 | R17 | **General validation:** required text trimmed and non-empty; numbers within the ranges in §4; dates sane. Validation is in Pydantic (API), mirrored in Zod (web), and backed by CHECK constraints (DB). A text value longer than its column, or a number larger than its column, is a 422 (`VALUE_TOO_LONG`, `NUMBER_TOO_LARGE`) and never a server error: `commit`, `flush` and an app-wide handler map the database's data errors (B5). |
+| R18 | **Cost visibility:** the costing endpoints and the cost on the Roll Passport are for owner and accountant only; every other role gets `cost: null`, and a buyer never sees cost (R15 `buyer_view`). |
 
 ---
 
 ## 7. Costing method
 
+*Revised 2026-10-10 21:20 IST after the B6 design review (approved section by section by Hritwik). Changes from the first draft: support staff are their own line (7.2), pay is split by hours actually run whatever the worker's role, runs without rolls go to the order pool, "final" is defined, the month rules are exact (7.5), cost is visible to owner and accountant only (R18).*
+
 ### 7.1 Cost sources
 
-1. **Yarn:** kg issued × that lot's cost/kg, minus returns. Belongs to the order of the spinning run it was issued to.
-2. **Machine:** run duration (hours) × machine `running_cost_per_hour`.
-3. **Labour:** shift wages split across runs (§7.2).
-4. **Rework:** machine + labour cost of rework runs.
+1. **Yarn:** kg issued to a run minus kg returned, times that lot's cost/kg. Every issue and return is tied to a run (database rule), so yarn always belongs to the order of that run.
+2. **Machine:** run hours × the machine's `running_cost_per_hour`. A rework run done by hand has no machine and costs 0 here. A run still open is costed up to now and the result is **provisional**; a zero-length run costs nothing.
+3. **Labour:** attendance pay split across runs by hours actually run (7.2).
+4. **Rework:** the machine + labour of rework runs, shown as its own part.
+
+A roll's **parts** are yarn, machine, labour and rework. An order's total is the sum of its parts.
 
 ### 7.2 Labour split (shift-wage allocation)
 
-For each attendance record (worker, date, shift) with status present or half_day (absent records are skipped — no pay, nothing to split):
-- `pay` = daily_wage × (1 for present, 0.5 for half_day).
-- `paid_hours` = shift length × (1 or 0.5). Shift length handles midnight crossing.
-- `h_i` = hours each of that worker's runs overlaps the shift window; `H` = Σ h_i.
-- Each run receives `pay × h_i / max(H, paid_hours)`.
-- `idle_labour` = `pay × max(0, 1 − H / paid_hours)`.
+For each attendance record (worker, date, shift) with status present or half_day (absent records are skipped: no pay, nothing to split):
+- The shift **window** starts at the record's date and the shift's start time (IST) and lasts the shift length; a night shift that crosses midnight is dated by the day it **starts** (assumption: the attendance screen uses the same convention, to be told to Track A).
+- `pay` = daily_wage × (1 for present, 0.5 for half_day), the same rule as `GET /wages`.
+- `paid_hours` = shift length × (1 or 0.5).
+- `h_i` = hours each of that worker's runs (on any order) overlaps the window; `H` = Σ h_i.
+- Each run receives `pay × h_i / max(H, paid_hours)`, **whatever the worker's role** (a supervisor or inspector who runs a machine for 2 hours is costed for those 2 hours).
+- The leftover `pay × max(0, 1 − H / paid_hours)` goes to **idle labour** if the worker's role is `operator`, and to **support staff** otherwise (inspectors, supervisors, storekeepers, dispatch clerks, helpers when not running a machine).
 
-This guarantees Σ allocated + idle = pay exactly. One worker minding three looms: H > paid_hours, so pay is split three ways and idle = 0. A run whose operator has no present/half_day attendance record for that time (missing, or marked absent) is reported as a **data warning** (never silently costed at zero).
+So Σ allocated + idle labour + support staff = pay exactly. Support staff is overhead: it is **not** part of any roll or order cost; it is a separate line on the month report.
+A run hour that no present/half_day record of its operator covers is a **data warning** naming the run and the uncovered hours (never silently costed at zero).
 
-### 7.3 From runs to rolls
+Hand-worked (shift A 06:00-14:00 = 8 h, wage 800; the tests assert these):
+1. Present, one run of 4 h: run 400, idle labour 400.
+2. Half day (pay 400, paid hours 4), run of 2 h: run 200, idle 200; with a run of 6 h: run 400, idle 0.
+3. One weaver on three looms, 8 h each at once: H = 24, each run 800 × 8/24 = 266.666…, idle 0.
+4. Present for A and B (800 each), one run 12:00-16:00: 200 from A + 200 from B = 400; if B is not marked: 200 and a warning for 2 uncovered hours.
+5. An operator with no runs: 800 idle. A storekeeper with no runs: 800 support staff. A supervisor with a 2 h run: run 200, support staff 600.
+6. Shift C (22:00-06:00) dated 10 Oct, a run on 11 Oct 02:00-04:00: paid from the 10 Oct record.
 
-- Weaving run cost → split across the rolls it produced, by metres.
-- Dye run cost → split across the rolls loaded into it, by metres.
-- Rework run cost → the roll(s) it reworked, by metres.
-- Spinning runs + yarn → split across **all** the order's rolls, by metres.
-- **Rejected rolls'** total cost is redistributed across the order's non-rejected rolls by metres, so a roll's cost per metre is the true cost of a *good* metre. If no good rolls exist yet, the cost is shown on the order as "not yet absorbed".
-- Order-level shares (spinning, yarn, rejects) are spread over the rolls produced **so far**, so a roll's cost per metre is **provisional** until the order's last roll is inspected; the Roll Passport labels it "provisional" or "final".
+### 7.3 From runs to rolls and orders
 
-### 7.4 Order and month
+- A **weaving** run's cost goes to the rolls it produced, a **dye** run's to the rolls loaded into it, a **rework** run's to the one roll it mended, each **by metres**.
+- **Spinning** runs, and **any run with no rolls of its own** (a loom that broke before making a roll), go into the order's **pool**, spread over all the order's rolls by metres.
+- **Rejected rolls'** total cost (own runs + pool share) is redistributed across the order's non-rejected rolls by metres, so a roll's cost per metre is the true cost of a *good* metre. (Algebraically the pool then reaches the good rolls exactly as if spread over them alone.) The redistributed amount is the roll's `reject_share`; roll total = parts + reject_share; the order's `reject_cost` is the part of the order total that came from rejected rolls (not added on top).
+- If no non-rejected roll exists, `cost_per_good_metre` is blank and the whole order cost is `unabsorbed`.
+- The pool is spread over the rolls that exist **now**, so a roll's cost can still move. It is **final** only when (a) no run of the order is open, (b) every roll is settled (none is woven, in dyeing, awaiting QC, awaiting rework or in rework), and (c) the order's non-rejected woven metres have reached the ordered metres or the order is cancelled; otherwise **provisional**. The Roll Passport labels it.
+- **Order profit** = good (non-rejected) metres × price per metre − order cost (a running figure while provisional; the month report uses invoices instead).
 
-- **Order profit** = good metres × price per metre − order cost (§7.1).
-- **Month-end, three panels:**
-  - **Profit:** invoiced in the month − yarn issued in the month − wages earned in the month (idle labour as its own line) − machine running cost in the month − stock write-offs (negative adjustments × lot cost/kg, its own line).
-  - **Cash:** received from buyers − paid to suppliers − paid in wages; plus receivables and payables outstanding.
-  - **Machines:** per machine, hours running / idle / down within shift time; idle and down hours shown as **lost capacity** (hours × rated output), never as rupees.
-- **Reconciliation invariant (tested):** Σ order costs incurred in the month + idle labour = yarn issued + wages earned + machine running cost for the month.
+Hand-worked: rolls R1 1,000 m, R2 600 m, R3 400 m (rejected); order pool 20,000; one weaving run 6,000 for all three; one dye run 2,000 for all three; one rework run 500 on R2. Before redistribution R1 14,000, R2 8,900, R3 5,600 (sum 28,500). R3's 5,600 goes 3,500 to R1 and 2,100 to R2. Final: R1 17,500 = **17.50/m**, R2 11,000 = **18.33/m**, order cost per good metre 28,500 / 1,600 = **17.8125**; at 25 a metre revenue 40,000, profit **11,500**.
 
-### 7.5 Implementation
+### 7.4 Rounding
 
-Computed on request in `modules/costing` (no stored totals). Endpoints return the breakdown, not just the total, so the Roll Passport and order page can show each component.
+Everything is exact (`fractions.Fraction`, so a third of 800 stays a third) inside the engine. Figures shown are rounded half up to the paisa; a total is the sum of its rounded parts (the invoice rule). The reconciliation invariant is tested on the exact values.
+
+### 7.5 The month report
+
+The month is 00:00 IST on the 1st to 00:00 IST on the next 1st (up to now for the current month). A month outside 1900-01 to 2100-12 is a 422 on `month` (also for the wages page and the assistant's month summary). Each cost counts in the month it is incurred: yarn on the day issued, machine cost for the hours inside the month (a run 22:00 on 31 Oct to 04:00 on 1 Nov at 60/h puts 120 in October and 240 in November), wages on the day worked (the attendance record's date).
+
+- **Profit panel:** `invoiced` (invoices issued in the month) − `yarn_issued` (issues − returns in the month × lot cost/kg) − `wages_earned` (exactly `GET /wages` `total_earned`, taken from `people.service.wage_rows`) − `machine_running_cost` − `stock_writeoffs` (negative adjustments × lot cost/kg; positive ones are not credited) = `profit`. `idle_labour` and `support_staff` are lines **inside** wages_earned, not subtracted again.
+- **Cash panel:** `received_from_buyers` (received_on in the month), `paid_to_suppliers` (paid_on in the month), `paid_wages` (wage payments paid in the month, whatever period they cover), `net_cash`; `receivables_outstanding` and `payables_outstanding` at the end of the month (at now for the current month), rebuilt from the dates. Wages still owed are on the wages page, not here.
+- **Machines:** per machine, within shift time (the union of the shifts) and from the machine's creation: down hours (downtime overlaps, an open one up to now), running hours (run overlaps), idle = the rest. `lost_capacity` = (idle + down) × rated output per hour in kg or m, never rupees. Output: spinning = kg of runs that ended in the month; weaving = metres of rolls made in the month; dyeing = metres of rolls in dye runs that ended in the month.
+- **Orders:** every order with cost or an invoice line in the month: revenue = its invoice lines in the month, cost = the order's cost incurred in the month, profit = difference.
+- **Reconciliation invariant (tested, exact):** Σ order costs incurred in the month + idle labour + support staff = yarn issued + wages earned + machine running cost. Over all months, an order's monthly costs add up to its whole cost.
+
+Hand-worked month: one order; a lot at 250/kg, 120 kg issued 3 Oct and 20 kg returned 4 Oct = yarn 25,000; a 5 kg write-off = 1,250. A spinning run 06:00-10:00 at 55 = 220; a 12 h weaving run at 60 = 720 (machine 940). Ravi (operator, 800, present, runs the spinning run): 400 allocated, 400 idle. Kiran (storekeeper, 800, present, no runs): 800 support staff. Wages earned 1,600. The weaving run has no operator attendance: no labour and a warning. Order cost 25,000 + 940 + 400 = 26,340; + idle 400 + support 800 = 27,540 = yarn 25,000 + wages 1,600 + machine 940. One invoice of 40,000 on 20 Oct: profit 40,000 − 25,000 − 1,600 − 940 − 1,250 = **11,210**. A buyer pays 15,000: receivables outstanding **25,000**.
+
+### 7.6 Implementation
+
+Computed on request, no stored totals, no migration, read-only (no locks, no events).
+- `modules/costing/engine/`: the pure core (no database, no clock; "now" is an input), as small modules: `records`, `intervals`, `labour`, `runs`, `allocation`, `month`.
+- `modules/costing/loader.py`: reads rows into plain records. For one order it must also load the other runs of the same operators in the same windows (labour is split across all of a worker's runs, whatever the order).
+- `modules/costing/service.py`: rounding and the response shapes; `router.py`: the three real handlers.
+- Contract: one additive field, `ProfitPanel.support_staff`; everything else byte-identical. Track A's `Owner.test.tsx` fixture needs the field and the owner page a row.
+- Known and accepted: the loader's queries are not one snapshot (a write landing between them can skew one figure for that instant; the next request is right). Speed was measured: a month of 901 runs and 1,080 attendance records is costed in 0.16 s (`tests/test_costing_speed.py` guards a 15 s budget).
+
+### 7.7 Build order (B6, done; see `docs/plans/B6-costing.md`)
+
+1. Engine: labour split. 2. Engine: rolls and orders. 3. Engine: month and machines. 4. Loader and service, the roll and order endpoints, the passport. 5. The month endpoint, the contract change, the note to Track A. 6. Property test, speed, live check, docs and memory. (1 → 2 → 3; 4 needs 1 and 2; 5 needs 3 and 4; 6 last.)
 
 ---
 
 ## 8. Calculated intelligence (no language model)
 
+*Revised 2026-10-10 22:56 IST after the B7 design review (approved section by section by Hritwik). Changes from the first draft: the exact test is written in the project (no scipy), shifts run per stage are a setting, an order with no work left at a stage passes straight through it, remaining spinning uses kg spun, the QC day is skipped when everything has passed, what-ifs name the orders they harm, the order dates and the portal's delivery date are specified (8.5); the portal itself was built by Track A.*
+
 ### 8.1 Delivery date and delay warning
 
-- **Remaining work per order per stage:** spinning kg = outstanding need; weaving m = qty − woven (excluding rejected); dyeing m = woven − dyed. QC is not capacity-modelled (see the fixed QC day below).
-- **Daily capacity per stage** = Σ over active, not-down machines of rated output × shift hours per day × the stage's **observed efficiency** (actual output ÷ rated output over run hours in the last 7 days; default 0.8 when there is no history).
-- **Queue:** earliest-deadline-first at every stage. An order cannot finish a stage before finishing the previous one: `finish(stage) = max(finish(previous stage), queue completion time at this stage)`.
-- **Delivery date** = dyeing finish + 1 day QC + 1 day dispatch buffer (both constants in config).
-- **Late warning** when the delivery date > deadline: days late and the bottleneck stage (the stage that adds the most delay).
-- **What-ifs (code, not the language model):** (a) +1 shift at the bottleneck stage (capacity × (shifts + 1) / shifts) — offered only when fewer than 3 shifts are configured; (b) move this order to the front of every queue. Each returns the new delivery date.
-- Simplification: each stage is one pool of capacity; changeover time is ignored.
+- **Open orders:** confirmed orders with metres still to dispatch (drafts, cancelled and fully dispatched orders are left out).
+- **Remaining work per order per stage:** spinning kg = ordered yarn need − kg already spun; weaving m = qty − (woven − rejected); dyeing m = woven − dyed. QC is not capacity-modelled.
+- **Daily capacity per stage** = Σ over active machines that are not down of rated output × the stage's hours per day × the stage's **observed efficiency**. *Hours per day* = the total length of the first N shifts, where N comes from the setting `STAGE_SHIFTS` (for example `weaving=2,dyeing=2`; a stage not listed runs all configured shifts). *Efficiency* = output ÷ rated output over the stage's runs that ended in the last 7 days (a spinning run counts only if its output was recorded), capped at 1; with less than one hour of such run time, the default 0.8.
+- **Queue:** earliest-deadline-first at every stage (ties: confirmed earlier, then order code). With `work` the order's remaining work at a stage and `C` the cumulative work of that order and all orders ahead of it divided by the capacity: an order with **no work left at a stage passes straight through** (finish = its finish at the previous stage); otherwise `finish(stage) = max(finish(previous stage), C)`.
+- **Delivery date** = today + ceil(dyeing finish in days) + dispatch day + QC day. The QC day is skipped when every metre of the order has already passed QC. Both buffers are settings (`QC_DAYS`, `DISPATCH_DAYS`, default 1 each).
+- **Late warning** when the delivery date is after the deadline: days late (0 when on time) and the **bottleneck stage** = the stage that adds the most delay (`max(0, C − finish(previous))`; the earlier stage wins a tie); none when on time.
+- **No working machine at a stage that has work:** the date is unknown. The order list shows null, `GET /orders/{code}/eta` answers 409 ("no working machine at weaving"), and the order is left out of the late list.
+- **What-ifs** (code, not the language model), offered only for a late order and only when they strictly improve its date: (a) **add a shift** at the bottleneck stage, only if that stage runs fewer than all configured shifts (label like "Add a third shift on weaving"); (b) **move the order to the front of every queue**, omitted if it is already first. The label of (b) names every other order it would make later or newly late ("…(ORD-A would be 3 days late)").
+- Known limits: the schedule assumes yarn is available (a shortage is reported by 8.2) and ignores rework work and changeover; the mill is assumed to run seven days a week (the data model has no calendar).
+
+Hand-worked (capacities per day: spinning 200 kg, weaving 100 m, dyeing 150 m; today 10 Oct; ORD-A deadline 14 Oct with 100 kg, 300 m, 300 m left; ORD-B deadline 25 Oct with 400 kg, 200 m, 200 m; ORD-C deadline 30 Oct with 0 kg, 100 m, 100 m): ORD-A finishes spinning at day 0.5, weaving at 3, dyeing at 3 → delivery 3 + 1 + 1 days = **15 Oct, 1 day late**, delay added per stage 0.5 / 2.5 / 0, bottleneck **weaving**; ORD-B finishes at day 5 (**17 Oct**), ORD-C at day 6 (**18 Oct**). Weaving at 2 of 3 shifts: ×1.5 capacity → ORD-A **14 Oct, 0 days late** (B 16 Oct, C 16 Oct). If ORD-B's deadline were 16 Oct it would be 1 day late; moving it to the front delivers it **14 Oct** and puts ORD-A at 17 Oct, **3 days late**. Capacity: two looms rated 25 m/h, 2 shifts of 8 h, efficiency 0.8 → 2 × 25 × 16 × 0.8 = **640 m/day**; a third shift → **960**.
 
 ### 8.2 Yarn shortage forecast (reorder-point rule)
 
-For each yarn type: spread each confirmed order's outstanding need evenly over its spinning window from §8.1; project on-hand stock day by day; find the first day it falls below the reorder level. `order_by` = that day − supplier lead time (the yarn type's most recent supplier). `suggested_kg` = outstanding need − on hand + reorder level, rounded up to 50 kg. If `order_by` is in the past: "order now — N days late".
+- For each yarn type: on hand = stock in unblocked lots; each confirmed order's outstanding yarn (from `v_order_yarn_need`) is drawn **evenly over its spinning window** = today to its spinning finish from 8.1, rounded up, at least 1 day (an order that cannot spin: all at once). Walk forward day by day; the stock cannot rise, so it ends at on hand − total outstanding = `free_kg`; a type is reported exactly when `free_kg` < its reorder level (the same test as the stock page's "below reorder"). The walk finds **when**.
+- `falls_below_on` = the date during which stock first ends a day below the level (today if it already is). `supplier` = the supplier of the type's most recent lot (none if never received). `order_by` = `falls_below_on` − that supplier's lead time (blank without a supplier). `overdue_days` = days past `order_by`, else 0. `suggested_kg` = reorder level − `free_kg`, rounded **up** to a multiple of 50 kg. Most urgent first (earliest `order_by`, then yarn code).
+- Known limit: there are no purchase orders, so yarn already ordered but not received cannot be counted.
+
+Hand-worked (today 10 Oct): cotton 800 kg on hand, reorder level 300, lead time 5 days; ORD-A draws 200 kg over 1 day, ORD-B 400 kg over 3 days; end-of-day stock 466.67, 333.33, 200 → falls below on **12 Oct**, order by **7 Oct**, **3 days overdue**, `free_kg` 200, suggested **100 kg**. The contract's example (free −417.5, level 300) gives 717.5 → **750 kg**, falling today, order by 5 Oct, 5 days overdue.
 
 ### 8.3 Defect root cause
 
-Factors: weaving machine, dyeing machine, weaving operator, weaving shift (from the weaving run's start time), yarn lot. For each value, compare the share of inspected rolls with defects against all other rolls using **Fisher's exact test** (one-sided, `scipy.stats.fisher_exact`), only for groups with ≥ 5 inspected rolls, with a **Bonferroni** correction (α = 0.05 ÷ number of tests). Output per flagged value: counts, rates and p-value, e.g. "Lot L-17: 9 of 20 rolls defective vs 4% elsewhere". Uses only inspector-confirmed defects (`qc_defects`).
+- A roll is **defective** if an inspector ever confirmed a defect on it (`qc_defects` only, never the AI suggestion); only inspected rolls count. Groups per factor: weaving machine, dyeing machine (its latest dye run; none → no group), weaving operator, weaving shift (the shift whose hours contain the weaving run's start time), and yarn lot (**every** lot with a net positive issue to the spinning run that fed the weaving run; a roll can be in several lots).
+- A group of at least 5 inspected rolls (with a non-empty rest) is compared with all other inspected rolls using **Fisher's exact test, one-sided**, written in the project with exact fractions (the hypergeometric tail; no scipy). **Bonferroni:** flagged when p < 0.05 ÷ the number of groups tested.
+- Output: only groups whose rate is above the rest's, sorted by p-value, at most 10 rows (the correction still counts every group tested); each row has defective / inspected, rate, rest rate, p-value, flagged.
+- Verified once against `scipy.stats.fisher_exact` in a scratch environment on 6,006 tables (worst relative difference 1.4×10⁻¹⁵); the repository tests use known values and a brute-force enumeration.
+- Limits: a flag is a pattern, not proof (two flagged factors may share one cause); Bonferroni is cautious; a rework roll counts once.
+
+Hand-worked: 100 inspected rolls, 12 defective, 14 groups tested (5 lots, 2 weaving machines, 4 operators, 3 shifts), threshold 0.05 ÷ 14 = **0.0036**. **Lot L-17**: 9 of 20 vs 3 of 80 (3.75%) elsewhere, p = **0.0000137**, flagged. **Operator 1**: 6 of 25 vs 8%, p = 0.043: flagged at an uncorrected 0.05, **not** flagged with the correction. **LOOM-05**: 8 of 50 vs 8%, p = 0.18.
 
 ### 8.4 Recall chain
 
-Blocked lot → its issue movements → spinning runs → weaving runs whose `input_run_id` is one of those → rolls produced → each roll's status, order, buyer and dispatch. Output grouped by: on the floor / in store / loading / dispatched (with buyer and dispatch code). Simplification stated openly: each weaving run draws from one spinning run.
+Lot → spinning runs with a **net positive issue** of it (the passport's rule, run the other way) → weaving runs whose `input_run_id` is one of those → the rolls they produced → each roll's status, order, buyer and truck. Groups: `on_floor` (woven, dyeing, awaiting QC, awaiting rework, in rework and **rejected**, the status shown on the row), `in_store`, `loading` (with the truck's code), `dispatched` (with the dispatch code). `buyers`: per buyer, all rolls from the lot, how many have left on a **confirmed** truck, and those trucks' codes. Works on any lot (blocked or not) and reports `is_blocked`; an unknown lot is a 404; roles store and owner. Over-inclusive on purpose (a spinning run that used two lots counts against both). Each weaving run draws from one spinning run (stated simplification). A test pins that a roll's passport lists a lot exactly when the lot's recall lists the roll.
+
+Hand-worked: lot L-0017, 120 kg issued to spinning run S1, 50 kg issued to S2 and fully returned (net 0, excluded). S1 fed one weaving run that made R1 (dyeing), R2 and R3 (in store), R4 (dispatched, DSP-1, Sharma), R5 (on loading truck DSP-2, Kavya), R6 (rejected): `on_floor` R1, R6; `in_store` R2, R3; `loading` R5; `dispatched` R4. Sharma: 5 rolls, 1 dispatched, [DSP-1]; Kavya: 1 roll, 0 dispatched, [].
+
+### 8.5 Order dates and the buyer portal
+
+- **Dates on orders.** The orders router (not the order service, which would be a circular import) asks insights once for the whole mill's delivery dates and passes each order's date to `order_out`: `delivery_date` and `days_late` (0 when on time) on the list, detail, create, confirm, cancel and edit routes; null for an order not waiting for production.
+- **The portal API was built by Track A** (`portal/service.py`; merged 2026-10-10) and is described here as it is. **`GET /portal/orders`** (buyer only): the logged-in buyer's own **confirmed or cancelled** orders (never drafts), newest first; the buyer comes from the login. `progress_pct` is a rough share of the work done: half the weight on weaving, a quarter on dyeing and a quarter on metres passed quality check, 100 once dispatched (the screens say "a rough share").
+- **`GET /portal/orders/{code}`**: the same fields plus `timeline` (built by a function; the `v_order_timeline` view was never created), sorted by time: "Order confirmed", "Spinning started", "Weaving started", "Dyeing started" (first run of each), "First rolls passed quality check" (earliest pass), and one "N m dispatched (CODE)" per confirmed truck; and `dispatches` (code, date, the metres **of this order** on it, invoice number; only trucks that have left). Buyer-safe wording: no machines, operators, lots, suppliers or costs. A foreign order, a missing order and the buyer's own draft give the **identical 404** (R15).
+- **B7's part is the delivery date.** `delivery_date` on the portal comes from the same whole-mill schedule as the staff screens (8.1): the portal service asks the insights service for the dates, because the order service cannot (insights already reads from it). A cancelled order has none.
+- Hand-worked (B7's part): on the delivery-date mill, an order due in 3 days whose schedule says 4 shows its buyer `delivery_date` today + 4, the same as the staff screen.
+- The assistant's buyer tools call these handlers by name with the database and the user, so they read real data unchanged.
+
+### 8.6 Implementation
+
+Computed on request, no stored values, no migration, read-only (no locks, no events); all response shapes already exist, so `contracts/` is byte-identical. `modules/insights/engine/` (pure: `fisher`, `schedule`, `shortage`, `rootcause`; exact fractions; "today" is an input), `insights/loader.py` (rows → plain records), `insights/service.py` (rounding, shapes, order dates), `insights/recall.py` (the recall joins; the route stays under `store`). The portal service is Track A's; B7 changes only where it gets the delivery date. Settings in `app/config.py` (defaults from the spec): `QC_DAYS`, `DISPATCH_DAYS`, `DEFAULT_EFFICIENCY` 0.8, `EFFICIENCY_WINDOW_DAYS` 7, `EFFICIENCY_MIN_HOURS` 1, `STAGE_SHIFTS`, `ROOT_CAUSE_MIN_GROUP` 5, `ROOT_CAUSE_ALPHA` 0.05, `REORDER_ROUND_KG` 50. The handlers keep the names the assistant calls (`late_orders`, `order_eta`, `shortages`, `root_causes`, `lot_recall`, `my_orders`, `my_order`) and take `db` (and `user` for the portal). Accepted: the loader's queries are not one snapshot. Speed was measured on a synthetic busy mill of 200 open orders: the order list (which builds the whole-mill schedule once) 0.43 s, late orders 0.46 s, shortages 0.37 s, root causes 0.05 s (`tests/test_insights_speed.py` guards a 20 s budget).
+
+### 8.7 Build order (B7, done; see `docs/plans/B7-intelligence.md`)
+
+1. The exact test and the root-cause engine. 2. The schedule engine. 3. The shortage engine. 4. Loader and service, the four insight routes, the settings, real dates on orders. 5. The recall chain and its route. 6. The buyer portal's real delivery date (the portal itself is Track A's). 7. Live check, docs, memory. (1, 2, 3 independent; 4 needs 1-3; 5 independent; 6 needs 4; 7 last.)
 
 ---
 
@@ -317,12 +385,12 @@ Phone-first for floor roles; laptop layout for owner and accountant. Menus show 
 | QC queue | `/qc` | qc | rolls awaiting QC / rework; passed / failed / waiting counts |
 | QC inspect | `/qc/[rollCode]` | qc | camera, AI box overlay, verdict, defects |
 | Model card | `/qc/model` | qc, owner | held-out results |
-| Roll Passport | `/r/[code]` | all logged-in (buyers: own rolls only) | full life of the roll + cost per metre |
+| Roll Passport | `/r/[code]` | all logged-in (buyers: own rolls only) | full life of the roll; cost per metre for owner and accountant only (R18) |
 | Dispatch | `/dispatch`, `/dispatch/[code]` | dispatch | create dispatch; scan-to-load with live checks; per-order loaded vs remaining; confirm |
 | Invoice | `/invoices/[no]` | dispatch, accountant, buyer (own) | printable invoice |
 | Money | `/money/receivables`, `/money/payables` | accountant, owner | invoices and bills with balances; record payments |
 | People | `/people/workers`, `/people/attendance`, `/people/wages` | supervisor (attendance), accountant | worker list; mark attendance per shift (all present, untick absent); wages earned / paid / owed; record wage payment |
-| Owner | `/owner` | owner | month-end: profit, cash, machines (lost capacity), idle labour; month summary |
+| Owner | `/owner` | owner | month-end: profit, cash, machines (lost capacity), idle labour, support staff; month summary |
 | Insights | `/owner/insights` | owner | late orders, reorder suggestions, defect root causes |
 | Copilot | `/copilot` | owner, accountant, supervisor | chat with Sources panel |
 | AI settings | `/settings/ai`, `/settings/ai/report-card` | owner | provider/model/key; run and view report card |
@@ -433,6 +501,7 @@ One continuous story, same order / lot / rolls throughout, "Demo data" badge vis
 - A lot's "intended order" is information only; it does not reserve stock.
 - Live updates assume a single API process.
 - Stages follow the brief (spinning → weaving → dyeing) even though mills that buy yarn usually do not spin it.
+- The mill is assumed to run seven days a week (no working calendar in the data model); the delivery-date schedule assumes yarn is available and ignores rework work; there are no purchase orders, so yarn already ordered is not counted; a night shift is dated by the day it starts; recall is deliberately over-inclusive when a spinning run used several lots.
 
 **Unverified — to be measured or checked during the build:**
 - Weavers commonly mind several looms at once (the costing handles it either way).

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import require_roles
 from app.db.models import User
 from app.db.session import get_db
-from app.modules.store import examples as ex
+from app.modules.insights import recall
 from app.modules.store import schemas as s
 from app.modules.store import service
 
@@ -37,8 +37,8 @@ def block_lot(lot_code: str, body: s.BlockIn, db: Session = Depends(get_db),
 
 
 @router.get("/lots/{lot_code}/recall", response_model=s.RecallOut, dependencies=[Depends(store_staff)])
-def lot_recall(lot_code: str) -> s.RecallOut:
-    return ex.RECALL
+def lot_recall(lot_code: str, db: Session = Depends(get_db)) -> s.RecallOut:
+    return recall.lot_recall(db, lot_code)
 
 
 @router.post("/movements/issue", response_model=s.MovementOut, status_code=201)

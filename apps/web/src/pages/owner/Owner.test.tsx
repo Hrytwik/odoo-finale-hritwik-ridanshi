@@ -9,7 +9,7 @@ import OwnerDashboard from './OwnerDashboard'
 
 const REPORT = {
   month: '2026-10',
-  profit: { invoiced: 412000, yarn_issued: 198500, wages_earned: 96000, idle_labour: 14200, machine_running_cost: 61500, stock_writeoffs: 2500, profit: 53500 },
+  profit: { invoiced: 412000, yarn_issued: 198500, wages_earned: 96000, idle_labour: 14200, support_staff: 3200, machine_running_cost: 61500, stock_writeoffs: 2500, profit: 53500 },
   cash: { received_from_buyers: 260000, paid_to_suppliers: 150000, paid_wages: 80000, net_cash: 30000, receivables_outstanding: 152000, payables_outstanding: 248500 },
   machines: [{ code: 'LOOM-04', name: 'Loom 4', stage: 'weaving', running_h: 180, idle_h: 31, down_h: 12, output: 3960, output_unit: 'm', lost_capacity: 946, lost_capacity_unit: 'm' }],
   orders: [

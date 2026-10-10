@@ -425,6 +425,9 @@ def test_what_was_expected_is_written_out_for_a_failed_line():
 
 
 def test_the_questions_come_from_the_current_data_and_there_are_at_most_fifteen(client, login_as, db):
+    from tests.insights_world import build_mill
+
+    build_mill(db)          # real data now: stock, two orders (one late) and a month report give the questions
     user = login_as("owner")
     qs = reportcard.build_questions(ToolContext(db, user))
     assert 8 <= len(qs) <= 15

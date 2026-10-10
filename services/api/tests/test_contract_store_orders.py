@@ -1,7 +1,6 @@
-def test_recall_is_still_example_data_until_b7(client, login_as):
+def test_recall_of_a_lot_that_does_not_exist_is_a_404(client, login_as):
     login_as("owner")
-    r = client.get("/api/lots/L-0017/recall")
-    assert r.status_code == 200 and r.json()["lot_code"] == "L-0017"
+    assert client.get("/api/lots/L-0017/recall").status_code == 404
 
 
 def test_adjustment_of_zero_rejected(client, login_as):

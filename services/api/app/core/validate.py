@@ -26,6 +26,21 @@ def exact_positive(value, field: str, rounder: Callable[[Decimal], Decimal]) -> 
     return d
 
 
+MIN_YEAR, MAX_YEAR = 1900, 2100
+
+
+def parse_month(month: str) -> tuple[int, int]:
+    """A request's 'YYYY-MM' as (year, month). The year must be 1900 to 2100: the date maths behind a month report
+    (the first of the next month, a day either side) cannot represent year 0 or the year after 9999."""
+    try:
+        year, mon = (int(part) for part in month.split("-"))
+    except ValueError:
+        raise invalid("Use a month like 2026-09", "month") from None
+    if not (MIN_YEAR <= year <= MAX_YEAR and 1 <= mon <= 12):
+        raise invalid(f"Use a month between {MIN_YEAR}-01 and {MAX_YEAR}-12", "month")
+    return year, mon
+
+
 _UPLOAD_PATH = re.compile(r"uploads/[0-9a-f]{32}\.(jpg|png|webp)")
 
 

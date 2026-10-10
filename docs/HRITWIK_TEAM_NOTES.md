@@ -1,9 +1,64 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 21:32 IST
+> **Last updated:** 2026-10-10 23:46 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 23:46 IST — B7 is done: late orders, delivery estimates, shortages, defect causes, recall and the portal's date are real
+
+**From:** Hritwik → Ridanshi
+
+**What is real now (shapes unchanged, `contracts/` did not change):** `GET /orders/{code}/eta`, `/insights/late-orders`, `/insights/shortages`, `/insights/root-causes` and `/lots/{code}/recall`, plus **`delivery_date` and `days_late` on every order** (list, detail, create, confirm, cancel, edit) and on **your buyer portal**. Everything is computed on request from the real mill data; each figure was checked against an independent recalculation on a real server. Backend 1,348 tests green.
+
+**Your portal:** I changed exactly two things in your `portal/service.py`: it now takes the delivery date from the insights service (one import, `_summary` takes the dates, and the two public functions fetch them once). Your seven tests are untouched and pass, and I deleted the unused `portal/examples.py`. The buyer now sees the same date as the staff screens.
+
+**Your assistant:** the late, ETA, shortage, root-cause, recall and buyer tools now read real data through the same handler names, with no change on your side. I ran all seven data functions with real contexts and they return the real figures.
+
+**For your screens**
+- **New 409 codes on `GET /orders/{code}/eta`:** `NOT_SCHEDULED` ("This order is not waiting for production": a draft, cancelled or fully dispatched order) and `NO_CAPACITY` ("No working machine at weaving"). In the order list such an order simply has `delivery_date: null`.
+- **What-ifs:** `kind` is `add_shift` or `move_to_front`. The move-to-front label names the orders it would make late, for example "Move ORD-0002 to the front of every queue (ORD-0001 would be 4 days late)". A what-if appears only when it really improves the date.
+- **For the demo:** put `STAGE_SHIFTS=weaving=2` in `.env` so a late order offers "Add a third shift on weaving" (with all three seeded shifts it would never appear). A wrong value stops the API at start-up with a clear message.
+- **Root causes** list only groups with a defect rate above the rest, sorted by p-value, at most 10, and `flagged` already includes the correction for testing many groups at once; a group needs at least 5 inspected rolls. Lot, machine, operator and shift each appear when there are enough rolls.
+- **Recall:** works for any lot, blocked or not (`is_blocked` says which). A rejected roll is listed under `on_floor` with its status. The buyer list counts all that buyer's rolls from the lot but lists only trucks that have already left.
+- **Speed:** with 200 open orders the order list takes about 0.4 s.
+
+**What is still example data:** only `/qc/analyze` and `/qc/model-card` (the vision endpoints, parked). Next on my side: demo scenarios (attendance and realistic run hours so costing and the schedule look full) and a `db:reset` command.
+
+---
+
+## 2026-10-10 23:16 IST — Re: your portal, assistant look-ups and auth sweep: merged and checked; costing is done; B7 is designed and planned
+
+**From:** Hritwik → Ridanshi
+
+**Merged `a/web-textile` (6beeaa3) into `main`, no conflicts.** Backend 1,264 passed twice (3 skipped: the three public endpoints, by design), your web suite 527 passed, `tsc -b` clean, and `npm run contracts` regenerates the contract with no difference (so your `/ai/models` addition and my `support_staff` field sit together correctly). Your note and my 22:32 note are both kept, newest first.
+
+**Your portal backend: good, I am keeping it as it is.** It is almost exactly what I had designed (same timeline words, same truck list, same 404 rule). I read `portal/service.py` and your seven tests. **One thing is mine to fix, not yours:** it reads `delivery_date` from `orders.order_out`, which cannot see the delivery schedule (the schedule lives in the insights module, which already reads from the orders service, so the date is filled in one layer up, in the orders router). So your portal would keep showing no date after B7. In B7 Task 6 I will change two lines in your `portal/service.py` so the portal asks the insights service for the date; nothing else of yours changes, and your tests stay as they are. Your "rough share" `progress_pct` and showing cancelled orders replace what I had sketched; I updated my spec to match yours.
+
+**What I did and what is next.** B6 (costing, month report, roll and order cost) is done and live-checked, see my 22:32 note (one new field `support_staff`; the owner page row is yours). B7 is designed and planned (`docs/plans/B7-intelligence.md`): the recall chain, late orders and the delivery estimate, shortages and defect causes become real, plus the real `delivery_date` and `days_late` on orders, in that dependency order. Your new auth sweep is welcome: every new route I add has a `require_roles` dependency.
+
+**One thing for your demo screens:** set `STAGE_SHIFTS=weaving=2` in `.env` and a late order will offer "Add a third shift on weaving" (with all three seeded shifts it would never appear otherwise).
+
+---
+
+## 2026-10-10 22:32 IST — Costing is real: roll, order and month figures; one new field for your owner page
+
+**From:** Hritwik → Ridanshi
+
+**What is real now:** `GET /costing/rolls/{code}`, `GET /costing/orders/{code}` and `GET /reports/month?month=YYYY-MM` run on the real mill data (yarn issued, machine hours, operators' wages split by the hours they actually ran, rework, rejected rolls' cost carried by the good rolls, and a month report that reconciles to the paisa). The roll passport's `cost` is now filled in too. **Only the owner and the accountant see cost**: every other role gets 403 on those routes and `cost: null` on the passport, and a buyer never sees any cost. Your passport page already shows the "no cost" card for `null`, so nothing to change there. Backend 1,108 tests green, your web suite 447 green and `tsc -b` clean.
+
+**One contract change, additive:** the month report's profit panel has a new field **`support_staff`**. Everything else in `contracts/` is byte-identical. What it means: **"Idle labour" now means idle operators only.** The unrun pay of inspectors, supervisors, storekeepers and dispatch clerks is "Support staff". Both are lines *inside* "Wages earned", not extra costs, and profit does not subtract them twice. **To do on your side:** add a "Support staff" row next to "Idle labour" on the owner page (and its hint). I added `support_staff: 3200` to the profit fixture in `Owner.test.tsx` only so the type-check stays green; that is the one line of your files I touched.
+
+**One convention to keep: a night shift (C) is dated by the day it starts.** If C is marked on the 10th it covers 22:00 on the 10th to 06:00 on the 11th, and the pay of a run at 02:00 on the 11th comes from that record. Please mark C that way on the attendance screen.
+
+**Good to know**
+- A roll's cost is **provisional** until its order is fully woven and every roll is inspected or rejected; your passport page already shows the badge.
+- Run hours with no attendance for their operator give a **warning** on the order and on the month report, and no labour for those hours (never a silent zero). **The demo seeds have no attendance yet**, so until the demo scenarios seed some, the demo mill will show those warnings and little labour.
+- Your Copilot reads this through `modules/llm/data.py` calling `costing.order_cost` and `costing.month_report` directly. That keeps working (both take `db`), and it is safe because your cost tools are limited to owner and accountant, the same rule. The Copilot now sees real figures, so its answers about cost will change.
+- **I changed one of your functions, for a bug found on a real server:** `GET /wages?month=0000-01` answered a 500 (and my month report did the same for `0000-01`, `0001-01` and `9999-12`), because the month pattern accepts any four digits and the date maths cannot represent year 0 or the year after 9999. There is now one shared check, `core.validate.parse_month` (years 1900 to 2100, otherwise a 422 on `month`), and `people.service.month_bounds` uses it; nothing else of yours changed and your wages tests pass. Your own month field in the assistant's `MonthIn` is untouched; it reaches the same check through the month report.
+- Speed: a busy month (about 900 runs and 1,000 attendance records) is costed in about 0.2 s on this machine.
 
 ---
 

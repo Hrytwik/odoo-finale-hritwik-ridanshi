@@ -12,6 +12,7 @@ from app.modules.llm.runtime import LlmConfig, LlmRuntime, get_runtime
 from app.modules.llm.types import AdapterError, Completion, ToolCall
 
 KEY = "sk-ant-api03-SECRET-KEY-VALUE"
+from tests.insights_world import build_mill, build_recall_mill
 
 
 class Fake:
@@ -256,50 +257,56 @@ def test_a_buyer_cannot_reach_the_staff_copilot_tools_by_name(client, login_as):
 
 # ---------- drafts ----------
 
-def test_explain_delay_words_the_estimate_and_cites_it(client, login_as):
+def test_explain_delay_words_the_estimate_and_cites_it(client, login_as, db):
+    late = build_mill(db).order_a.code                      # a real order that the schedule says is 1 day late
     login_as("owner")
-    fake = use(Fake("It will be 2 days late because of weaving."))
-    r = client.post("/api/ai/explain-delay/ORD-0012")
-    assert r.status_code == 200 and r.json()["text"].startswith("It will be 2 days late")
+    fake = use(Fake("It will be 1 day late because of weaving."))
+    r = client.post(f"/api/ai/explain-delay/{late}")
+    assert r.status_code == 200 and r.json()["text"].startswith("It will be 1 day late")
     assert r.json()["sources"][0]["tool"] == "get_order_eta"
     sent = fake.calls[0]
-    assert sent["tools"] == [] and "ORD-0012" in sent["turns"][0].text and "what-ifs" in sent["system"]
+    assert sent["tools"] == [] and late in sent["turns"][0].text and "what-ifs" in sent["system"]
 
 
-def test_explain_delay_is_for_managers_only(client, login_as):
+def test_explain_delay_is_for_managers_only(client, login_as, db):
+    late = build_mill(db).order_a.code
     use(Fake("x"))
     for role in ("store", "qc", "dispatch", "buyer"):
         login_as(role)
-        assert client.post("/api/ai/explain-delay/ORD-0012").status_code == 403, role
+        assert client.post(f"/api/ai/explain-delay/{late}").status_code == 403, role
     login_as("supervisor")
-    assert client.post("/api/ai/explain-delay/ORD-0012").status_code == 200
+    assert client.post(f"/api/ai/explain-delay/{late}").status_code == 200
 
 
-def test_explain_delay_when_the_provider_is_down(client, login_as):
+def test_explain_delay_when_the_provider_is_down(client, login_as, db):
+    late = build_mill(db).order_a.code
     login_as("owner")
     use(Fake(AdapterError("unreachable", "x")))
-    assert client.post("/api/ai/explain-delay/ORD-0012").status_code == 503
+    assert client.post(f"/api/ai/explain-delay/{late}").status_code == 503
 
 
-def test_recall_drafts_write_one_message_per_buyer_from_the_facts(client, login_as):
+def test_recall_drafts_write_one_message_per_buyer_from_the_facts(client, login_as, db):
+    mill = build_recall_mill(db)                              # Kavya's truck is still loading; Sharma's has left with one roll
     login_as("store")
     fake = use(Fake(reply=lambda s, turns, t: Completion(f"Dear buyer: {turns[0].text[:40]}", [])))
-    r = client.post("/api/ai/recall-drafts/L-0017")
+    r = client.post(f"/api/ai/recall-drafts/{mill.lot.lot_code}")
     assert r.status_code == 200
     drafts = r.json()["drafts"]
-    assert [d["buyer_name"] for d in drafts] == ["Sharma Fabrics"]
-    facts = json.loads(fake.calls[0]["turns"][0].text)
-    assert facts["lot_code"] == "L-0017" and facts["dispatch_codes"] == ["DSP-0007"] and facts["dispatched_roll_count"] == 3
+    assert [d["buyer_name"] for d in drafts] == ["Kavya Garments", "Sharma Fabrics"]
+    kavya, sharma = (json.loads(call["turns"][0].text) for call in fake.calls)
+    assert kavya["lot_code"] == mill.lot.lot_code and kavya["dispatch_codes"] == [] and kavya["dispatched_roll_count"] == 0
+    assert sharma["dispatch_codes"] == [mill.sent_truck.code] and sharma["dispatched_roll_count"] == 1 and sharma["roll_count"] == 5
     assert "do not state a cause" in fake.calls[0]["system"].lower()
 
 
-def test_recall_drafts_are_for_the_owner_and_store_only(client, login_as):
+def test_recall_drafts_are_for_the_owner_and_store_only(client, login_as, db):
+    lot = build_recall_mill(db).lot.lot_code
     use(Fake("x"))
     for role in ("supervisor", "accountant", "qc", "dispatch", "buyer"):
         login_as(role)
-        assert client.post("/api/ai/recall-drafts/L-0017").status_code == 403, role
+        assert client.post(f"/api/ai/recall-drafts/{lot}").status_code == 403, role
     login_as("owner")
-    assert client.post("/api/ai/recall-drafts/L-0017").status_code == 200
+    assert client.post(f"/api/ai/recall-drafts/{lot}").status_code == 200
 
 
 def test_month_summary_is_for_finance_and_checks_the_month(client, login_as):

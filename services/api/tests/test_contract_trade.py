@@ -3,9 +3,8 @@ import pytest
 
 @pytest.mark.parametrize("role,path", [
     ("accountant", "/api/money/receivables"), ("accountant", "/api/money/payables"),
-    ("owner", "/api/costing/rolls/R-0142"), ("owner", "/api/costing/orders/ORD-0012"),
     ("owner", "/api/reports/month?month=2026-10"),
-    ("owner", "/api/insights/late-orders"), ("supervisor", "/api/orders/ORD-0012/eta"),
+    ("owner", "/api/insights/late-orders"),
     ("store", "/api/insights/shortages"), ("owner", "/api/insights/root-causes"),
 ])
 def test_example_data_served(client, login_as, role, path):
