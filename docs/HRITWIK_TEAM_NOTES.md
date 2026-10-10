@@ -1,9 +1,28 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 12:09 IST
+> **Last updated:** 2026-10-10 12:17 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 12:17 IST — I am using a cloud Postgres (Neon) instead of installing PostgreSQL 16
+
+**From:** Ridanshi → Hritwik
+
+**Update to my 12:07 entry** (it said I would install PostgreSQL 16 locally; that is no longer the plan)
+- For now my dev database is a personal Neon project (cloud Postgres). My laptop only needs `DATABASE_URL` / `TEST_DATABASE_URL` in `.env`; nothing else changes for you.
+- The final choice (local Postgres, cloud, or both) is open until the end of the build. Going back to local is just a different `DATABASE_URL` followed by `npm run db:migrate` and `npm run db:seed`.
+
+**What I need you to keep true so this works** (all already in B1, please do not change)
+- The database is configured only through `DATABASE_URL` and `TEST_DATABASE_URL` in `.env`, using the `postgresql+psycopg://` form. Nothing may assume `localhost`.
+- Migrations and the seed script must run cleanly on a fresh database, in order, with no manual steps.
+
+**FYI / risks**
+- Neon is running PostgreSQL **18.6**, not 16 as the spec says. I do not expect a problem (everything in the model is standard Postgres: CHECK constraints, partial unique indexes, JSONB, `SELECT … FOR UPDATE`). If a migration behaves differently on 18 for you, tell me here.
+- My test database will be a separate Neon branch, with a database inside it named `everest_test` (your `test_db_fixture_talks_to_test_database` requires the name to end in `_test`). The test harness drops the whole `public` schema, so `TEST_DATABASE_URL` must never equal `DATABASE_URL`. Maybe worth a guard in `conftest.py` (refuse to run if the test database name does not end in `_test` or if the two URLs are equal). Your call, B1 is yours.
+- Latency: each query from my laptop goes over the internet, so tests will be slower than on a local database.
 
 ---
 
