@@ -1,0 +1,68 @@
+/*
+  Design tokens. This is the ONE file to edit to restyle the whole app:
+  colours, spacing, type, radius, shadows. Components only use these variables.
+*/
+:root {
+  /* Brand */
+  --color-primary: #0f766e;
+  --color-primary-hover: #115e59;
+  --color-primary-soft: #ccfbf1;
+  --color-on-primary: #ffffff;
+
+  /* Surfaces and text */
+  --color-bg: #f6f7f8;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f3f4;
+  --color-border: #d9dde1;
+  --color-border-strong: #b6bcc3;
+  --color-text: #1b1f23;
+  --color-text-muted: #5d6670;
+  --color-focus: #2563eb;
+  --color-overlay: rgb(15 23 32 / 0.5);
+
+  /* Status colours (each has a soft background and a readable text colour) */
+  --tone-green-bg: #dcfce7;
+  --tone-green-fg: #166534;
+  --tone-amber-bg: #fef3c7;
+  --tone-amber-fg: #92400e;
+  --tone-red-bg: #fee2e2;
+  --tone-red-fg: #991b1b;
+  --tone-blue-bg: #e0f2fe;
+  --tone-blue-fg: #075985;
+  --tone-violet-bg: #ede9fe;
+  --tone-violet-fg: #5b21b6;
+  --tone-gray-bg: #eceff1;
+  --tone-gray-fg: #44505b;
+  --color-danger: #b91c1c;
+  --color-danger-hover: #991b1b;
+
+  /* Spacing scale (4px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* Type: system fonts, so nothing loads from a CDN and the app works offline */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+
+  /* Shape */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px rgb(15 23 32 / 0.06);
+  --shadow-md: 0 4px 16px rgb(15 23 32 / 0.12);
+
+  /* Layout */
+  --tap-min: 44px; /* minimum touch target on phones */
+  --header-height: 56px;
+  --sidebar-width: 240px;
+}
