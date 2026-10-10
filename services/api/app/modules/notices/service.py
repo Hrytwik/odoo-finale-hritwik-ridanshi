@@ -62,7 +62,8 @@ def channel(db: Session, order: Order) -> s.ChannelOut:
         problem = f"The phone number for {order.buyer.name} does not look right. Fix it under Buyers."
     else:
         problem = None
-    return s.ChannelOut(whatsapp_ready=problem is None, to=whatsapp.mask_phone(number) if number else None, problem=problem, tracking_url=tracking)
+    return s.ChannelOut(whatsapp_ready=problem is None, to=whatsapp.mask_phone(number) if number else None,
+                        phone=number.lstrip("+") if number else None, problem=problem, tracking_url=tracking)
 
 
 def draft(db: Session, order_code: str, reason: str) -> s.DraftOut:

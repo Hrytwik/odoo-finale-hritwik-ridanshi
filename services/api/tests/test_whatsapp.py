@@ -209,7 +209,7 @@ def test_without_a_connection_the_notice_says_it_was_not_sent_on_whatsapp(client
 def test_the_draft_tells_the_owner_where_it_would_go_or_why_not(client, connected, db):
     good = make_order(db, buyer=make_buyer(db, name="Sharma", phone="98450 12345"))
     r = client.post(f"/api/orders/{good.code}/delay-notice/draft", json={"reason": "other"}).json()["channel"]
-    assert r == {"whatsapp_ready": True, "to": "+91 ••••• ••345", "problem": None, "tracking_url": f"https://mill.example/portal/orders/{good.code}"}
+    assert r == {"whatsapp_ready": True, "to": "+91 ••••• ••345", "phone": "919845012345", "problem": None, "tracking_url": f"https://mill.example/portal/orders/{good.code}"}
     none = make_order(db, buyer=make_buyer(db, name="NoPhone Co", phone=None))
     assert "no phone number" in client.post(f"/api/orders/{none.code}/delay-notice/draft", json={"reason": "other"}).json()["channel"]["problem"]
     odd = make_order(db, buyer=make_buyer(db, name="Odd Co", phone="abc"))
@@ -219,8 +219,8 @@ def test_the_draft_tells_the_owner_where_it_would_go_or_why_not(client, connecte
 def test_the_buyers_phone_is_never_sent_to_the_buyer_or_shown_in_full(client, connected, db, outbox):
     buyer = make_buyer(db, phone="98450 12345")
     order = make_order(db, buyer=buyer)
-    text = json.dumps(client.post(f"/api/orders/{order.code}/delay-notice/draft", json={"reason": "other"}).json())
-    assert "98450" not in text and "9845012345" not in text
+    draft = client.post(f"/api/orders/{order.code}/delay-notice/draft", json={"reason": "other"}).json()
+    assert "98450" not in draft["channel"]["to"] and draft["channel"]["phone"] == "919845012345"  # masked for display; the digits are for the link
 
 
 def test_twilios_own_error_number_is_kept_so_the_cause_can_be_looked_up():

@@ -1,4 +1,4 @@
-import { BellRing } from 'lucide-react'
+import { BellRing, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { ActionDialog } from '@/components/common/ActionDialog'
@@ -8,6 +8,7 @@ import { Field, Select, Textarea } from '@/components/ui/Field'
 import { api, call, errorMessage, type components } from '@/lib/api'
 import { useMe } from '@/lib/auth'
 import { useSubmitLock } from '@/lib/forms'
+import { whatsappLink } from '@/lib/whatsappLink'
 
 /** The reasons the owner can pick from. The same list, in the same order, as the server's. */
 const DELAY_REASONS = [
@@ -116,6 +117,14 @@ function DelayNoticeDialog({ orderCode, buyerName, onClose }: { orderCode: strin
           <p className="eyebrow">Also on WhatsApp</p>
           <WhatsAppPreview message={message} withTracking={!!channel.tracking_url} />
           <p className={channel.whatsapp_ready ? 'muted text-sm' : 'text-sm text-danger'}>{channel.whatsapp_ready ? `It will also be sent to ${channel.to}.` : channel.problem}</p>
+          {channel.phone && (
+            <p className="row">
+              <a className="btn btn-secondary" href={whatsappLink(channel.phone, message, channel.tracking_url)} target="_blank" rel="noopener noreferrer">
+                <MessageCircle size={16} aria-hidden /> Send from my WhatsApp
+              </a>
+              <span className="muted text-sm">Opens WhatsApp with this message ready for {channel.to}. You press send.</span>
+            </p>
+          )}
         </div>
       )}
     </ActionDialog>

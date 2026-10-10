@@ -135,3 +135,41 @@ describe('the WhatsApp part of the delay dialog', () => {
     expect(within(dialog).getByRole('figure')).not.toHaveTextContent('Track my order')
   })
 })
+
+describe('Send from my WhatsApp', () => {
+  const open = async (channel: object) => {
+    mockApi({
+      GET: { '/api/auth/me': me('owner') },
+      POST: { '/api/orders/{order_code}/delay-notice/draft': { message: 'Your order is delayed: a power cut.', drafted_by_ai: false, channel } },
+    })
+    renderPage(<DelayNoticeButton orderCode="ORD-0001" buyerName="Sharma Fabrics" />)
+    await userEvent.click(await screen.findByRole('button', { name: /tell the buyer about a delay/i }))
+    await userEvent.selectOptions(within(await screen.findByRole('dialog')).getByLabelText('Reason for the delay'), 'power_cut')
+    return screen.findByRole('dialog')
+  }
+
+  it('opens WhatsApp at the buyer with the message and the tracking link typed in', async () => {
+    const dialog = await open({ whatsapp_ready: false, to: '+91 ***** **345', phone: '919845012345', problem: 'WhatsApp is not connected yet.', tracking_url: 'https://mill.example/portal/orders/ORD-0001' })
+    const link = await within(dialog).findByRole('link', { name: /send from my whatsapp/i })
+    const href = link.getAttribute('href') ?? ''
+    expect(href.startsWith('https://wa.me/919845012345?text=')).toBe(true)
+    expect(decodeURIComponent(href.split('?text=')[1])).toBe('Your order is delayed: a power cut.\n\nTrack my order: https://mill.example/portal/orders/ORD-0001')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
+  })
+
+  it('follows the owner\'s edits to the message', async () => {
+    const dialog = await open({ whatsapp_ready: false, to: '+91 ***** **345', phone: '919845012345', problem: 'x', tracking_url: null })
+    const box = await within(dialog).findByLabelText('Message to the buyer')
+    await userEvent.clear(box)
+    await userEvent.type(box, 'New words')
+    const href = within(dialog).getByRole('link', { name: /send from my whatsapp/i }).getAttribute('href') ?? ''
+    expect(decodeURIComponent(href.split('?text=')[1])).toBe('New words')
+  })
+
+  it('is not offered when the buyer has no usable phone number', async () => {
+    const dialog = await open({ whatsapp_ready: false, to: null, phone: null, problem: 'Sharma Fabrics has no phone number. Add one under Buyers.', tracking_url: null })
+    await within(dialog).findByText('Sharma Fabrics has no phone number. Add one under Buyers.')
+    expect(within(dialog).queryByRole('link', { name: /send from my whatsapp/i })).not.toBeInTheDocument()
+  })
+})

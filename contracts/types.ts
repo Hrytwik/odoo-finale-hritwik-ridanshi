@@ -1833,6 +1833,8 @@ export interface components {
          * @description How the message would also reach this buyer on WhatsApp, shown to the owner before sending.
          */
         ChannelOut: {
+            /** Phone */
+            phone: string | null;
             /** Problem */
             problem: string | null;
             /** To */

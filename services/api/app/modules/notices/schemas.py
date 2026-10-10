@@ -22,6 +22,7 @@ class ChannelOut(BaseModel):
     """How the message would also reach this buyer on WhatsApp, shown to the owner before sending."""
     whatsapp_ready: bool
     to: str | None  # the buyer's number with the middle hidden
+    phone: str | None  # the buyer's number as digits with the country code (for a wa.me link); only the owner can ask for this
     problem: str | None  # why it would not be sent on WhatsApp, in words for the owner
     tracking_url: str | None
 

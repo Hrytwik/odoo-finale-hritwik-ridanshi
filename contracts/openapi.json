@@ -643,6 +643,17 @@
       "ChannelOut": {
         "description": "How the message would also reach this buyer on WhatsApp, shown to the owner before sending.",
         "properties": {
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
           "problem": {
             "anyOf": [
               {
@@ -684,6 +695,7 @@
         "required": [
           "whatsapp_ready",
           "to",
+          "phone",
           "problem",
           "tracking_url"
         ],
