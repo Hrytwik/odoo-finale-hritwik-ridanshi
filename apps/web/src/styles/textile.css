@@ -1221,3 +1221,21 @@ h1 {
   min-height: 0;
   max-height: none;
 }
+
+/* ---------- Orders: find an order ---------- */
+.orders-search {
+  position: relative;
+  display: block;
+  max-width: 520px;
+}
+.orders-search svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+.orders-search .input {
+  padding-left: 40px;
+}

@@ -107,3 +107,23 @@ describe('OrdersList', () => {
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
   })
 })
+
+describe('OrdersList search', () => {
+  it('finds an order by its code, buyer or colour as you type', async () => {
+    setup()
+    const box = await screen.findByRole('searchbox', { name: 'Find an order' })
+    await userEvent.type(box, 'patel')
+    const table = await screen.findByRole('table')
+    expect(within(table).getByRole('row', { name: /ORD-0013/ })).toBeInTheDocument()
+    expect(within(table).queryByRole('row', { name: /ORD-0012/ })).not.toBeInTheDocument()
+    await userEvent.clear(box)
+    await userEvent.type(box, 'ORD-0015')
+    expect(within(await screen.findByRole('table')).getAllByRole('row')).toHaveLength(2)
+  })
+
+  it('says so when nothing matches the search', async () => {
+    setup()
+    await userEvent.type(await screen.findByRole('searchbox', { name: 'Find an order' }), 'zzz')
+    expect(await screen.findByText('No order matches your search')).toBeInTheDocument()
+  })
+})
