@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
 from app.db.models import Order, User
+from app.modules.insights import service as insights
 from app.modules.orders import service as orders
 from app.modules.portal import schemas as s
 
@@ -42,18 +43,20 @@ def _share_done(order: Order, progress: orders.s.Progress) -> float:
     return round(100 * (0.5 * part(progress.woven_m) + 0.25 * part(progress.dyed_m) + 0.25 * part(ready)), 1)
 
 
-def _summary(db: Session, order: Order) -> s.PortalOrder:
+def _summary(db: Session, order: Order, dates: dict[str, tuple[dt.date, int]]) -> s.PortalOrder:
+    """`dates` is the whole mill's delivery schedule (insights); the order service alone cannot see it."""
     out = orders.order_out(db, order)
     return s.PortalOrder(
         code=order.code, fabric=out.fabric_type.name, colour=order.colour, qty_metres=out.qty_metres, stage=out.stage,
         progress_pct=100.0 if out.stage == "dispatched" else _share_done(order, out.progress),
-        deadline=order.deadline, delivery_date=out.delivery_date)
+        deadline=order.deadline, delivery_date=dates[order.code][0] if order.code in dates else None)
 
 
 def my_orders(db: Session, user: User) -> list[s.PortalOrder]:
+    dates = insights.delivery_dates(db)
     query = (select(Order).where(Order.buyer_id == user.buyer_id, Order.state.in_(("confirmed", "cancelled")))
              .order_by(Order.id.desc()))
-    return [_summary(db, order) for order in db.scalars(query)]
+    return [_summary(db, order, dates) for order in db.scalars(query)]
 
 
 def my_order(db: Session, user: User, code: str) -> s.PortalOrderDetail:
@@ -61,6 +64,7 @@ def my_order(db: Session, user: User, code: str) -> s.PortalOrderDetail:
                                           Order.state.in_(("confirmed", "cancelled"))))
     if order is None:
         raise AppError("NOT_FOUND", "Order not found", status=404)
+    dates = insights.delivery_dates(db)
     events: list[tuple[dt.datetime, str]] = []
     if order.confirmed_at:
         events.append((order.confirmed_at, "Order confirmed"))
@@ -74,5 +78,5 @@ def my_order(db: Session, user: User, code: str) -> s.PortalOrderDetail:
     for d in dispatches:
         events.append((d.dispatched_at, f"{d.metres:g} m dispatched ({d.code})"))
     events.sort(key=lambda e: e[0])
-    return s.PortalOrderDetail(**_summary(db, order).model_dump(), timeline=[s.TimelineEvent(at=at, label=label) for at, label in events],
+    return s.PortalOrderDetail(**_summary(db, order, dates).model_dump(), timeline=[s.TimelineEvent(at=at, label=label) for at, label in events],
                                dispatches=dispatches)
