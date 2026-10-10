@@ -5,8 +5,12 @@ from app.config import settings
 from app.core.errors import install_error_handlers
 from app.modules.auth.router import router as auth_router
 from app.modules.events.router import router as events_router
+from app.modules.costing.router import router as costing_router
+from app.modules.dispatch.router import router as dispatch_router
 from app.modules.floor.router import router as floor_router
+from app.modules.insights.router import router as insights_router
 from app.modules.master.router import router as master_router
+from app.modules.money.router import router as money_router
 from app.modules.orders.router import router as orders_router
 from app.modules.passport.router import router as passport_router
 from app.modules.qc.router import router as qc_router
@@ -37,6 +41,10 @@ def create_app() -> FastAPI:
     api.include_router(floor_router)
     api.include_router(qc_router)
     api.include_router(passport_router)
+    api.include_router(dispatch_router)
+    api.include_router(money_router)
+    api.include_router(costing_router)
+    api.include_router(insights_router)
     application.include_router(api)
     return application
 

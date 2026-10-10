@@ -374,6 +374,85 @@
         "title": "BuyerPatch",
         "type": "object"
       },
+      "BuyerPaymentIn": {
+        "properties": {
+          "amount": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100000000.0,
+            "title": "Amount",
+            "type": "number"
+          },
+          "invoice_no": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Invoice No",
+            "type": "string"
+          },
+          "received_on": {
+            "format": "date",
+            "title": "Received On",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          }
+        },
+        "required": [
+          "invoice_no",
+          "amount",
+          "received_on"
+        ],
+        "title": "BuyerPaymentIn",
+        "type": "object"
+      },
+      "CashPanel": {
+        "properties": {
+          "net_cash": {
+            "title": "Net Cash",
+            "type": "number"
+          },
+          "paid_to_suppliers": {
+            "title": "Paid To Suppliers",
+            "type": "number"
+          },
+          "paid_wages": {
+            "title": "Paid Wages",
+            "type": "number"
+          },
+          "payables_outstanding": {
+            "title": "Payables Outstanding",
+            "type": "number"
+          },
+          "receivables_outstanding": {
+            "title": "Receivables Outstanding",
+            "type": "number"
+          },
+          "received_from_buyers": {
+            "title": "Received From Buyers",
+            "type": "number"
+          }
+        },
+        "required": [
+          "received_from_buyers",
+          "paid_to_suppliers",
+          "paid_wages",
+          "net_cash",
+          "receivables_outstanding",
+          "payables_outstanding"
+        ],
+        "title": "CashPanel",
+        "type": "object"
+      },
       "ClassResult": {
         "properties": {
           "defect_type": {
@@ -560,6 +639,147 @@
         "title": "DefectOut",
         "type": "object"
       },
+      "DispatchIn": {
+        "properties": {
+          "buyer_id": {
+            "title": "Buyer Id",
+            "type": "integer"
+          },
+          "driver_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Name"
+          },
+          "vehicle_no": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Vehicle No",
+            "type": "string"
+          }
+        },
+        "required": [
+          "buyer_id",
+          "vehicle_no"
+        ],
+        "title": "DispatchIn",
+        "type": "object"
+      },
+      "DispatchOut": {
+        "properties": {
+          "buyer": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "dispatched_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dispatched At"
+          },
+          "driver_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Name"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/OrderLoadSummary"
+            },
+            "title": "Orders",
+            "type": "array"
+          },
+          "rolls": {
+            "items": {
+              "$ref": "#/components/schemas/RollOut"
+            },
+            "title": "Rolls",
+            "type": "array"
+          },
+          "state": {
+            "enum": [
+              "loading",
+              "dispatched"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "total_metres": {
+            "title": "Total Metres",
+            "type": "number"
+          },
+          "vehicle_no": {
+            "title": "Vehicle No",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "buyer",
+          "vehicle_no",
+          "driver_name",
+          "state",
+          "created_at",
+          "dispatched_at",
+          "rolls",
+          "orders",
+          "total_metres",
+          "invoice_no",
+          "warnings"
+        ],
+        "title": "DispatchOut",
+        "type": "object"
+      },
       "DowntimeOut": {
         "properties": {
           "reason": {
@@ -577,6 +797,74 @@
           "started_at"
         ],
         "title": "DowntimeOut",
+        "type": "object"
+      },
+      "EtaOut": {
+        "properties": {
+          "bottleneck_stage": {
+            "anyOf": [
+              {
+                "enum": [
+                  "spinning",
+                  "weaving",
+                  "dyeing"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bottleneck Stage"
+          },
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "days_late": {
+            "title": "Days Late",
+            "type": "integer"
+          },
+          "deadline": {
+            "format": "date",
+            "title": "Deadline",
+            "type": "string"
+          },
+          "delivery_date": {
+            "format": "date",
+            "title": "Delivery Date",
+            "type": "string"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/StageFinish"
+            },
+            "title": "Stages",
+            "type": "array"
+          },
+          "what_ifs": {
+            "items": {
+              "$ref": "#/components/schemas/WhatIf"
+            },
+            "title": "What Ifs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "order_code",
+          "buyer_name",
+          "deadline",
+          "delivery_date",
+          "days_late",
+          "bottleneck_stage",
+          "stages",
+          "what_ifs"
+        ],
+        "title": "EtaOut",
         "type": "object"
       },
       "FabricTypeIn": {
@@ -949,6 +1237,108 @@
           "notes"
         ],
         "title": "InspectionOut",
+        "type": "object"
+      },
+      "InvoiceLineOut": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "number"
+          },
+          "colour": {
+            "title": "Colour",
+            "type": "string"
+          },
+          "fabric": {
+            "title": "Fabric",
+            "type": "string"
+          },
+          "metres": {
+            "title": "Metres",
+            "type": "number"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "rate": {
+            "title": "Rate",
+            "type": "number"
+          },
+          "roll_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Roll Codes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "order_code",
+          "fabric",
+          "colour",
+          "metres",
+          "rate",
+          "amount",
+          "roll_codes"
+        ],
+        "title": "InvoiceLineOut",
+        "type": "object"
+      },
+      "InvoiceOut": {
+        "properties": {
+          "balance": {
+            "title": "Balance",
+            "type": "number"
+          },
+          "buyer": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "dispatch_code": {
+            "title": "Dispatch Code",
+            "type": "string"
+          },
+          "invoice_no": {
+            "title": "Invoice No",
+            "type": "string"
+          },
+          "issued_at": {
+            "format": "date-time",
+            "title": "Issued At",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "paid_amount": {
+            "title": "Paid Amount",
+            "type": "number"
+          },
+          "total_amount": {
+            "title": "Total Amount",
+            "type": "number"
+          },
+          "vehicle_no": {
+            "title": "Vehicle No",
+            "type": "string"
+          }
+        },
+        "required": [
+          "invoice_no",
+          "issued_at",
+          "buyer",
+          "dispatch_code",
+          "vehicle_no",
+          "lines",
+          "total_amount",
+          "paid_amount",
+          "balance"
+        ],
+        "title": "InvoiceOut",
         "type": "object"
       },
       "IssueIn": {
@@ -1486,6 +1876,77 @@
         "title": "MachineIn",
         "type": "object"
       },
+      "MachineMonth": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "down_h": {
+            "title": "Down H",
+            "type": "number"
+          },
+          "idle_h": {
+            "title": "Idle H",
+            "type": "number"
+          },
+          "lost_capacity": {
+            "title": "Lost Capacity",
+            "type": "number"
+          },
+          "lost_capacity_unit": {
+            "enum": [
+              "kg",
+              "m"
+            ],
+            "title": "Lost Capacity Unit",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "output": {
+            "title": "Output",
+            "type": "number"
+          },
+          "output_unit": {
+            "enum": [
+              "kg",
+              "m"
+            ],
+            "title": "Output Unit",
+            "type": "string"
+          },
+          "running_h": {
+            "title": "Running H",
+            "type": "number"
+          },
+          "stage": {
+            "enum": [
+              "spinning",
+              "weaving",
+              "dyeing"
+            ],
+            "title": "Stage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "stage",
+          "running_h",
+          "idle_h",
+          "down_h",
+          "output",
+          "output_unit",
+          "lost_capacity",
+          "lost_capacity_unit"
+        ],
+        "title": "MachineMonth",
+        "type": "object"
+      },
       "MachineOut": {
         "properties": {
           "active": {
@@ -1759,6 +2220,51 @@
         "title": "ModelCard",
         "type": "object"
       },
+      "MonthReport": {
+        "properties": {
+          "cash": {
+            "$ref": "#/components/schemas/CashPanel"
+          },
+          "machines": {
+            "items": {
+              "$ref": "#/components/schemas/MachineMonth"
+            },
+            "title": "Machines",
+            "type": "array"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/OrderMonth"
+            },
+            "title": "Orders",
+            "type": "array"
+          },
+          "profit": {
+            "$ref": "#/components/schemas/ProfitPanel"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "month",
+          "profit",
+          "cash",
+          "machines",
+          "orders",
+          "warnings"
+        ],
+        "title": "MonthReport",
+        "type": "object"
+      },
       "MovementOut": {
         "properties": {
           "at": {
@@ -1852,6 +2358,83 @@
         "title": "MovementOut",
         "type": "object"
       },
+      "OrderCost": {
+        "properties": {
+          "cost_per_good_metre": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Per Good Metre"
+          },
+          "good_metres": {
+            "title": "Good Metres",
+            "type": "number"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "parts": {
+            "$ref": "#/components/schemas/CostParts"
+          },
+          "profit": {
+            "title": "Profit",
+            "type": "number"
+          },
+          "provisional": {
+            "title": "Provisional",
+            "type": "boolean"
+          },
+          "reject_cost": {
+            "title": "Reject Cost",
+            "type": "number"
+          },
+          "rejected_metres": {
+            "title": "Rejected Metres",
+            "type": "number"
+          },
+          "revenue": {
+            "title": "Revenue",
+            "type": "number"
+          },
+          "total": {
+            "title": "Total",
+            "type": "number"
+          },
+          "unabsorbed": {
+            "title": "Unabsorbed",
+            "type": "number"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "order_code",
+          "parts",
+          "reject_cost",
+          "total",
+          "good_metres",
+          "rejected_metres",
+          "cost_per_good_metre",
+          "revenue",
+          "profit",
+          "unabsorbed",
+          "provisional",
+          "warnings"
+        ],
+        "title": "OrderCost",
+        "type": "object"
+      },
       "OrderIn": {
         "properties": {
           "buyer_id": {
@@ -1895,6 +2478,77 @@
           "deadline"
         ],
         "title": "OrderIn",
+        "type": "object"
+      },
+      "OrderLoadSummary": {
+        "properties": {
+          "loaded_m": {
+            "title": "Loaded M",
+            "type": "number"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "ordered_m": {
+            "title": "Ordered M",
+            "type": "number"
+          },
+          "over_shipped": {
+            "title": "Over Shipped",
+            "type": "boolean"
+          },
+          "previously_dispatched_m": {
+            "title": "Previously Dispatched M",
+            "type": "number"
+          },
+          "remaining_m": {
+            "title": "Remaining M",
+            "type": "number"
+          }
+        },
+        "required": [
+          "order_code",
+          "ordered_m",
+          "previously_dispatched_m",
+          "loaded_m",
+          "remaining_m",
+          "over_shipped"
+        ],
+        "title": "OrderLoadSummary",
+        "type": "object"
+      },
+      "OrderMonth": {
+        "properties": {
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "cost": {
+            "title": "Cost",
+            "type": "number"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "profit": {
+            "title": "Profit",
+            "type": "number"
+          },
+          "revenue": {
+            "title": "Revenue",
+            "type": "number"
+          }
+        },
+        "required": [
+          "order_code",
+          "buyer_name",
+          "revenue",
+          "cost",
+          "profit"
+        ],
+        "title": "OrderMonth",
         "type": "object"
       },
       "OrderOut": {
@@ -2251,6 +2905,108 @@
         "title": "PassportRun",
         "type": "object"
       },
+      "PayableRow": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "number"
+          },
+          "balance": {
+            "title": "Balance",
+            "type": "number"
+          },
+          "bill_date": {
+            "format": "date",
+            "title": "Bill Date",
+            "type": "string"
+          },
+          "bill_id": {
+            "title": "Bill Id",
+            "type": "integer"
+          },
+          "bill_no": {
+            "title": "Bill No",
+            "type": "string"
+          },
+          "due_date": {
+            "format": "date",
+            "title": "Due Date",
+            "type": "string"
+          },
+          "lot_code": {
+            "title": "Lot Code",
+            "type": "string"
+          },
+          "overdue": {
+            "title": "Overdue",
+            "type": "boolean"
+          },
+          "paid": {
+            "title": "Paid",
+            "type": "number"
+          },
+          "supplier": {
+            "$ref": "#/components/schemas/Ref"
+          }
+        },
+        "required": [
+          "bill_id",
+          "bill_no",
+          "supplier",
+          "lot_code",
+          "bill_date",
+          "due_date",
+          "amount",
+          "paid",
+          "balance",
+          "overdue"
+        ],
+        "title": "PayableRow",
+        "type": "object"
+      },
+      "ProfitPanel": {
+        "properties": {
+          "idle_labour": {
+            "title": "Idle Labour",
+            "type": "number"
+          },
+          "invoiced": {
+            "title": "Invoiced",
+            "type": "number"
+          },
+          "machine_running_cost": {
+            "title": "Machine Running Cost",
+            "type": "number"
+          },
+          "profit": {
+            "title": "Profit",
+            "type": "number"
+          },
+          "stock_writeoffs": {
+            "title": "Stock Writeoffs",
+            "type": "number"
+          },
+          "wages_earned": {
+            "title": "Wages Earned",
+            "type": "number"
+          },
+          "yarn_issued": {
+            "title": "Yarn Issued",
+            "type": "number"
+          }
+        },
+        "required": [
+          "invoiced",
+          "yarn_issued",
+          "wages_earned",
+          "idle_labour",
+          "machine_running_cost",
+          "stock_writeoffs",
+          "profit"
+        ],
+        "title": "ProfitPanel",
+        "type": "object"
+      },
       "Progress": {
         "properties": {
           "dispatched_m": {
@@ -2497,6 +3253,44 @@
         "title": "RecallRoll",
         "type": "object"
       },
+      "ReceivableRow": {
+        "properties": {
+          "balance": {
+            "title": "Balance",
+            "type": "number"
+          },
+          "buyer": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "invoice_no": {
+            "title": "Invoice No",
+            "type": "string"
+          },
+          "issued_at": {
+            "format": "date-time",
+            "title": "Issued At",
+            "type": "string"
+          },
+          "paid": {
+            "title": "Paid",
+            "type": "number"
+          },
+          "total": {
+            "title": "Total",
+            "type": "number"
+          }
+        },
+        "required": [
+          "invoice_no",
+          "buyer",
+          "issued_at",
+          "total",
+          "paid",
+          "balance"
+        ],
+        "title": "ReceivableRow",
+        "type": "object"
+      },
       "RecipeLineIn": {
         "properties": {
           "kg_per_metre": {
@@ -2735,6 +3529,61 @@
         "title": "RollOut",
         "type": "object"
       },
+      "RootCauseRow": {
+        "properties": {
+          "defective": {
+            "title": "Defective",
+            "type": "integer"
+          },
+          "factor": {
+            "enum": [
+              "weaving_machine",
+              "dyeing_machine",
+              "weaving_operator",
+              "weaving_shift",
+              "yarn_lot"
+            ],
+            "title": "Factor",
+            "type": "string"
+          },
+          "flagged": {
+            "title": "Flagged",
+            "type": "boolean"
+          },
+          "inspected": {
+            "title": "Inspected",
+            "type": "integer"
+          },
+          "p_value": {
+            "title": "P Value",
+            "type": "number"
+          },
+          "rate": {
+            "title": "Rate",
+            "type": "number"
+          },
+          "rest_rate": {
+            "title": "Rest Rate",
+            "type": "number"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "factor",
+          "value",
+          "defective",
+          "inspected",
+          "rate",
+          "rest_rate",
+          "p_value",
+          "flagged"
+        ],
+        "title": "RootCauseRow",
+        "type": "object"
+      },
       "RunBrief": {
         "properties": {
           "id": {
@@ -2937,6 +3786,21 @@
         "title": "RunStartIn",
         "type": "object"
       },
+      "ScanIn": {
+        "properties": {
+          "roll_code": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Roll Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "roll_code"
+        ],
+        "title": "ScanIn",
+        "type": "object"
+      },
       "ShiftIn": {
         "properties": {
           "end_time": {
@@ -3022,6 +3886,99 @@
           }
         },
         "title": "ShiftPatch",
+        "type": "object"
+      },
+      "ShortageOut": {
+        "properties": {
+          "falls_below_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Falls Below On"
+          },
+          "free_kg": {
+            "title": "Free Kg",
+            "type": "number"
+          },
+          "order_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order By"
+          },
+          "overdue_days": {
+            "title": "Overdue Days",
+            "type": "integer"
+          },
+          "reorder_level_kg": {
+            "title": "Reorder Level Kg",
+            "type": "number"
+          },
+          "suggested_kg": {
+            "title": "Suggested Kg",
+            "type": "number"
+          },
+          "supplier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ref"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "yarn_type": {
+            "$ref": "#/components/schemas/YarnTypeRef"
+          }
+        },
+        "required": [
+          "yarn_type",
+          "free_kg",
+          "reorder_level_kg",
+          "falls_below_on",
+          "supplier",
+          "order_by",
+          "suggested_kg",
+          "overdue_days"
+        ],
+        "title": "ShortageOut",
+        "type": "object"
+      },
+      "StageFinish": {
+        "properties": {
+          "finish_date": {
+            "format": "date",
+            "title": "Finish Date",
+            "type": "string"
+          },
+          "stage": {
+            "enum": [
+              "spinning",
+              "weaving",
+              "dyeing"
+            ],
+            "title": "Stage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage",
+          "finish_date"
+        ],
+        "title": "StageFinish",
         "type": "object"
       },
       "StockRow": {
@@ -3172,6 +4129,45 @@
           }
         },
         "title": "SupplierPatch",
+        "type": "object"
+      },
+      "SupplierPaymentIn": {
+        "properties": {
+          "amount": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100000000.0,
+            "title": "Amount",
+            "type": "number"
+          },
+          "bill_id": {
+            "title": "Bill Id",
+            "type": "integer"
+          },
+          "paid_on": {
+            "format": "date",
+            "title": "Paid On",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          }
+        },
+        "required": [
+          "bill_id",
+          "amount",
+          "paid_on"
+        ],
+        "title": "SupplierPaymentIn",
         "type": "object"
       },
       "UploadOut": {
@@ -3374,6 +4370,39 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "WhatIf": {
+        "properties": {
+          "days_late": {
+            "title": "Days Late",
+            "type": "integer"
+          },
+          "delivery_date": {
+            "format": "date",
+            "title": "Delivery Date",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "add_shift",
+              "move_to_front"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "delivery_date",
+          "days_late"
+        ],
+        "title": "WhatIf",
         "type": "object"
       },
       "WorkerIn": {
@@ -3949,6 +4978,369 @@
         ]
       }
     },
+    "/api/costing/orders/{order_code}": {
+      "get": {
+        "operationId": "order_cost_api_costing_orders__order_code__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_code",
+            "required": true,
+            "schema": {
+              "title": "Order Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderCost"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Order Cost",
+        "tags": [
+          "costing"
+        ]
+      }
+    },
+    "/api/costing/rolls/{roll_code}": {
+      "get": {
+        "operationId": "roll_cost_api_costing_rolls__roll_code__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "roll_code",
+            "required": true,
+            "schema": {
+              "title": "Roll Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RollCost"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Roll Cost",
+        "tags": [
+          "costing"
+        ]
+      }
+    },
+    "/api/dispatches": {
+      "get": {
+        "operationId": "list_dispatches_api_dispatches_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DispatchOut"
+                  },
+                  "title": "Response List Dispatches Api Dispatches Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Dispatches",
+        "tags": [
+          "dispatch"
+        ]
+      },
+      "post": {
+        "operationId": "create_dispatch_api_dispatches_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Dispatch",
+        "tags": [
+          "dispatch"
+        ]
+      }
+    },
+    "/api/dispatches/{dispatch_code}": {
+      "get": {
+        "operationId": "get_dispatch_api_dispatches__dispatch_code__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dispatch_code",
+            "required": true,
+            "schema": {
+              "title": "Dispatch Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Dispatch",
+        "tags": [
+          "dispatch"
+        ]
+      }
+    },
+    "/api/dispatches/{dispatch_code}/confirm": {
+      "post": {
+        "operationId": "confirm_dispatch_api_dispatches__dispatch_code__confirm_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dispatch_code",
+            "required": true,
+            "schema": {
+              "title": "Dispatch Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Dispatch",
+        "tags": [
+          "dispatch"
+        ]
+      }
+    },
+    "/api/dispatches/{dispatch_code}/items": {
+      "post": {
+        "operationId": "scan_roll_api_dispatches__dispatch_code__items_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dispatch_code",
+            "required": true,
+            "schema": {
+              "title": "Dispatch Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Scan Roll",
+        "tags": [
+          "dispatch"
+        ]
+      }
+    },
+    "/api/dispatches/{dispatch_code}/items/{roll_code}": {
+      "delete": {
+        "operationId": "unload_roll_api_dispatches__dispatch_code__items__roll_code__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dispatch_code",
+            "required": true,
+            "schema": {
+              "title": "Dispatch Code",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "roll_code",
+            "required": true,
+            "schema": {
+              "title": "Roll Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unload Roll",
+        "tags": [
+          "dispatch"
+        ]
+      }
+    },
     "/api/events": {
       "get": {
         "operationId": "events_api_events_get",
@@ -4118,6 +5510,123 @@
         "summary": "Health",
         "tags": [
           "system"
+        ]
+      }
+    },
+    "/api/insights/late-orders": {
+      "get": {
+        "operationId": "late_orders_api_insights_late_orders_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EtaOut"
+                  },
+                  "title": "Response Late Orders Api Insights Late Orders Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Late Orders",
+        "tags": [
+          "insights"
+        ]
+      }
+    },
+    "/api/insights/root-causes": {
+      "get": {
+        "operationId": "root_causes_api_insights_root_causes_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RootCauseRow"
+                  },
+                  "title": "Response Root Causes Api Insights Root Causes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Root Causes",
+        "tags": [
+          "insights"
+        ]
+      }
+    },
+    "/api/insights/shortages": {
+      "get": {
+        "operationId": "shortages_api_insights_shortages_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ShortageOut"
+                  },
+                  "title": "Response Shortages Api Insights Shortages Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Shortages",
+        "tags": [
+          "insights"
+        ]
+      }
+    },
+    "/api/invoices/{invoice_no}": {
+      "get": {
+        "operationId": "get_invoice_api_invoices__invoice_no__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invoice_no",
+            "required": true,
+            "schema": {
+              "title": "Invoice No",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Invoice",
+        "tags": [
+          "dispatch"
         ]
       }
     },
@@ -4617,6 +6126,56 @@
         ]
       }
     },
+    "/api/money/payables": {
+      "get": {
+        "operationId": "payables_api_money_payables_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PayableRow"
+                  },
+                  "title": "Response Payables Api Money Payables Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Payables",
+        "tags": [
+          "money"
+        ]
+      }
+    },
+    "/api/money/receivables": {
+      "get": {
+        "operationId": "receivables_api_money_receivables_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReceivableRow"
+                  },
+                  "title": "Response Receivables Api Money Receivables Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Receivables",
+        "tags": [
+          "money"
+        ]
+      }
+    },
     "/api/movements/adjust": {
       "post": {
         "operationId": "adjust_stock_api_movements_adjust_post",
@@ -5024,6 +6583,48 @@
         ]
       }
     },
+    "/api/orders/{order_code}/eta": {
+      "get": {
+        "operationId": "order_eta_api_orders__order_code__eta_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_code",
+            "required": true,
+            "schema": {
+              "title": "Order Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EtaOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Order Eta",
+        "tags": [
+          "insights"
+        ]
+      }
+    },
     "/api/orders/{order_code}/yarn-check": {
       "get": {
         "operationId": "yarn_check_api_orders__order_code__yarn_check_get",
@@ -5063,6 +6664,88 @@
         "summary": "Yarn Check",
         "tags": [
           "orders"
+        ]
+      }
+    },
+    "/api/payments/buyer": {
+      "post": {
+        "operationId": "record_buyer_payment_api_payments_buyer_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuyerPaymentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivableRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Buyer Payment",
+        "tags": [
+          "money"
+        ]
+      }
+    },
+    "/api/payments/supplier": {
+      "post": {
+        "operationId": "record_supplier_payment_api_payments_supplier_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplierPaymentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayableRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Supplier Payment",
+        "tags": [
+          "money"
         ]
       }
     },
@@ -5187,6 +6870,49 @@
         "summary": "Qc Queue",
         "tags": [
           "qc"
+        ]
+      }
+    },
+    "/api/reports/month": {
+      "get": {
+        "operationId": "month_report_api_reports_month_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "month",
+            "required": true,
+            "schema": {
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+              "title": "Month",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Month Report",
+        "tags": [
+          "costing"
         ]
       }
     },
