@@ -493,3 +493,14 @@ def test_no_tool_schema_uses_anyof_or_refs_which_some_providers_reject():
     for tool in T.TOOLS:
         text = json.dumps(tool.spec().schema)
         assert "anyOf" not in text and "$ref" not in text, tool.name
+
+
+def test_the_month_summary_is_written_in_the_chosen_language(client, login_as):
+    login_as("owner")
+    fake = use(Fake("Done."))
+    r = client.post("/api/ai/month-summary", json={"month": "2026-10", "language": "Marathi"})
+    assert r.status_code == 200 and "Write your answer in Marathi" in fake.calls[0]["system"]
+    assert client.post("/api/ai/month-summary", json={"month": "2026-10", "language": "x"}).status_code == 422
+    fake = use(Fake("Done."))
+    client.post("/api/ai/month-summary", json={"month": "2026-10"})
+    assert "Write your answer in" not in fake.calls[0]["system"]

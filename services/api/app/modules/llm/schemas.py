@@ -74,6 +74,7 @@ class ChatOut(BaseModel):
 
 class MonthIn(BaseModel):
     month: Annotated[str, StringConstraints(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")]
+    language: Language = "English"
 
 
 class DraftOut(BaseModel):

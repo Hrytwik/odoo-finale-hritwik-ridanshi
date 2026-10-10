@@ -243,7 +243,7 @@ describe('Drafts', () => {
     renderPage(<MonthSummary month="2026-10" />)
     await userEvent.click(screen.getByRole('button', { name: /write a summary of the month/i }))
     expect(await screen.findByText('A profitable month.')).toBeInTheDocument()
-    expect(post).toHaveBeenCalledWith('/api/ai/month-summary', { body: { month: '2026-10' } })
+    expect(post).toHaveBeenCalledWith('/api/ai/month-summary', { body: { month: '2026-10', language: 'English' } })
   })
 
   it('shows one message for each buyer', async () => {

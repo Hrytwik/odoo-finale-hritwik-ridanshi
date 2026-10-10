@@ -2754,6 +2754,23 @@
       },
       "MonthIn": {
         "properties": {
+          "language": {
+            "default": "English",
+            "enum": [
+              "English",
+              "Hindi",
+              "Kannada",
+              "Tamil",
+              "Telugu",
+              "Marathi",
+              "Bengali",
+              "Gujarati",
+              "Malayalam",
+              "Punjabi"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
           "month": {
             "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
             "title": "Month",

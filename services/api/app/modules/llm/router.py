@@ -90,12 +90,12 @@ def buyer_assistant(body: s.ChatIn, db: Session = Depends(get_db), user: User = 
     return s.ChatOut(answer=result.text, sources=_sources(result), provider=rt.config.provider, model=rt.config.model)
 
 
-def _write(rt: LlmRuntime, system: str, prompt: str) -> str:
+def _write(rt: LlmRuntime, system: str, prompt: str, language: str | None = None) -> str:
     """One plain model call with no tools: the model only words figures we hand it."""
     reply = None
     try:
         for budget in (700, 1500):  # a model that thinks first may need more room; a draft is never handed back cut off
-            reply = rt.adapter.complete(system, [Turn(role="user", text=prompt)], [], {"max_tokens": budget})
+            reply = rt.adapter.complete(engine.with_language(system, language), [Turn(role="user", text=prompt)], [], {"max_tokens": budget})
             if not reply.truncated:
                 break
     except AdapterError as exc:
@@ -146,6 +146,7 @@ def month_summary(body: s.MonthIn, db: Session = Depends(get_db), user: User = D
         "You write one paragraph of four to six sentences summarising a mill's month for its owner. Use only the numbers given, "
         "copied exactly, in Indian rupees. Mention profit, cash, and anything in the warnings. Do not give advice.",
         json.dumps(report, default=str),
+        body.language,
     )
     return s.DraftOut(text=text, sources=[_source("get_month_summary", {"month": body.month}, report)], provider=rt.config.provider, model=rt.config.model)
 

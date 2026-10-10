@@ -2530,6 +2530,12 @@ export interface components {
         };
         /** MonthIn */
         MonthIn: {
+            /**
+             * Language
+             * @default English
+             * @enum {string}
+             */
+            language: "English" | "Hindi" | "Kannada" | "Tamil" | "Telugu" | "Marathi" | "Bengali" | "Gujarati" | "Malayalam" | "Punjabi";
             /** Month */
             month: string;
         };
