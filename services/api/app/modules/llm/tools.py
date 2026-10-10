@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, StringConstraints
+from pydantic import BaseModel, Field, StringConstraints
 
 from app.modules.llm import data
 from app.modules.llm.data import ToolContext
@@ -27,6 +27,31 @@ class OrderIn(BaseModel):
 
 class MonthIn(BaseModel):
     month: Month
+
+
+class StateIn(BaseModel):
+    state: str = Field("", description="Leave empty for all, or one state such as confirmed, draft, cancelled, loading or dispatched.")
+
+
+class LotIn(BaseModel):
+    lot_code: Code
+
+
+class RollIn(BaseModel):
+    roll_code: Code
+
+
+class MachineIn(BaseModel):
+    machine_code: Code
+
+
+class RollsIn(BaseModel):
+    status: str = Field("", description="Leave empty for all, or one roll status such as awaiting_qc, in_store, loading, dispatched, rejected.")
+    order_code: str = Field("", description="Leave empty for all, or an order code like ORD-0001.")
+
+
+class BlockedIn(BaseModel):
+    blocked: bool = Field(False, description="true to list only blocked lots, false for every lot.")
 
 
 @dataclass(frozen=True)
@@ -61,6 +86,42 @@ TOOLS: tuple[Tool, ...] = (
          NoInput, MANAGERS, "copilot", lambda c, a: data.root_causes(c)),
     Tool("get_stock", "Yarn stock per type: on hand, needed by open orders, free, and the reorder level.",
          NoInput, MANAGERS, "copilot", lambda c, a: data.stock(c)),
+    Tool("list_orders", "Every order in one line: buyer, fabric, colour, metres, deadline, state, stage, yarn status and metres woven, dyed, passed and dispatched. Use for 'which orders', 'how many orders' or any question about orders in general.",
+         StateIn, MANAGERS, "copilot", lambda c, a: data.orders_overview(c, a.state)),
+    Tool("list_fabric_types", "The fabric types the mill makes, with width, wastage and the yarn recipe (kg of each yarn per metre).",
+         NoInput, MANAGERS, "copilot", lambda c, a: data.fabric_types(c)),
+    Tool("list_yarn_types", "The yarn types: code, name, colour and reorder level.",
+         NoInput, MANAGERS, "copilot", lambda c, a: data.yarn_types(c)),
+    Tool("list_machines", "Every machine: code, name, stage (spinning, weaving, dyeing), speed, running cost and whether it is active.",
+         NoInput, MANAGERS, "copilot", lambda c, a: data.machines(c)),
+    Tool("get_floor_board", "What every machine is doing right now: running (with its order and operator), idle or down.",
+         NoInput, MANAGERS, "copilot", lambda c, a: data.floor_board(c)),
+    Tool("get_machine", "One machine by code (like LOOM-04): its state now, current run and today's output.",
+         MachineIn, MANAGERS, "copilot", lambda c, a: data.machine_detail(c, a.machine_code)),
+    Tool("list_yarn_lots", "Yarn lots received: lot code, yarn, supplier, quantity, cost per kg, on hand, and whether blocked.",
+         BlockedIn, MANAGERS, "copilot", lambda c, a: data.lots(c, True if a.blocked else None)),
+    Tool("get_yarn_lot", "One yarn lot by code (like L-0001): its details and stock ledger.",
+         LotIn, MANAGERS, "copilot", lambda c, a: data.lot_detail(c, a.lot_code)),
+    Tool("list_rolls", "Fabric rolls with code, order, metres and status; filter by status or order.",
+         RollsIn, MANAGERS, "copilot", lambda c, a: data.rolls_list(c, a.status, a.order_code)),
+    Tool("get_roll_passport", "The full life of one roll by code (like R-0001): runs, yarn lots, quality checks and dispatch.",
+         RollIn, MANAGERS, "copilot", lambda c, a: data.roll_passport(c, a.roll_code)),
+    Tool("get_qc_queue", "Rolls waiting for a quality check or rework, and counts of passed, reworked and rejected rolls.",
+         NoInput, MANAGERS, "copilot", lambda c, a: data.qc_queue(c)),
+    Tool("list_dispatches", "Trucks: code, buyer, vehicle, state and what is loaded; filter by state (loading or dispatched).",
+         StateIn, FINANCE, "copilot", lambda c, a: data.dispatches(c, a.state)),
+    Tool("get_receivables", "Invoices and what each buyer still owes, with due dates and overdue flags.",
+         NoInput, FINANCE, "copilot", lambda c, a: data.receivables(c)),
+    Tool("get_payables", "Supplier bills and what the mill still owes each supplier, with due dates and overdue flags.",
+         NoInput, FINANCE, "copilot", lambda c, a: data.payables(c)),
+    Tool("get_wages", "Wages earned, paid and owed for each worker for one month (YYYY-MM).",
+         MonthIn, FINANCE, "copilot", lambda c, a: data.wages(c, a.month)),
+    Tool("list_buyers", "The buyers (customers) of the mill.",
+         NoInput, FINANCE, "copilot", lambda c, a: data.buyers(c)),
+    Tool("list_suppliers", "The yarn suppliers and their lead times.",
+         NoInput, FINANCE, "copilot", lambda c, a: data.suppliers(c)),
+    Tool("list_workers", "The workers on the payroll with role and daily wage.",
+         NoInput, FINANCE, "copilot", lambda c, a: data.workers(c)),
     Tool("get_my_orders", "The logged-in buyer's own orders with stage, progress and dates.",
          NoInput, BUYERS, "buyer", lambda c, a: data.my_orders(c)),
     Tool("get_my_order_status", "One of the logged-in buyer's own orders by code: stage, progress, timeline and dispatches.",

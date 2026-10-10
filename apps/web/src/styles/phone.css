@@ -1,0 +1,89 @@
+/*
+  Phone layout. Loaded last. Everything here sits inside a max-width query, so screens wider than the breakpoint
+  (laptops, desktops) are exactly as they were before this file existed.
+*/
+
+/* ---------- Tablet and phone: nothing may push the page sideways ---------- */
+@media (max-width: 1023px) {
+  .shell-main {
+    overflow-x: clip;
+  }
+}
+
+/*
+  The menu drawer. The dialog is rendered straight into <body>, outside .sidebar-drawer, so the rule in layout.css
+  never reaches it: the drawer came out cream with near-white text. Styled here by its own class instead.
+*/
+@media (max-width: 1023px) {
+  .dialog-left {
+    background: var(--color-ink);
+    color: var(--color-on-ink);
+  }
+  .dialog-left .dialog-header {
+    border-bottom-color: var(--color-ink-line);
+  }
+  .dialog-left .dialog-header h2,
+  .dialog-left .btn-ghost {
+    color: var(--color-on-ink);
+  }
+  .dialog-left .dialog-body {
+    padding: 0;
+  }
+}
+
+/* ---------- Header: menu, brand and four tools must fit in one row ---------- */
+@media (max-width: 719px) {
+  .shell-header {
+    gap: var(--space-2);
+    padding: 0 var(--space-3);
+  }
+  .brand {
+    min-width: 0;
+    font-size: 1.05rem;
+    gap: 8px;
+  }
+  .shell-tools,
+  .shell-user {
+    gap: 6px;
+  }
+  .header-square {
+    width: 34px;
+    min-height: 34px;
+  }
+}
+@media (max-width: 519px) {
+  .brand-more {
+    display: none; /* "EVEREST" alone is enough once the row gets tight */
+  }
+}
+@media (max-width: 429px) {
+  .brand-text {
+    display: none; /* the mark alone: the menu and four tools need the room on a small phone */
+  }
+}
+
+/* ---------- Phone: denser cards, easier taps ---------- */
+@media (max-width: 519px) {
+  /* KPI cards two to a row instead of one long column */
+  .grid-cards:has(.kpi) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+  .kpi {
+    padding: var(--space-3) var(--space-4);
+  }
+  .kpi-value {
+    font-size: 1.5rem;
+  }
+  /* a link inside a line of text is a thin target; vertical padding on an inline element widens the tap area without moving the lines */
+  .shell-main p a,
+  .shell-main li a,
+  .shell-main dd a,
+  .shell-main span a {
+    padding: 7px 0;
+  }
+  a.code-text {
+    display: inline-block;
+    padding: 5px 0;
+  }
+}

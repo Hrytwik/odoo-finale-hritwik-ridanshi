@@ -33,11 +33,14 @@ export function ChatPanel({
   suggestions,
   placeholder,
   label,
+  fill = false,
 }: {
   send: (question: string, history: { role: 'user' | 'assistant'; text: string }[]) => Promise<Chat>
   suggestions: string[]
   placeholder: string
   label: string
+  /** use the whole width, and the height of the page, instead of a box */
+  fill?: boolean
 }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
@@ -69,7 +72,7 @@ export function ChatPanel({
     })
 
   return (
-    <section className="chat" aria-label={label}>
+    <section className={fill ? 'chat chat-fill' : 'chat'} aria-label={label}>
       <div className="chat-log" role="log" aria-live="polite">
         {messages.length === 0 && (
           <div className="chat-empty">
@@ -90,7 +93,7 @@ export function ChatPanel({
               {m.role === 'user' ? <User size={16} /> : <Bot size={16} />}
             </span>
             <div className="chat-body">
-              <p className="chat-text">{m.text}</p>
+              <RichText text={m.text} />
               {m.sources && m.sources.length > 0 && <Sources sources={m.sources} />}
             </div>
           </article>
@@ -116,6 +119,65 @@ export function ChatPanel({
         </Button>
       </form>
     </section>
+  )
+}
+
+/** Bold (**like this**), "- " bullet lines and simple | tables, which models write whatever they are asked; nothing else is interpreted. */
+export function RichText({ text }: { text: string }) {
+  const inline = (line: string) =>
+    line.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith('**') && part.endsWith('**') && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : part))
+  const cells = (line: string) => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim())
+  type Block = { kind: 'text' | 'bullets' | 'table'; lines: string[] }
+  const blocks: Block[] = []
+  for (const raw of text.split(String.fromCharCode(10))) {
+    const line = raw.trim()
+    if (!line) continue
+    const kind: Block['kind'] = line.startsWith('|') ? 'table' : /^[-*•]\s+/.test(line) ? 'bullets' : 'text'
+    const last = blocks[blocks.length - 1]
+    const body = kind === 'bullets' ? line.replace(/^[-*•]\s+/, '') : line
+    if (last && last.kind === kind) last.lines.push(body)
+    else blocks.push({ kind, lines: [body] })
+  }
+  return (
+    <div className="chat-text">
+      {blocks.map((b, i) => {
+        if (b.kind === 'bullets')
+          return (
+            <ul key={i} className="chat-list">
+              {b.lines.map((l, j) => (
+                <li key={j}>{inline(l)}</li>
+              ))}
+            </ul>
+          )
+        if (b.kind === 'table') {
+          const rows = b.lines.filter((l) => !/^[|\s:-]+$/.test(l)).map(cells)
+          const [head, ...body] = rows
+          return (
+            <div key={i} className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    {head.map((c, j) => (
+                      <th key={j}>{inline(c)}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {body.map((r, j) => (
+                    <tr key={j}>
+                      {r.map((c, k) => (
+                        <td key={k}>{inline(c)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        }
+        return b.lines.map((l, j) => <p key={`${i}-${j}`}>{inline(l)}</p>)
+      })}
+    </div>
   )
 }
 

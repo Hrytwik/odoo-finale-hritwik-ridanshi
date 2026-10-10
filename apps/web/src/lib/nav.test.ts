@@ -51,3 +51,10 @@ describe('safeNext', () => {
     expect(safeNext('')).toBeNull()
   })
 })
+
+describe('what the owner can reach from the menu', () => {
+  it('lists every screen the owner is allowed to open, not only the ones the owner uses most', () => {
+    const hrefs = navFor('owner').map((i) => i.href)
+    expect(hrefs).toEqual(expect.arrayContaining(['/dispatch', '/people/attendance', '/people/workers', '/people/wages']))
+  })
+})

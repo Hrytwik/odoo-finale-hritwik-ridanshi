@@ -20,6 +20,13 @@ class Fake:
     def __init__(self, *replies, reply=None):
         self.replies, self.reply, self.calls = list(replies), reply, []
 
+    def models(self):
+        if isinstance(self.model_names, Exception):
+            raise self.model_names
+        return self.model_names
+
+    model_names = ["model-a", "model-b"]
+
     def complete(self, system, turns, tools, options=None):
         self.calls.append({"system": system, "turns": list(turns), "tools": [t.name for t in tools]})
         if self.reply:
@@ -86,6 +93,24 @@ def test_a_local_server_is_configured_by_its_address_alone(client, login_as):
     login_as("owner")
     r = client.put("/api/ai/settings", json={"provider": "openai_compatible", "model": "llama3.1", "base_url": "http://localhost:11434/v1"})
     assert r.status_code == 200 and r.json()["configured"] is True and r.json()["api_key_set"] is False
+
+
+def test_a_hosted_address_without_a_key_is_not_configured_until_the_key_is_saved(client, login_as):
+    login_as("owner")
+    body = {"provider": "openai_compatible", "model": "llama-3.3-70b-versatile", "base_url": "https://api.groq.com/openai/v1"}
+    r = client.put("/api/ai/settings", json=body)
+    assert r.status_code == 200 and r.json()["configured"] is False
+    r = client.put("/api/ai/settings", json={**body, "api_key": "gsk-test-value"})
+    assert r.json()["configured"] is True and r.json()["api_key_set"] is True
+
+
+@pytest.mark.parametrize("url,local", [
+    ("http://localhost:11434/v1", True), ("http://127.0.0.1:1234/v1", True), ("http://192.168.1.20:11434/v1", True),
+    ("http://my-pc.local:11434/v1", True), ("https://api.groq.com/openai/v1", False), ("https://api.openai.com/v1", False),
+    ("http://8.8.8.8/v1", False), ("not a url", False)])
+def test_only_addresses_on_this_computer_or_network_may_go_without_a_key(url, local):
+    from app.modules.llm.runtime import is_local_address
+    assert is_local_address(url) is local
 
 
 def test_settings_are_one_row_that_is_updated_not_added_to(client, login_as, db):
@@ -205,8 +230,11 @@ def test_a_buyer_is_offered_only_their_own_tools_and_a_buyer_safe_prompt(client,
     assert "never mention costs" in fake.calls[0]["system"].lower()
 
 
-def test_a_buyer_reads_their_orders_through_the_portal(client, login_as):
-    login_as("buyer")
+def test_a_buyer_reads_their_orders_through_the_portal(client, login_as, db):
+    from tests.factories import make_order
+    buyer = login_as("buyer")
+    from app.db.models import Buyer
+    make_order(db, buyer=db.get(Buyer, buyer.buyer_id))
     use(Fake(Completion("", [ToolCall("c1", "get_my_orders", {})]), "You have one order."))
     body = asks(client, "/api/ai/buyer-assistant").json()
     assert body["sources"][0]["tool"] == "get_my_orders" and "ORD-" in body["sources"][0]["summary"]
@@ -363,3 +391,87 @@ def test_only_the_owner_runs_or_reads_the_report_card(client, login_as):
         login_as(role)
         assert client.post("/api/ai/report-card/run").status_code == 403, role
         assert client.get("/api/ai/report-card").status_code == 403, role
+
+
+# ---------- which models can this key use ----------
+
+def test_the_owner_can_list_the_models_the_saved_key_may_use(client, login_as):
+    login_as("owner")
+    use(Fake())
+    r = client.get("/api/ai/models")
+    assert r.status_code == 200 and r.json() == {"models": ["model-a", "model-b"]}
+
+
+def test_only_the_owner_may_list_models(client, login_as):
+    use(Fake())
+    for role in ("accountant", "supervisor", "store", "buyer"):
+        login_as(role)
+        assert client.get("/api/ai/models").status_code == 403, role
+
+
+def test_a_failing_provider_is_reported_when_listing_models(client, login_as):
+    login_as("owner")
+    adapter = Fake()
+    adapter.model_names = AdapterError("auth", "The provider refused the API key")
+    use(adapter)
+    r = client.get("/api/ai/models")
+    assert r.status_code == 503 and r.json()["code"] == "AI_UNAVAILABLE" and "refused the API key" in r.json()["message"]
+
+
+# ---------- the tool list covers what the dashboards show ----------
+
+SAMPLE_ARGS = {"order_code": "ORD-0001", "month": "2026-10", "state": "", "lot_code": "L-0001", "roll_code": "R-0001",
+               "machine_code": "LOOM-06", "status": "", "blocked": False}
+
+
+def test_every_owner_tool_runs_without_crashing_on_an_empty_mill(db, login_as):
+    from app.core.errors import AppError
+    from app.modules.llm import tools as T
+    owner = login_as("owner")
+    ran = 0
+    for tool in T.tools_for("owner", "copilot"):
+        args = tool.input_model(**{k: SAMPLE_ARGS[k] for k in tool.input_model.model_fields if k in SAMPLE_ARGS})
+        try:
+            tool.run(ToolContext(db, owner), args)
+        except AppError:
+            pass  # "no such order" and the like are answers the model can read
+        ran += 1
+    assert ran >= 25
+
+
+def test_a_question_about_fabric_types_is_answerable_from_a_tool(db, login_as):
+    from app.modules.llm import tools as T
+    from tests.factories import make_fabric_type
+    owner = login_as("owner")
+    make_fabric_type(db, name="Twill 60in")
+    out = T.BY_NAME["list_fabric_types"].run(ToolContext(db, owner), T.NoInput())
+    assert [r["name"] for r in out["rows"]] == ["Twill 60in"] and out["count"] == 1
+
+
+def test_a_long_list_is_cut_and_says_how_many_there_were():
+    from app.modules.llm.data import ROW_LIMIT, capped
+    out = capped(list(range(ROW_LIMIT + 7)))
+    assert out["count"] == ROW_LIMIT + 7 and out["shown"] == ROW_LIMIT and len(out["rows"]) == ROW_LIMIT
+
+
+def test_money_wages_and_people_tools_are_kept_from_a_supervisor():
+    from app.modules.llm import tools as T
+    names = {t.name for t in T.tools_for("supervisor", "copilot")}
+    for secret in ("get_wages", "get_receivables", "get_payables", "list_workers", "list_buyers", "list_suppliers",
+                   "list_dispatches", "get_order_cost", "get_month_summary"):
+        assert secret not in names, secret
+    assert {"list_orders", "list_fabric_types", "get_floor_board", "get_roll_passport"} <= names
+
+
+def test_a_buyer_is_offered_none_of_the_staff_tools():
+    from app.modules.llm import tools as T
+    assert {t.name for t in T.tools_for("buyer", "buyer")} == {"get_my_orders", "get_my_order_status", "get_my_order_eta"}
+    assert T.tools_for("buyer", "copilot") == []
+
+
+def test_no_tool_schema_uses_anyof_or_refs_which_some_providers_reject():
+    import json
+    from app.modules.llm import tools as T
+    for tool in T.TOOLS:
+        text = json.dumps(tool.spec().schema)
+        assert "anyOf" not in text and "$ref" not in text, tool.name

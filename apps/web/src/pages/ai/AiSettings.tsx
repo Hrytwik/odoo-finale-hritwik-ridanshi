@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, PlugZap } from 'lucide-react'
+import { CheckCircle2, ListChecks, PlugZap } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -11,16 +11,20 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Field, Input, Select } from '@/components/ui/Field'
 import { ApiError, api, call, errorMessage, type components } from '@/lib/api'
+import { addressProblem } from '@/lib/aiAddress'
 import { useSubmitLock } from '@/lib/forms'
 
 type Settings = components['schemas']['SettingsOut']
 
 /** Starting points for the address of an OpenAI-compatible provider. */
 const PRESETS = [
-  { label: 'Groq', url: 'https://api.groq.com/openai/v1' },
-  { label: 'OpenAI', url: 'https://api.openai.com/v1' },
-  { label: 'Ollama on this computer', url: 'http://localhost:11434/v1' },
+  { label: 'Groq', url: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
+  { label: 'OpenAI', url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+  { label: 'Ollama on this computer', url: 'http://localhost:11434/v1', model: 'llama3.1' },
 ]
+
+/** True while the model box still holds a name that belongs to a different provider than the chosen preset. */
+const isStarterModel = (model: string) => !model.trim() || model.startsWith('claude-') || PRESETS.some((p) => p.model === model)
 
 export default function AiSettings() {
   const settings = useQuery({ queryKey: ['ai', 'settings'], queryFn: () => call(api.GET('/api/ai/settings')) })
@@ -58,7 +62,10 @@ function SettingsForm({ current }: { current: Settings }) {
     run(async () => {
       const found: Record<string, string> = {}
       if (!model.trim()) found.model = 'Enter the model name'
-      if (provider === 'openai_compatible' && !baseUrl.trim()) found.base_url = 'Enter the address of the provider'
+      if (provider === 'openai_compatible') {
+        const problem = addressProblem(baseUrl)
+        if (problem) found.base_url = problem
+      }
       setErrors(found)
       setFormError(null)
       if (Object.keys(found).length) return
@@ -117,7 +124,12 @@ function SettingsForm({ current }: { current: Settings }) {
             )}
           </Field>
           <Field label="Model" error={errors.model} hint={provider === 'anthropic' ? 'For example claude-opus-5-5' : 'The exact name the provider uses, for example llama-3.3-70b-versatile'}>
-            {(c) => <Input {...c} autoComplete="off" value={model} onChange={(e) => setModel(e.target.value)} />}
+            {(c) => (
+              <>
+                <Input {...c} autoComplete="off" value={model} onChange={(e) => setModel(e.target.value)} />
+                <ModelPicker enabled={current.configured} onPick={setModel} />
+              </>
+            )}
           </Field>
           {provider === 'openai_compatible' && (
             <Field label="Address" error={errors.base_url} hint="The provider's base address, ending in /v1">
@@ -126,7 +138,16 @@ function SettingsForm({ current }: { current: Settings }) {
                   <Input {...c} autoComplete="off" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
                   <span className="row">
                     {PRESETS.map((p) => (
-                      <button key={p.label} type="button" className="chat-chip" onClick={() => setBaseUrl(p.url)}>
+                      <button
+                        key={p.label}
+                        type="button"
+                        className="chat-chip"
+                        onClick={() => {
+                          setBaseUrl(p.url)
+                          // fill in a matching model name, but never overwrite one the user typed
+                          if (isStarterModel(model)) setModel(p.model)
+                        }}
+                      >
                         {p.label}
                       </button>
                     ))}
@@ -163,6 +184,44 @@ function SettingsForm({ current }: { current: Settings }) {
         </div>
       </form>
       <TestConnection disabled={!current.configured} />
+    </div>
+  )
+}
+
+/** Asks the saved provider which models the saved key may use, so the model name is one that exists. */
+function ModelPicker({ enabled, onPick }: { enabled: boolean; onPick: (model: string) => void }) {
+  const { run, pending } = useSubmitLock()
+  const [models, setModels] = useState<string[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const load = () =>
+    run(async () => {
+      setError(null)
+      try {
+        setModels((await call(api.GET('/api/ai/models'))).models)
+      } catch (err) {
+        setModels(null)
+        setError(errorMessage(err))
+      }
+    })
+  return (
+    <div className="stack-sm">
+      <span className="row">
+        <Button variant="secondary" onClick={() => void load()} disabled={!enabled || pending}>
+          {pending ? <span className="spinner" aria-hidden /> : <ListChecks size={16} aria-hidden />} Show the models my key can use
+        </Button>
+        {!enabled && <span className="muted text-sm">Save a key first.</span>}
+      </span>
+      {error && <Alert tone="error">{error}</Alert>}
+      {models && models.length === 0 && <p className="muted text-sm">The provider listed no models.</p>}
+      {models && models.length > 0 && (
+        <span className="row" role="group" aria-label="Models this key can use">
+          {models.map((m) => (
+            <button key={m} type="button" className="chat-chip" onClick={() => onPick(m)}>
+              {m}
+            </button>
+          ))}
+        </span>
+      )}
     </div>
   )
 }

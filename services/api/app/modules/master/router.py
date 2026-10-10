@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import STAFF, hash_password, require_roles
 from app.core.errors import AppError, commit
+from app.core.passwords import check_new_password
 from app.db.models import Buyer, FabricRecipeLine, FabricType, Machine, Shift, Supplier, User, Worker, YarnType
 from app.db.session import get_db
 from app.modules.master import schemas as s
@@ -101,6 +102,13 @@ def update_fabric_type(item_id: int, body: s.FabricTypePatch, db: Session = Depe
     return _fabric_out(ft)
 
 
+def _check_password(password: str, username: str) -> None:
+    """A login the owner creates or resets follows the same rules as one a person chooses for themselves."""
+    problem = check_new_password(password, username)
+    if problem:
+        raise AppError("WEAK_PASSWORD", problem, field="password", status=422)
+
+
 @router.get("/users", response_model=list[s.UserOut])
 def list_users(db: Session = Depends(get_db), _=Depends(owner_only)):
     return db.scalars(select(User).order_by(User.username)).all()
@@ -109,6 +117,7 @@ def list_users(db: Session = Depends(get_db), _=Depends(owner_only)):
 @router.post("/users", response_model=s.UserOut, status_code=201)
 def create_user(body: s.UserIn, db: Session = Depends(get_db), _=Depends(owner_only)):
     data = body.model_dump()
+    _check_password(data["password"], data["username"])
     user = User(password_hash=hash_password(data.pop("password")), **data)
     db.add(user)
     commit(db)
@@ -121,6 +130,7 @@ def update_user(item_id: int, body: s.UserPatch, db: Session = Depends(get_db), 
     user = _get_or_404(db, User, item_id)
     data = body.model_dump(exclude_unset=True)
     if "password" in data:
+        _check_password(data["password"], user.username)
         user.password_hash = hash_password(data.pop("password"))
     for key, value in data.items():
         setattr(user, key, value)

@@ -2,7 +2,7 @@
 
 > **Summary:** Track A's eighth plan, written while building: the provider-agnostic language-model module (`modules/llm`) and its screens. The backend and the three main screens are built and tested; some wiring and screen tests are still to do (listed at the end).
 > **Last updated:** 2026-10-10 17:44 IST
-> **Status:** in progress on branch `a/web-textile`.
+> **Status:** done on branch `a/web-textile`. Works end to end against the demo mill with a stand-in provider; a live check with a real provider key is the owner's step on `/settings/ai`.
 
 **Spec:** §10 (language-model layer), §4.4 (settings tables, already in the schema, no migration), §11 (screens). The rules the module follows: the model never calculates a number, tools are read-only and fixed, every answer lists its sources, buyer tools never take a buyer id, and with no provider every AI surface says so while all number screens keep working.
 
@@ -45,3 +45,12 @@
 ## Still to do in A8
 
 Screen tests for the three AI pages; place `ExplainDelay` on the insights cards, `MonthSummary` on the owner dashboard and `RecallDrafts` on the lot page; a live run against a real provider once the owner has entered a key on the settings screen.
+
+## Finishing notes
+
+- The draft buttons are on their pages: "Explain this delay" on each late order in Insights, "Write a summary of the month" on Month-end, "Draft messages to buyers" on a blocked lot.
+- The model is told today's date in India time, so "this month" means something.
+- A request the provider refuses (for example a malformed tool call) is tried once more before an error is shown.
+- Requests send a plain User-Agent: providers behind Cloudflare, Groq among them, turn away Python's default one with a 403.
+- A hosted address (Groq, OpenAI) with no key is "not set up"; only an address on this computer or network may go without a key.
+- Tests: `Ai.test.tsx` (Copilot, settings, report card, drafts) and the additions in `test_llm_core.py` and `test_llm_api.py`.

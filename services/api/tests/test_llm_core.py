@@ -149,7 +149,7 @@ def test_post_json_returns_the_reply(monkeypatch):
     assert adapters.post_json("http://x", {}, {"a": 1}) == {"ok": True}
 
 
-@pytest.mark.parametrize("code,kind", [(401, "auth"), (403, "auth"), (400, "bad_request"), (404, "bad_request"), (429, "bad_request"), (500, "server"), (503, "server")])
+@pytest.mark.parametrize("code,kind", [(401, "auth"), (403, "auth"), (400, "bad_request"), (404, "bad_request"), (429, "rate_limit"), (500, "server"), (503, "server")])
 def test_post_json_says_why_the_provider_refused(monkeypatch, code, kind):
     def boom(req, timeout):
         raise http_error(code, b'{"error": {"message": "model not found"}}')
@@ -258,7 +258,15 @@ def test_a_question_that_needs_no_tool_is_answered_straight_away():
     adapter = Script(say("Hello."))
     result = engine.run_chat(adapter, "sys", [], "Hi", [fake_tool()], CTX)
     assert result.text == "Hello." and result.sources == []
-    assert adapter.calls[0]["system"] == "sys" and adapter.calls[0]["tools"] == ["get_thing"]
+    assert adapter.calls[0]["system"].startswith("sys ") and adapter.calls[0]["tools"] == ["get_thing"]
+
+
+def test_the_model_is_told_todays_date_in_india_so_this_month_means_something():
+    import datetime as dt
+    assert engine.with_today("Be brief.", dt.date(2026, 10, 10)) == "Be brief. Today is 2026-10-10 (India time), so this month is 2026-10."
+    adapter = Script(say("ok"))
+    engine.run_chat(adapter, "sys", [], "q", [], CTX)
+    assert "Today is " in adapter.calls[0]["system"] and "this month is " in adapter.calls[0]["system"]
 
 
 def test_the_model_asks_for_a_tool_gets_the_result_and_answers_from_it():
@@ -333,12 +341,39 @@ def test_the_loop_stops_after_six_steps():
     assert "could not finish" in result.text and len(result.sources) == 6
 
 
-@pytest.mark.parametrize("kind", ["unreachable", "auth", "server", "bad_request"])
+@pytest.mark.parametrize("kind", ["unreachable", "auth", "server"])
 def test_a_provider_failure_becomes_ai_unavailable(kind):
     adapter = Script(AdapterError(kind, "boom"))
     with pytest.raises(AppError) as e:
         engine.run_chat(adapter, "s", [], "q", [], CTX)
     assert e.value.code == "AI_UNAVAILABLE" and e.value.status == 503 and "Check Settings" in e.value.message
+    assert len(adapter.calls) == 1  # these are not retried
+
+
+def test_a_refused_request_is_tried_once_more_then_reported():
+    adapter = Script(AdapterError("bad_request", "bad tool call"), AdapterError("bad_request", "bad tool call"))
+    with pytest.raises(AppError) as e:
+        engine.run_chat(adapter, "s", [], "q", [], CTX)
+    assert e.value.code == "AI_UNAVAILABLE" and "bad tool call" in e.value.message and len(adapter.calls) == 2
+
+
+def test_a_refused_request_that_works_the_second_time_is_answered():
+    adapter = Script(AdapterError("bad_request", "bad tool call"), say("Fine."))
+    assert engine.run_chat(adapter, "s", [], "q", [], CTX).text == "Fine."
+
+
+def test_requests_carry_a_plain_user_agent(monkeypatch):
+    import io
+    seen = {}
+
+    def fake_urlopen(request, timeout=None):
+        seen["ua"] = request.get_header("User-agent")
+        return io.BytesIO(b'{"ok": true}')
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    from app.modules.llm.adapters import post_json
+    assert post_json("https://example.test/v1", {}, {}, 5) == {"ok": True}
+    assert seen["ua"] == "EverestMills/1.0"
 
 
 def test_an_empty_answer_gets_a_plain_fallback():
@@ -405,3 +440,97 @@ def test_a_data_source_that_fails_only_removes_its_own_questions(client, login_a
     monkeypatch.setattr("app.modules.llm.data.stock", lambda ctx: (_ for _ in ()).throw(RuntimeError("down")))
     fewer = reportcard.build_questions(ToolContext(db, user))
     assert 0 < len(fewer) < full
+
+
+# ---------- listing models ----------
+
+def test_the_openai_compatible_adapter_lists_model_names_with_the_key_as_a_bearer_token():
+    seen = {}
+
+    def get(url, headers, timeout):
+        seen.update(url=url, headers=headers)
+        return {"data": [{"id": "zeta"}, {"id": "alpha"}, {"id": "alpha"}, {"nope": 1}]}
+
+    adapter = OpenAICompatibleAdapter("https://api.groq.com/openai/v1/", "m", "gsk-x", get=get)
+    assert adapter.models() == ["alpha", "zeta"]
+    assert seen["url"] == "https://api.groq.com/openai/v1/models" and seen["headers"] == {"Authorization": "Bearer gsk-x"}
+
+
+def test_the_anthropic_adapter_lists_model_names_with_its_headers():
+    seen = {}
+
+    def get(url, headers, timeout):
+        seen.update(url=url, headers=headers)
+        return {"data": [{"id": "claude-b"}, {"id": "claude-a"}]}
+
+    adapter = AnthropicAdapter("sk-1", "m", get=get)
+    assert adapter.models() == ["claude-a", "claude-b"]
+    assert seen["url"].startswith("https://api.anthropic.com/v1/models") and seen["headers"]["x-api-key"] == "sk-1"
+
+
+def test_a_model_list_in_an_unexpected_shape_is_empty_not_a_crash():
+    assert OpenAICompatibleAdapter("http://x/v1", "m", get=lambda *a: {"oops": True}).models() == []
+
+
+def test_a_missing_model_is_reported_with_what_the_provider_said(monkeypatch):
+    import io
+    import urllib.error
+
+    def refuse(request, timeout=None):
+        raise urllib.error.HTTPError(request.full_url, 404, "Not Found", {}, io.BytesIO(b'{"error": {"message": "The model `x` does not exist"}}'))
+
+    monkeypatch.setattr("urllib.request.urlopen", refuse)
+    with pytest.raises(AdapterError) as e:
+        adapters.post_json("https://api.example.test/v1/chat/completions", {}, {}, 5)
+    assert e.value.kind == "bad_request" and "The model `x` does not exist" in e.value.message and "/v1" in e.value.message
+
+
+# ---------- a provider's per-minute limit ----------
+
+def test_a_rate_limit_waits_as_long_as_the_provider_asked_and_then_answers(monkeypatch):
+    waited = []
+    monkeypatch.setattr(engine, "sleep", waited.append)
+    adapter = Script(AdapterError("rate_limit", "busy", retry_after=7.2), say("Done."))
+    assert engine.run_chat(adapter, "s", [], "q", [], CTX).text == "Done."
+    assert waited == [7.7] and len(adapter.calls) == 2
+
+
+def test_a_rate_limit_that_needs_too_long_a_wait_is_reported_at_once(monkeypatch):
+    waited = []
+    monkeypatch.setattr(engine, "sleep", waited.append)
+    adapter = Script(AdapterError("rate_limit", "The provider's limit for this minute was reached", retry_after=55.0))
+    with pytest.raises(AppError) as e:
+        engine.run_chat(adapter, "s", [], "q", [], CTX)
+    assert "limit for this minute" in e.value.message and waited == [] and len(adapter.calls) == 1
+
+
+def test_a_rate_limit_that_keeps_coming_gives_up_after_three_tries(monkeypatch):
+    monkeypatch.setattr(engine, "sleep", lambda s: None)
+    adapter = Script(*[AdapterError("rate_limit", "busy", retry_after=1.0) for _ in range(3)])
+    with pytest.raises(AppError):
+        engine.run_chat(adapter, "s", [], "q", [], CTX)
+    assert len(adapter.calls) == 3
+
+
+@pytest.mark.parametrize("message,seconds", [
+    ("Rate limit reached. Please try again in 7.2s. Need more tokens?", 7.2),
+    ("Please try again in 350ms.", 0.35),
+    ("Some other text", None)])
+def test_how_long_to_wait_is_read_from_the_providers_message(message, seconds):
+    import io
+    import urllib.error
+    exc = urllib.error.HTTPError("http://x", 429, "Too Many", {}, io.BytesIO(b""))
+    assert adapters._retry_after(exc, message) == seconds
+
+
+def test_a_429_from_the_provider_becomes_a_rate_limit_error(monkeypatch):
+    import io
+    import urllib.error
+
+    def refuse(request, timeout=None):
+        raise urllib.error.HTTPError(request.full_url, 429, "Too Many", {"Retry-After": "4"}, io.BytesIO(b'{"error": {"message": "slow down"}}'))
+
+    monkeypatch.setattr("urllib.request.urlopen", refuse)
+    with pytest.raises(AdapterError) as e:
+        adapters.post_json("https://api.example.test/v1/chat/completions", {}, {}, 5)
+    assert e.value.kind == "rate_limit" and e.value.retry_after == 4.0

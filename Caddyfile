@@ -1,5 +1,7 @@
 {
 	local_certs
+	# do not add Caddy's local certificate authority to this computer's trusted store (that asks for a Windows security prompt)
+	skip_install_trust
 }
 
 # One HTTPS origin for phones: the web app on :3000 and the API on :8000.

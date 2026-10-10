@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -15,6 +15,7 @@ import { Table } from '@/components/ui/Table'
 import { api, call, type components } from '@/lib/api'
 import { useMe } from '@/lib/auth'
 import { formatDate, formatKg, formatMetres } from '@/lib/format'
+import { matchesSearch } from '@/lib/orderSearch'
 
 type Order = components['schemas']['OrderOut']
 
@@ -33,6 +34,7 @@ export default function OrdersList() {
   const orders = useQuery({ queryKey: ['orders'], queryFn: () => call(api.GET('/api/orders')) })
   const me = useMe()
   const [filter, setFilter] = useState<Filter>('All')
+  const [query, setQuery] = useState('')
   const canCreate = me.data?.role === 'owner' || me.data?.role === 'accountant'
 
   return (
@@ -77,9 +79,20 @@ export default function OrdersList() {
                   ))}
                 </AnimatedBackground>
               </div>
+              <label className="orders-search">
+                <Search size={16} aria-hidden />
+                <input
+                  type="search"
+                  className="input"
+                  aria-label="Find an order"
+                  placeholder="Find an order: code, buyer, fabric, colour or stage"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </label>
               <StageLegend />
               <Reveal>
-                <OrdersTable orders={all.filter(MATCH[filter])} />
+                <OrdersTable orders={all.filter(MATCH[filter]).filter((o) => matchesSearch(o, query))} searching={query.trim() !== ''} />
               </Reveal>
             </div>
           )
@@ -89,8 +102,8 @@ export default function OrdersList() {
   )
 }
 
-function OrdersTable({ orders }: { orders: Order[] }) {
-  if (orders.length === 0) return <EmptyState title="No orders match this filter" />
+function OrdersTable({ orders, searching }: { orders: Order[]; searching: boolean }) {
+  if (orders.length === 0) return <EmptyState title={searching ? 'No order matches your search' : 'No orders match this filter'} description={searching ? 'Try a different word, or clear the search box.' : undefined} />
   return (
     <Table>
       <thead>
