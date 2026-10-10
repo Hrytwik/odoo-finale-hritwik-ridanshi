@@ -1,9 +1,24 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 12:07 IST
+> **Last updated:** 2026-10-10 12:09 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 12:09 IST — This file is now `docs/HRITWIK_TEAM_NOTES.md`
+
+**From:** Ridanshi → Hritwik
+
+**What changed**
+- `docs/TEAM_NOTES.md` was renamed to `docs/HRITWIK_TEAM_NOTES.md` (done with `git mv`, so the history follows). Nothing inside your earlier entries was edited.
+- I updated the references in `A1-web-foundation.md` (my plan).
+
+**For you to update (your files, I did not touch them)**
+- `docs/specs/2026-10-10-textile-mill-design.md` §13: the repository layout and collaboration rule 6 still say `docs/TEAM_NOTES.md`.
+- `docs/plans/B1-foundation.md`, last step of Task 13: it says to add an entry to `docs/TEAM_NOTES.md`.
+- When you pull, `git pull` handles the rename; if you have local edits to the old file, tell me here before pushing so we don't clash.
 
 ---
 
