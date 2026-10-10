@@ -1,5 +1,7 @@
 """The configured provider: the owner's settings, with the key decrypted, and the adapter built from them."""
+import ipaddress
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -14,6 +16,18 @@ DEFAULT_PROVIDER = "anthropic"
 DEFAULT_MODEL = "claude-opus-5-5"
 
 
+def is_local_address(url: str) -> bool:
+    """True for localhost, loopback and private-network addresses, where a model server (Ollama, LM Studio) needs no key."""
+    host = (urlparse(url).hostname or "").lower()
+    if host == "localhost" or host.endswith(".local"):
+        return True
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return ip.is_loopback or ip.is_private
+
+
 @dataclass
 class LlmConfig:
     provider: str
@@ -25,8 +39,10 @@ class LlmConfig:
 
     @property
     def configured(self) -> bool:
-        # a hosted Anthropic model needs a key; a local or compatible server needs an address and may need no key
-        return bool(self.api_key) if self.provider == "anthropic" else bool(self.base_url)
+        # a hosted model (Anthropic, Groq, OpenAI...) needs a key; only a server on this computer or the local network may go without
+        if self.api_key:
+            return True
+        return self.provider != "anthropic" and bool(self.base_url) and is_local_address(self.base_url)
 
 
 @dataclass

@@ -88,6 +88,24 @@ def test_a_local_server_is_configured_by_its_address_alone(client, login_as):
     assert r.status_code == 200 and r.json()["configured"] is True and r.json()["api_key_set"] is False
 
 
+def test_a_hosted_address_without_a_key_is_not_configured_until_the_key_is_saved(client, login_as):
+    login_as("owner")
+    body = {"provider": "openai_compatible", "model": "llama-3.3-70b-versatile", "base_url": "https://api.groq.com/openai/v1"}
+    r = client.put("/api/ai/settings", json=body)
+    assert r.status_code == 200 and r.json()["configured"] is False
+    r = client.put("/api/ai/settings", json={**body, "api_key": "gsk-test-value"})
+    assert r.json()["configured"] is True and r.json()["api_key_set"] is True
+
+
+@pytest.mark.parametrize("url,local", [
+    ("http://localhost:11434/v1", True), ("http://127.0.0.1:1234/v1", True), ("http://192.168.1.20:11434/v1", True),
+    ("http://my-pc.local:11434/v1", True), ("https://api.groq.com/openai/v1", False), ("https://api.openai.com/v1", False),
+    ("http://8.8.8.8/v1", False), ("not a url", False)])
+def test_only_addresses_on_this_computer_or_network_may_go_without_a_key(url, local):
+    from app.modules.llm.runtime import is_local_address
+    assert is_local_address(url) is local
+
+
 def test_settings_are_one_row_that_is_updated_not_added_to(client, login_as, db):
     login_as("owner")
     client.put("/api/ai/settings", json={"provider": "anthropic", "model": "a"})
