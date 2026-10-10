@@ -1,4 +1,5 @@
 """B8 Task 2: POST /qc/analyze with a fake detector standing in for the model."""
+import json
 import threading
 import time
 
@@ -43,7 +44,7 @@ def test_a_hole_becomes_a_box_and_a_rework_suggestion(client, login_as, monkeypa
     fake(monkeypatch, [HOLE])
     login_as("qc")
     body = analyze(client).json()
-    assert body["available"] is True
+    assert body["available"] is False                      # no card shows the bar met: the suggestion is flagged unvalidated
     assert "Unvalidated" in body["message"] and "does not mean" in body["message"]
     s = body["suggestion"]
     assert s["verdict"] == "rework" and s["model_version"] == "best"
@@ -138,7 +139,7 @@ def test_a_load_failure_is_not_remembered_so_fixing_it_works_on_the_next_request
     assert analyze(client).json()["available"] is False
     monkeypatch.setattr(vision, "_load_detector", lambda: (lambda path: [HOLE]))
     fixed = analyze(client).json()
-    assert fixed["available"] is True and [b["defect_type"] for b in fixed["suggestion"]["boxes"]] == ["hole"]
+    assert [b["defect_type"] for b in fixed["suggestion"]["boxes"]] == ["hole"]
 
 
 def test_the_model_is_loaded_once(client, login_as, monkeypatch):
@@ -165,3 +166,64 @@ def test_two_photos_at_once_never_run_the_model_at_the_same_time(monkeypatch):
     [t.start() for t in threads]
     [t.join() for t in threads]
     assert peak[0] == 1
+
+
+def write_card(tmp_path, monkeypatch, **changes):
+    card = {
+        "model_version": "yolo-validated", "trained_at": "2026-10-10T09:30:00+00:00", "datasets": [],
+        "test_defective": 40, "test_clean": 35, "clean_false_alarm_rate": 0.1,
+        "per_class": [{"defect_type": "hole", "found": 34, "missed": 6, "false_alarms": 4, "precision": 0.89, "recall": 0.85}],
+        "confusion_labels": ["hole", "clean"], "confusion_matrix": [[34, 6], [4, 0]],
+    }
+    card.update(changes)
+    path = tmp_path / "validated_card.json"
+    path.write_text(json.dumps(card))
+    monkeypatch.setattr(vision, "CARD_PATH", path)
+
+
+def test_a_model_whose_card_clears_the_bar_is_available_with_no_unvalidated_label(client, login_as, monkeypatch, tmp_path):
+    fake(monkeypatch, [HOLE])
+    write_card(tmp_path, monkeypatch)
+    login_as("qc")
+    body = analyze(client).json()
+    assert body["available"] is True and body["message"] is None
+    assert body["suggestion"]["model_version"] == "yolo-validated" and body["suggestion"]["verdict"] == "rework"
+
+
+def test_a_card_that_misses_the_bar_keeps_the_unvalidated_label(client, login_as, monkeypatch, tmp_path):
+    fake(monkeypatch, [HOLE])
+    write_card(tmp_path, monkeypatch, clean_false_alarm_rate=0.3)
+    login_as("qc")
+    body = analyze(client).json()
+    assert body["available"] is False and "Unvalidated" in body["message"] and body["suggestion"] is not None
+
+
+def card(**changes):
+    base = {
+        "available": True, "model_version": "v", "trained_at": None, "datasets": [], "test_defective": 40, "test_clean": 35,
+        "clean_false_alarm_rate": 0.1, "confusion_labels": [], "confusion_matrix": [],
+        "per_class": [{"defect_type": "hole", "found": 34, "missed": 6, "false_alarms": 0, "precision": 1.0, "recall": 0.85}],
+    }
+    base.update(changes)
+    return vision.s.ModelCard(**base)
+
+
+def holes(found, missed):
+    return [{"defect_type": "hole", "found": found, "missed": missed, "false_alarms": 0, "precision": None, "recall": None}]
+
+
+@pytest.mark.parametrize("changes,expected", [
+    ({}, True),
+    ({"available": False}, False),                                        # no card at all
+    ({"clean_false_alarm_rate": None}, False),                            # never measured
+    ({"test_clean": 29}, False), ({"test_clean": 30}, True),             # needs 30 clean test photos
+    ({"test_defective": 29}, False), ({"test_defective": 30}, True),     # and 30 defective ones
+    ({"per_class": holes(24, 6)}, True),                                  # exactly 80% of holes found
+    ({"per_class": holes(79, 21)}, False),                                # 79%
+    ({"per_class": holes(0, 0)}, False),                                  # no holes in the test
+    ({"per_class": []}, False),                                           # no hole row at all
+    ({"clean_false_alarm_rate": 0.2}, True), ({"clean_false_alarm_rate": 0.21}, False),
+    ({"clean_false_alarm_rate": 7 / 35}, True),                           # 7 of 35 is exactly 20%
+])
+def test_the_bar_is_the_spec_kill_criteria(changes, expected):
+    assert vision._validated(card(**changes)) is expected

@@ -18,6 +18,7 @@ from app.core.enums import DefectType, Verdict
 from app.core.validate import check_upload_path, invalid, not_found
 from app.modules.qc import schemas as s
 from app.modules.uploads.router import upload_root
+from ml.metrics import HOLE_CLASS, MAX_CLEAN_ALARM_RATE, MIN_CLEAN_IMAGES, MIN_DEFECTIVE_IMAGES, MIN_HOLE_RECALL
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +140,11 @@ def _model_version() -> str:
 
 def analyze_photo(photo_path: str) -> s.AnalyzeOut:
     """One uploaded photo in, the model's boxes and suggested verdict out. Calls are serialised by one lock (whether the
-    detector is safe to call from several threads at once is unverified, so it is not assumed)."""
+    detector is safe to call from several threads at once is unverified, so it is not assumed).
+
+    `available` follows the screens' three states: true = a suggestion from a model whose card clears the bar (see
+    `_validated`); false with a suggestion = the model ran but is unvalidated, so the screen badges it "Unvalidated
+    suggestion"; false with no suggestion = the model could not run and the inspector goes by eye."""
     global _detector
     path = check_upload_path(photo_path, "photo_path")
     file = upload_root() / path.removeprefix("uploads/")
@@ -159,7 +164,8 @@ def analyze_photo(photo_path: str) -> s.AnalyzeOut:
         return s.AnalyzeOut(available=False, message=f"The model failed on this photo, so there is no AI suggestion. {BY_HAND}",
                             suggestion=None)
     boxes = to_boxes([d for d in detections if d[2] >= CONFIDENCE])
-    return s.AnalyzeOut(available=True, message=NOTICE, suggestion=s.AiSuggestion(
+    validated = _validated(read_card())
+    return s.AnalyzeOut(available=validated, message=None if validated else NOTICE, suggestion=s.AiSuggestion(
         model_version=_model_version(), verdict=suggest_verdict(boxes), boxes=boxes))
 
 
@@ -176,3 +182,18 @@ def read_card() -> s.ModelCard:
     except (OSError, ValueError, TypeError, ValidationError):
         logger.warning("the model card file %s is unusable", CARD_PATH, exc_info=True)
         return NO_CARD
+
+
+def _validated(card: s.ModelCard) -> bool:
+    """True only when the saved card shows the model clears the spike's kill criteria (spec 9) on enough held-out photos:
+    the very bar `ml.metrics.decide` applies (at least 30 defective and 30 clean test photos, at least 80% of holes found,
+    at most 20% false alarms on clean cloth). Until then a suggestion is offered as unvalidated."""
+    if not card.available or card.clean_false_alarm_rate is None:
+        return False
+    if card.test_defective < MIN_DEFECTIVE_IMAGES or card.test_clean < MIN_CLEAN_IMAGES:
+        return False
+    holes = next((p for p in card.per_class if p.defect_type == HOLE_CLASS), None)
+    if holes is None or holes.found + holes.missed == 0:
+        return False
+    found_enough = holes.found * MIN_HOLE_RECALL[1] >= (holes.found + holes.missed) * MIN_HOLE_RECALL[0]
+    return found_enough and card.clean_false_alarm_rate <= MAX_CLEAN_ALARM_RATE[0] / MAX_CLEAN_ALARM_RATE[1]
