@@ -12,7 +12,7 @@ from app.core.errors import AppError, commit
 from app.core.events import broadcaster
 from app.core.money import dec, q_kg, q_money, to_float
 from app.db.models import (
-    Machine, Order, ProductionRun, Supplier, SupplierBill, User, YarnLot, YarnMovement, YarnType,
+    FabricRecipeLine, Machine, Order, ProductionRun, Supplier, SupplierBill, User, YarnLot, YarnMovement, YarnType,
 )
 from app.core.schemas import Ref
 from app.modules.store import schemas as s
@@ -41,8 +41,8 @@ def _exact(value, field: str, rounder) -> Decimal:
 
 def get_lot_or_404(db: Session, lot_code: str, for_update: bool = False) -> YarnLot:
     query = select(YarnLot).where(YarnLot.lot_code == lot_code)
-    if for_update:
-        query = query.with_for_update()
+    if for_update:  # take the row lock and re-read the row, so is_blocked and the ledger are what is committed NOW
+        query = query.with_for_update().execution_options(populate_existing=True)
     lot = db.scalar(query)
     if lot is None:
         raise _not_found("Lot", "lot_code")
@@ -132,19 +132,28 @@ def list_lots(db: Session, yarn_type_id: int | None = None, blocked: bool | None
     return _outs(db, list(db.scalars(query.order_by(YarnLot.id.desc()))))
 
 
-def movements_out(db: Session, lot: YarnLot) -> list[s.MovementOut]:
+def _movements(db: Session, *conditions) -> list[s.MovementOut]:
     rows = db.execute(
-        select(YarnMovement, ProductionRun.id, Order.code, Machine.code, User.username)
+        select(YarnMovement, YarnLot.lot_code, ProductionRun.id, Order.code, Machine.code, User.username)
+        .join(YarnLot, YarnLot.id == YarnMovement.yarn_lot_id)
         .outerjoin(ProductionRun, ProductionRun.id == YarnMovement.production_run_id)
         .outerjoin(Order, Order.id == ProductionRun.order_id)
         .outerjoin(Machine, Machine.id == ProductionRun.machine_id)
         .join(User, User.id == YarnMovement.moved_by)
-        .where(YarnMovement.yarn_lot_id == lot.id).order_by(YarnMovement.id)).all()
+        .where(*conditions).order_by(YarnMovement.id)).all()
     return [
-        s.MovementOut(id=m.id, lot_code=lot.lot_code, kind=m.kind, qty_kg=to_float(m.qty_kg), run_id=run_id,
+        s.MovementOut(id=m.id, lot_code=lot_code, kind=m.kind, qty_kg=to_float(m.qty_kg), run_id=run_id,
                       order_code=order_code, machine_code=machine_code, at=m.created_at, by=username, note=m.note)
-        for m, run_id, order_code, machine_code, username in rows
+        for m, lot_code, run_id, order_code, machine_code, username in rows
     ]
+
+
+def movements_out(db: Session, lot: YarnLot) -> list[s.MovementOut]:
+    return _movements(db, YarnMovement.yarn_lot_id == lot.id)
+
+
+def movement_out(db: Session, movement: YarnMovement) -> s.MovementOut:
+    return _movements(db, YarnMovement.id == movement.id)[0]
 
 
 def lot_detail(db: Session, lot: YarnLot) -> s.LotDetail:
@@ -163,3 +172,93 @@ def stock_rows(db: Session) -> list[s.StockRow]:
         for yt in db.scalars(select(YarnType).order_by(YarnType.code))
         for n in [numbers[yt.id]]
     ]
+
+
+# ---- issue, return, adjust, block (R2, R2b, R14) -----------------------------------------------------------------
+# Every one of these locks the lot's row first (SELECT ... FOR UPDATE), so two requests for the same lot run one after
+# the other and the second one sees what the first one committed. That is what keeps stock from going negative.
+
+def _on_hand(db: Session, lot: YarnLot) -> Decimal:
+    return db.execute(text("SELECT COALESCE((SELECT on_hand_kg FROM v_lot_stock WHERE yarn_lot_id = :i), 0)"),
+                      {"i": lot.id}).scalar_one()
+
+
+def _announce(lot: YarnLot) -> None:
+    broadcaster.publish("lot.changed", lot.id)
+    broadcaster.publish("stock.changed", lot.yarn_type_id)
+
+
+def _run_or_404(db: Session, run_id: int) -> ProductionRun:
+    run = db.get(ProductionRun, run_id)
+    if run is None:
+        raise _not_found("Production run", "run_id")
+    return run
+
+
+def _record(db: Session, user: User, lot: YarnLot, kind: str, qty: Decimal, run_id: int | None = None,
+            note: str | None = None) -> YarnMovement:
+    movement = YarnMovement(yarn_lot_id=lot.id, kind=kind, qty_kg=qty, production_run_id=run_id, note=note,
+                            moved_by=user.id)
+    db.add(movement)
+    commit(db)
+    db.refresh(movement)
+    _announce(lot)
+    return movement
+
+
+def issue_yarn(db: Session, user: User, body: s.IssueIn) -> YarnMovement:
+    lot = get_lot_or_404(db, body.lot_code, for_update=True)
+    qty = _exact(body.qty_kg, "qty_kg", q_kg)
+    if lot.is_blocked:
+        raise AppError("LOT_BLOCKED", "This lot is blocked and cannot be issued", field="lot_code")
+    run = _run_or_404(db, body.run_id)
+    order = db.get(Order, run.order_id)
+    if run.stage != "spinning" or run.ended_at is not None or order.state != "confirmed":
+        raise AppError("RUN_NOT_OPEN", "Yarn can only be issued to a running spinning job of a confirmed order",
+                       field="run_id")
+    in_recipe = db.scalar(select(FabricRecipeLine.id).where(
+        FabricRecipeLine.fabric_type_id == order.fabric_type_id, FabricRecipeLine.yarn_type_id == lot.yarn_type_id))
+    if in_recipe is None:
+        raise AppError("YARN_NOT_IN_RECIPE", "This order's fabric does not use this yarn type", field="lot_code")
+    available = _on_hand(db, lot)
+    if qty > available:
+        raise AppError("INSUFFICIENT_STOCK", f"Only {available:f} kg of this lot is in stock", field="qty_kg")
+    return _record(db, user, lot, "issue", -qty, run.id)
+
+
+def return_yarn(db: Session, user: User, body: s.ReturnIn) -> YarnMovement:
+    lot = get_lot_or_404(db, body.lot_code, for_update=True)
+    qty = _exact(body.qty_kg, "qty_kg", q_kg)
+    run = _run_or_404(db, body.run_id)
+    net_issued = -db.scalar(select(func.coalesce(func.sum(YarnMovement.qty_kg), 0)).where(
+        YarnMovement.yarn_lot_id == lot.id, YarnMovement.production_run_id == run.id,
+        YarnMovement.kind.in_(("issue", "return"))))
+    if qty > net_issued:
+        raise AppError("RETURN_EXCEEDS_ISSUED",
+                       f"Only {net_issued:f} kg of this lot is out with that run", field="qty_kg")
+    return _record(db, user, lot, "return", qty, run.id)
+
+
+def adjust_stock(db: Session, user: User, body: s.AdjustIn) -> YarnMovement:
+    lot = get_lot_or_404(db, body.lot_code, for_update=True)
+    try:
+        qty = q_kg(dec(body.qty_kg))
+    except ValueError:
+        raise _invalid("Enter a valid number", "qty_kg") from None
+    if qty == 0:
+        raise _invalid("This rounds to zero; enter a larger number", "qty_kg")
+    available = _on_hand(db, lot)
+    if qty < 0 and -qty > available:
+        raise AppError("INSUFFICIENT_STOCK", f"Only {available:f} kg of this lot is in stock", field="qty_kg")
+    return _record(db, user, lot, "adjustment", qty, note=body.note)
+
+
+def block_lot(db: Session, user: User, lot_code: str, body: s.BlockIn) -> YarnLot:
+    lot = get_lot_or_404(db, lot_code, for_update=True)
+    if lot.is_blocked:
+        raise AppError("LOT_ALREADY_BLOCKED", "This lot is already blocked", field="lot_code")
+    lot.is_blocked, lot.blocked_reason, lot.blocked_at = True, body.reason, dt.datetime.now(dt.UTC)
+    commit(db)
+    db.refresh(lot)
+    _announce(lot)
+    return lot

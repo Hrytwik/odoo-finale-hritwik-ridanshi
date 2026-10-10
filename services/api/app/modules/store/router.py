@@ -30,9 +30,10 @@ def get_lot(lot_code: str, db: Session = Depends(get_db)) -> s.LotDetail:
     return service.lot_detail(db, service.get_lot_or_404(db, lot_code))
 
 
-@router.post("/lots/{lot_code}/block", response_model=s.LotOut, dependencies=[Depends(store_staff)])
-def block_lot(lot_code: str, body: s.BlockIn) -> s.LotOut:
-    return ex.LOT.model_copy(update={"is_blocked": True, "blocked_reason": body.reason})
+@router.post("/lots/{lot_code}/block", response_model=s.LotOut)
+def block_lot(lot_code: str, body: s.BlockIn, db: Session = Depends(get_db),
+              user: User = Depends(store_staff)) -> s.LotOut:
+    return service.lot_out(db, service.block_lot(db, user, lot_code, body))
 
 
 @router.get("/lots/{lot_code}/recall", response_model=s.RecallOut, dependencies=[Depends(store_staff)])
@@ -40,19 +41,19 @@ def lot_recall(lot_code: str) -> s.RecallOut:
     return ex.RECALL
 
 
-@router.post("/movements/issue", response_model=s.MovementOut, status_code=201, dependencies=[Depends(issuers)])
-def issue_yarn(body: s.IssueIn) -> s.MovementOut:
-    return ex.MOVEMENTS[1]
+@router.post("/movements/issue", response_model=s.MovementOut, status_code=201)
+def issue_yarn(body: s.IssueIn, db: Session = Depends(get_db), user: User = Depends(issuers)) -> s.MovementOut:
+    return service.movement_out(db, service.issue_yarn(db, user, body))
 
 
-@router.post("/movements/return", response_model=s.MovementOut, status_code=201, dependencies=[Depends(issuers)])
-def return_yarn(body: s.ReturnIn) -> s.MovementOut:
-    return ex.MOVEMENTS[1].model_copy(update={"kind": "return", "qty_kg": body.qty_kg})
+@router.post("/movements/return", response_model=s.MovementOut, status_code=201)
+def return_yarn(body: s.ReturnIn, db: Session = Depends(get_db), user: User = Depends(issuers)) -> s.MovementOut:
+    return service.movement_out(db, service.return_yarn(db, user, body))
 
 
-@router.post("/movements/adjust", response_model=s.MovementOut, status_code=201, dependencies=[Depends(store_staff)])
-def adjust_stock(body: s.AdjustIn) -> s.MovementOut:
-    return ex.MOVEMENTS[0].model_copy(update={"kind": "adjustment", "qty_kg": body.qty_kg, "note": body.note})
+@router.post("/movements/adjust", response_model=s.MovementOut, status_code=201)
+def adjust_stock(body: s.AdjustIn, db: Session = Depends(get_db), user: User = Depends(store_staff)) -> s.MovementOut:
+    return service.movement_out(db, service.adjust_stock(db, user, body))
 
 
 @router.get("/stock", response_model=list[s.StockRow], dependencies=[Depends(stock_readers)])
