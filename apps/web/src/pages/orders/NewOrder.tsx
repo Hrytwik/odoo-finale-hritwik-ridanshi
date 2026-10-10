@@ -11,14 +11,8 @@ import { SubmitButton } from '@/components/common/SubmitButton'
 import { Card } from '@/components/ui/Card'
 import { Field, Input, Select } from '@/components/ui/Field'
 import { api, call, type components } from '@/lib/api'
+import { todayIso } from '@/lib/dates'
 import { applyServerErrors, useSubmitLock } from '@/lib/forms'
-
-/** Today as YYYY-MM-DD in the browser's own calendar, for the "not in the past" rule. */
-function todayIso() {
-  const d = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
 
 const schema = z.object({
   buyer_id: z.number({ error: 'Choose a buyer' }),
@@ -49,6 +43,7 @@ export default function NewOrder() {
 function OrderForm({ buyers, fabrics }: { buyers: components['schemas']['BuyerOut'][]; fabrics: components['schemas']['FabricTypeOut'][] }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [today] = useState(todayIso)
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { colour: '', deadline: '' } })
   const { run, pending } = useSubmitLock()
   const [formError, setFormError] = useState<string | null>(null)
@@ -110,7 +105,7 @@ function OrderForm({ buyers, fabrics }: { buyers: components['schemas']['BuyerOu
               {(c) => <Input {...c} type="number" inputMode="decimal" step="any" {...form.register('price_per_metre', { valueAsNumber: true })} />}
             </Field>
             <Field label="Deadline" error={errors.deadline?.message}>
-              {(c) => <Input {...c} type="date" min={todayIso()} {...form.register('deadline')} />}
+              {(c) => <Input {...c} type="date" min={today} {...form.register('deadline')} />}
             </Field>
           </div>
           {formError && <Alert tone="error">{formError}</Alert>}

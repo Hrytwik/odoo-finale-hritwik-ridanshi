@@ -20,6 +20,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Table } from '@/components/ui/Table'
 import { api, call, errorMessage, type components } from '@/lib/api'
 import { useMe } from '@/lib/auth'
+import { todayIso } from '@/lib/dates'
 import { useSubmitLock } from '@/lib/forms'
 import { formatDate, formatKg, formatMetres, formatMoney } from '@/lib/format'
 
@@ -350,7 +351,7 @@ function CancelDialog({ order, open, onClose }: { order: Order; open: boolean; o
 function DeadlineDialog({ order, open, onClose }: { order: Order; open: boolean; onClose: () => void }) {
   const { act, pending, error, setError, path } = useOrderAction(order, onClose)
   const [deadline, setDeadline] = useState(order.deadline)
-  const today = new Date().toISOString().slice(0, 10)
+  const [today] = useState(todayIso)
   return (
     <ActionDialog open={open} onClose={onClose} title="Change deadline" error={error}>
       <Field label="New deadline" error={deadline && deadline < today ? 'The deadline cannot be in the past' : undefined}>
