@@ -1,7 +1,7 @@
 # A2 — Store and Orders Screens
 
 > **Summary:** Track A's second plan, written after the work: the six store and order screens (receive yarn, yarn stock, yarn lot with recall, orders list, new order, order detail), what each one calls, the rules it enforces in the browser, and how it is tested.
-> **Last updated:** 2026-10-10 14:31 IST
+> **Last updated:** 2026-10-10 14:29 IST
 > **Status:** built and tested on branch `a/web-scaffold`. Not pushed yet (Ridanshi pushes when her Track A tasks are done).
 
 **Spec:** `docs/specs/2026-10-10-textile-mill-design.md` §6 (rules R1, R3, R14), §8 (delivery date, shortage, recall), §11 (screens). **Contract:** Hritwik's `contracts/types.ts`; the numbers are his example data until plans B2 to B7 land, and the shapes do not change.

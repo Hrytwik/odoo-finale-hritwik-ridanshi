@@ -1,7 +1,7 @@
 # A4 — Quality Check and Roll Passport
 
 > **Summary:** Track A's fourth plan, written after the work: the QC queue, the inspection screen with the AI suggestion and the human verdict, the vision model card, and the Roll Passport with its QR tag and scanner.
-> **Last updated:** 2026-10-10 14:55 IST
+> **Last updated:** 2026-10-10 14:52 IST
 > **Status:** built and tested on branch `a/web-scaffold`. Not pushed yet (Ridanshi pushes when her Track A tasks are done).
 
 **Spec:** §4.2 (rolls, QC), §5 (roll status), §6 R9 and R10, §7 (costing), §9 (vision QC), §11 (screens). **Contract:** Hritwik's `contracts/types.ts`; example data until plans B4, B6 and B8.

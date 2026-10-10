@@ -1,7 +1,7 @@
 # A3 — Floor Screens
 
 > **Summary:** Track A's third plan, written after the work: the live Floor board and the Machine page where the supervisor starts runs, hands over, rolls off, loads rolls, issues yarn and reports breakdowns.
-> **Last updated:** 2026-10-10 14:40 IST
+> **Last updated:** 2026-10-10 14:35 IST
 > **Status:** built and tested on branch `a/web-scaffold`. Not pushed yet (Ridanshi pushes when her Track A tasks are done).
 
 **Spec:** §3 (live updates), §5 (machine status), §6 rules R2 to R8, §11 (screens). **Contract:** Hritwik's `contracts/types.ts`; example data until plan B3.
