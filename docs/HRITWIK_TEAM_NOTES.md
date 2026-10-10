@@ -1,9 +1,32 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 16:05 IST
+> **Last updated:** 2026-10-10 17:31 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 17:31 IST — The floor is now real (shapes unchanged; read the new error codes)
+
+**From:** Hritwik → Ridanshi
+
+Runs, machines and rolls now run on real data and real rules. **No shape changed:** `contracts/` is byte-identical, so your screens compile as before. This will be on `main` after I push; then `git pull` and run `npm run db:migrate` (two new migrations: roll codes + roll status, machine status).
+
+**What is real now:** `GET /floor`, `GET /machines/{code}`, `GET /runs`, `POST /runs` (start), `/runs/{id}/end`, `/runs/{id}/handover`, `/runs/{id}/rolls` (roll off), `/runs/{id}/load-rolls`, `POST /machines/{code}/breakdown` and `/repair`, and `GET /rolls` (your tick list for dyeing now lists real woven rolls). Yarn issue from the last note now works: it needs a real open spinning run, which you can start. A whole chain was run on a live server: receive yarn, order, spin (issue and end with kg), weave across a shift change, dye, quality check; the order's progress and stage, the stock and the floor board agree at every step.
+
+**Things that behave differently from the example data**
+- **Ending a spinning run needs `output_kg`** (0 is fine, blank is refused with `OUTPUT_REQUIRED`, 422). Weaving and dyeing runs must **not** send one (`OUTPUT_NOT_ALLOWED`, 422).
+- **Hand-over and breakdown end a run without asking for output.** A spinning run ended that way keeps a blank output, so the "spun" total can be short. If a shift change on a spinning machine matters for the numbers, let the supervisor press **End run** (with the kg) and then **Start run** for the next person instead of Hand over.
+- **Hand-over to the same operator is refused** (422 on `operator_worker_id`). The new run starts with no rolls; rolls already made stay with the old run.
+- **Breakdown ends the running job at once; repair does not restart it.** After repair the machine is idle and someone starts a new run.
+- **The board lists active machines only**; an inactive machine's page is a 404. Machine `status` is `down` (open downtime), `running` (open run) or `idle`. `output_today` uses the India-time day: kg for spinning, metres for weaving and dyeing; `order_progress_pct` is the progress of that run's own stage for its order (capped at 100, one decimal).
+- **Starting a weaving run needs `input_run_id`** (a spinning run of the same order, open or ended): `GET /runs?stage=spinning&order_code=...` lists them.
+- Rolls get codes like `R-0142`, are `woven` when made, `dyeing` once loaded, and `awaiting_qc` when the dye run ends (the QC, dispatch and rework statuses come with the next plans; the status rules are already in place).
+
+**Error codes you can show** (standard `{code, message, field}`): start run: `ORDER_NOT_CONFIRMED`, `MACHINE_INACTIVE`, `OPERATOR_INACTIVE`, `INPUT_RUN_REQUIRED` (422 when missing, 409 when it is the wrong run), `MACHINE_DOWN`, `MACHINE_BUSY`; any run action: `RUN_NOT_OPEN` (run already ended), `WRONG_STAGE` (e.g. roll off on a dyeing run); breakdown/repair: `MACHINE_ALREADY_DOWN`, `MACHINE_NOT_DOWN`, `MACHINE_INACTIVE`; load rolls: `ROLL_WRONG_STATUS` (the message names the roll and its status), `ROLL_WRONG_ORDER`, 404 on `roll_codes` for an unknown roll, 422 for a repeated roll. Loading is all or nothing: if one roll is refused, none are loaded.
+
+**Test data tip:** `npm run db:seed` creates users, workers and one buyer only. To exercise the floor, create as `owner` a yarn type, supplier, fabric type with a recipe, at least one machine per stage and a couple of workers (`/yarn-types`, `/suppliers`, `/fabric-types`, `/machines`, `/workers`).
 
 ---
 

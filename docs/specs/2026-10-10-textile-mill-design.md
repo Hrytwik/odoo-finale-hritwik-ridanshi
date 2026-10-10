@@ -130,8 +130,8 @@ Total: 29 tables.
 | `v_lot_stock` | kg on hand per lot = sum of its movements |
 | `v_order_yarn_need` | per confirmed order and yarn type: `need_kg` = qty_metres × kg_per_metre × (1 + wastage_pct/100); `issued_kg` = issues − returns, from lots of that yarn type, to that order's runs; `outstanding_kg` = max(0, need − issued) |
 | `v_yarn_type_stock` | per yarn type: `on_hand_kg` (unblocked lots), `outstanding_kg` (all confirmed orders), `free_kg` = on_hand − outstanding, `below_reorder` = free_kg < reorder_level_kg |
-| `v_machine_status` | **down** if an open downtime exists; else **running** if an open run exists; else **idle** (active machines only) |
-| `v_roll_status` | see §5 |
+| `v_machine_status` | **down** if an open downtime exists; else **running** if an open run exists; else **idle** (active machines only). Real SQL view since B3 |
+| `v_roll_status` | see §5. Real SQL view since B3 (all five rules); "a rework run linked after the inspection" is a rework run whose `started_at` is not before the inspection's `inspected_at` |
 | `v_order_progress` | spun_kg vs need_kg; woven / dyed / passed / rejected / dispatched metres vs qty_metres; buyer-facing stage (§5). **Implemented as functions** (`progress` and `stage` in `modules/orders/service.py`, recomputed on every read), not as a SQL view; the stock views (`v_lot_stock`, `v_order_yarn_need`, `v_yarn_type_stock`) are real SQL views |
 | `v_order_timeline` | union of dated events per order (confirmed, first spinning/weaving/dyeing run, rolls passed, dispatches) for the buyer portal |
 
@@ -163,7 +163,7 @@ Every rule is enforced in the API inside one database transaction; the ones mark
 | R3 | **Orders:** draft → confirmed → (cancelled only while no runs exist) [`ORDER_HAS_RUNS`]. After confirmation only the deadline may change. |
 | R4 | **Start run:** machine active; not down [`MACHINE_DOWN`]; no open run [`MACHINE_BUSY`] **DB**; machine stage = run stage [`WRONG_STAGE`]; order confirmed; operator active. Weaving requires `input_run_id` = a spinning run of the same order [`INPUT_RUN_REQUIRED`]. |
 | R5 | **Breakdown:** opens a downtime and ends any open run on that machine at the same moment. **Repair:** ends the downtime. |
-| R6 | **Hand over (shift change / worker moves):** ends the current run and starts a new one on the same machine and order with the new operator (same `input_run_id`). Each run has exactly one operator. |
+| R6 | **Hand over (shift change / worker moves):** ends the current run and starts a new one on the same machine and order with the new operator (same `input_run_id`). Each run has exactly one operator. Ending a spinning run through `/runs/{id}/end` requires `output_kg` (0 allowed); hand-over and breakdown end a run without output, so a spinning run ended that way keeps a blank output (B3 decision, recorded in `docs/plans/B3-floor.md`). |
 | R7 | **Roll off:** only on an open weaving run; metres > 0; creates the roll (order = the run's order) and a `produce` link. |
 | R8 | **Load dyeing:** dye run open; every roll belongs to the run's order and has status `woven` [`ROLL_WRONG_STATUS`]; creates `dye` links. |
 | R9 | **QC:** roll status `awaiting_qc` [`ROLL_WRONG_STATUS`]; verdict required; at least one defect when verdict ≠ pass [`DEFECTS_REQUIRED`]; `overrode_ai` computed server-side. |
