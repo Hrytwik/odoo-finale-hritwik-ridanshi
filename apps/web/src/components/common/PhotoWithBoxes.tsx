@@ -1,5 +1,5 @@
 import type { components } from '@/lib/api'
-import { DEFECT_LABEL } from '@/lib/defects'
+import { useDefectLabel } from '@/lib/useDefectLabel'
 
 type Box = components['schemas']['Box']
 
@@ -9,6 +9,7 @@ const pct = (fraction: number) => `${Math.round(fraction * 10000) / 100}%`
 
 /** A photo with the model's suggested defects drawn over it. Box positions are 0 to 1 fractions of the photo, so they scale with it. */
 export function PhotoWithBoxes({ src, boxes, alt }: { src: string; boxes: Box[]; alt: string }) {
+  const label = useDefectLabel()
   return (
     <div className="photo-wrap">
       <img src={src} alt={alt} />
@@ -20,7 +21,7 @@ export function PhotoWithBoxes({ src, boxes, alt }: { src: string; boxes: Box[];
           style={{ left: pct(b.x), top: pct(b.y), width: pct(b.w), height: pct(b.h) }}
         >
           <span className="photo-box-label">
-            {DEFECT_LABEL[b.defect_type]} {Math.round(b.confidence * 100)}%
+            {label(b.defect_type)} {Math.round(b.confidence * 100)}%
           </span>
         </div>
       ))}
