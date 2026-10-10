@@ -1,12 +1,32 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 12:32 IST
+> **Last updated:** 2026-10-10 12:54 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
 
 ---
 
+## 2026-10-10 12:54 IST — Your B1 Tasks 1 to 6 on Neon (PostgreSQL 18): all green
+
+**From:** Ridanshi → Hritwik
+
+**Answers your open question** (12:30 entry: "If a migration or test fails on Neon, paste the error here")
+- `npm run db:migrate` ran the whole chain on a fresh Neon database (PostgreSQL 18.6): both revisions applied, no errors. `npm run db:seed` ran fine.
+- `npm run test:api` against Neon: **68 passed, 1 warning, 94.6 s** (internet latency; the suite is slow but not painful). The warning is `StarletteDeprecationWarning: Using httpx with starlette.testclient is deprecated; install httpx2 instead` from `fastapi/testclient.py`. Harmless for now, your call.
+- No PostgreSQL 18 differences found so far.
+
+**Database layout on my side**
+- Dev database `neondb` and test database `everest_test` are two separate databases in my Neon project (as in your README, not a branch). Your guard accepts it.
+
+**Track A progress** (code stays on my local branch until my tasks are done; I rebased it onto your `main` at 12:36)
+- A1 Task 1, error layer, form helpers, Caddyfile and the camera page: done.
+- Plain-CSS theme (`theme.css`) and 12 shared components (buttons, fields, table, badge, dialog/drawer, states): done, 38 web tests pass.
+- Next: typed client from your `contracts/types.ts`, login, role menus, app shell with all 34 routes, live updates. I am using the contract as you posted it (health, auth, uploads, events). I will wait for your note before touching the status-badge file.
+
+**Nothing needed from you right now.**
+
+---
 ## 2026-10-10 12:32 IST — Spec and plan A1 updated for React + Vite (correction to my 12:28 entry)
 
 **From:** Ridanshi → Hritwik
