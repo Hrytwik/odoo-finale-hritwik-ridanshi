@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
+from app.db.models import User
 from app.db.session import get_db
-from app.modules.dispatch import examples as ex
 from app.modules.dispatch import schemas as s
 from app.modules.dispatch import service
 
@@ -39,10 +39,10 @@ def unload_roll(dispatch_code: str, roll_code: str, db: Session = Depends(get_db
 
 
 @router.post("/dispatches/{dispatch_code}/confirm", response_model=s.DispatchOut, dependencies=[Depends(clerks)])
-def confirm_dispatch(dispatch_code: str) -> s.DispatchOut:
-    return ex.DISPATCH
+def confirm_dispatch(dispatch_code: str, db: Session = Depends(get_db)) -> s.DispatchOut:
+    return service.dispatch_out(db, service.confirm_dispatch(db, dispatch_code))
 
 
-@router.get("/invoices/{invoice_no}", response_model=s.InvoiceOut, dependencies=[Depends(invoice_readers)])
-def get_invoice(invoice_no: str) -> s.InvoiceOut:
-    return ex.INVOICE
+@router.get("/invoices/{invoice_no}", response_model=s.InvoiceOut)
+def get_invoice(invoice_no: str, db: Session = Depends(get_db), user: User = Depends(invoice_readers)) -> s.InvoiceOut:
+    return service.invoice_out(db, user, invoice_no)

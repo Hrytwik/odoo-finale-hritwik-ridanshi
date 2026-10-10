@@ -2,16 +2,17 @@
 Lock order (see floor/service.py): the dispatch row, then roll rows. A truck is for one buyer; over-shipping is a warning."""
 from decimal import Decimal
 
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.core.codes import next_code
 from app.core.errors import AppError, commit
 from app.core.events import broadcaster
-from app.core.money import to_float
+from app.core.money import q_money, to_float
 from app.core.schemas import Ref
 from app.core.validate import invalid, not_found
-from app.db.models import Buyer, Dispatch, DispatchItem, Invoice, Roll
+from app.db.models import Buyer, BuyerPayment, Dispatch, DispatchItem, Invoice, InvoiceLine, Order, Roll, User
+from app.modules.floor.service import db_now
 from app.modules.dispatch import schemas as s
 from app.modules.rolls.service import get_roll_or_404, roll_outs, roll_status
 
@@ -139,3 +140,54 @@ def list_dispatches(db: Session, state: str | None = None) -> list[s.DispatchOut
     if state is not None:
         query = query.where(Dispatch.state == state)
     return [dispatch_out(db, d) for d in db.scalars(query)]
+
+
+def confirm_dispatch(db: Session, code: str) -> Dispatch:
+    """Close the truck and bill it, in one transaction. One invoice line per order; the invoice total is the sum of the
+    rounded line amounts. After this nothing on the dispatch or its invoice changes."""
+    dispatch = _loading_dispatch(db, code)
+    rolls = list(db.scalars(select(Roll).join(DispatchItem, DispatchItem.roll_id == Roll.id)
+                            .where(DispatchItem.dispatch_id == dispatch.id).order_by(Roll.id)
+                            .with_for_update().execution_options(populate_existing=True)))
+    if not rolls:
+        raise AppError("EMPTY_DISPATCH", f"Dispatch {dispatch.code} has no rolls to confirm", field="dispatch_code")
+    now = db_now(db)
+    per_order: dict[int, Decimal] = {}
+    for roll in rolls:
+        per_order[roll.order_id] = per_order.get(roll.order_id, Decimal(0)) + roll.metres
+    orders = {o.id: o for o in db.scalars(select(Order).where(Order.id.in_(per_order)))}
+    lines = [InvoiceLine(order_id=oid, metres=metres, rate=orders[oid].price_per_metre,
+                         amount=q_money(metres * orders[oid].price_per_metre))
+             for oid, metres in sorted(per_order.items(), key=lambda kv: orders[kv[0]].code)]
+    dispatch.state, dispatch.dispatched_at = "dispatched", now
+    invoice = Invoice(invoice_no=next_code(db, "invoice"), dispatch_id=dispatch.id, buyer_id=dispatch.buyer_id,
+                      issued_at=now, total_amount=sum((line.amount for line in lines), Decimal(0)))
+    invoice.lines = lines
+    db.add(invoice)
+    commit(db)   # a line too big for its column is a clean 422 and the rollback leaves the truck `loading`
+    db.refresh(dispatch)
+    _announce(dispatch, *(r.id for r in rolls))
+    return dispatch
+
+
+def invoice_out(db: Session, user: User, invoice_no: str) -> s.InvoiceOut:
+    invoice = db.scalar(select(Invoice).where(Invoice.invoice_no == invoice_no))
+    # a buyer asking for another buyer's invoice gets exactly the answer for an invoice that does not exist (R15)
+    if invoice is None or (user.role == "buyer" and invoice.buyer_id != user.buyer_id):
+        raise not_found("Invoice", "invoice_no")
+    dispatch = db.get(Dispatch, invoice.dispatch_id)
+    buyer = db.get(Buyer, invoice.buyer_id)
+    lines = []
+    for line in sorted(invoice.lines, key=lambda ln: ln.order_id):
+        order = db.get(Order, line.order_id)
+        codes = list(db.scalars(select(Roll.code).join(DispatchItem, DispatchItem.roll_id == Roll.id)
+                                .where(DispatchItem.dispatch_id == dispatch.id, Roll.order_id == order.id)
+                                .order_by(Roll.id)))
+        lines.append(s.InvoiceLineOut(order_code=order.code, fabric=order.fabric_type.name, colour=order.colour,
+                                      metres=to_float(line.metres), rate=to_float(line.rate),
+                                      amount=to_float(line.amount), roll_codes=codes))
+    paid = db.scalar(select(func.coalesce(func.sum(BuyerPayment.amount), 0)).where(BuyerPayment.invoice_id == invoice.id))
+    return s.InvoiceOut(invoice_no=invoice.invoice_no, issued_at=invoice.issued_at, buyer=Ref(id=buyer.id, name=buyer.name),
+                        dispatch_code=dispatch.code, vehicle_no=dispatch.vehicle_no, lines=lines,
+                        total_amount=to_float(invoice.total_amount), paid_amount=to_float(paid),
+                        balance=to_float(invoice.total_amount - paid))

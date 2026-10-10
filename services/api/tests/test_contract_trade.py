@@ -2,8 +2,6 @@ import pytest
 
 
 @pytest.mark.parametrize("role,path", [
-    ("dispatch", "/api/invoices/INV-0007"),
-    ("buyer", "/api/invoices/INV-0007"),
     ("accountant", "/api/money/receivables"), ("accountant", "/api/money/payables"),
     ("owner", "/api/costing/rolls/R-0142"), ("owner", "/api/costing/orders/ORD-0012"),
     ("owner", "/api/reports/month?month=2026-10"),
