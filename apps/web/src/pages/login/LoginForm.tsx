@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { Alert } from '@/components/common/Alert'
 import { SubmitButton } from '@/components/common/SubmitButton'
 import { Field, Input } from '@/components/ui/Field'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 import { api, call, type components } from '@/lib/api'
 import { applyServerErrors, useSubmitLock } from '@/lib/forms'
 
@@ -40,7 +41,7 @@ export function LoginForm({ onSuccess }: { onSuccess: (me: Me) => void }) {
         {(c) => <Input {...c} autoComplete="username" autoCapitalize="none" autoFocus {...form.register('username')} />}
       </Field>
       <Field label="Password" error={errors.password?.message}>
-        {(c) => <Input {...c} type="password" autoComplete="current-password" {...form.register('password')} />}
+        {(c) => <PasswordInput {...c} autoComplete="current-password" {...form.register('password')} />}
       </Field>
       {formError && <Alert tone="error">{formError}</Alert>}
       <SubmitButton pending={pending} block>

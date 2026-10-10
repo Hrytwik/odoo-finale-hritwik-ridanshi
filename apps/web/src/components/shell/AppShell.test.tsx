@@ -63,4 +63,10 @@ describe('AppShell', () => {
     await userEvent.click(screen.getByRole('button', { name: /switch to light mode/i }))
     expect(document.documentElement.dataset.theme).toBe('light')
   })
+
+  it('opens the change-password dialog from the header', async () => {
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: 'Change password' }))
+    expect(await screen.findByRole('dialog', { name: /change your password/i })).toBeInTheDocument()
+  })
 })

@@ -1102,3 +1102,38 @@ h1 {
 .table td.num {
   white-space: nowrap;
 }
+
+/*
+  Text lines up with text. A badge that starts a line, alone in a table cell or stacked above or below other text,
+  hangs left by its own padding so the words inside it begin where the words around it begin ("5 days overdue" under
+  "5 Oct 2026", "Likely cause" over "p < 0.001"). A badge that follows other text on the same line is left alone.
+*/
+.badge:first-child {
+  margin-left: calc(var(--space-2) * -1);
+}
+
+/* ---------- Password box with a show/hide button ---------- */
+.password-field {
+  position: relative;
+  display: block;
+}
+.password-field .input {
+  padding-right: 44px;
+}
+.password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 100%;
+  background: none;
+  border: 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.password-toggle:hover {
+  color: var(--color-primary);
+}

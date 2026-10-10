@@ -62,3 +62,12 @@ def login_as(client, db):
         return user
 
     return _login
+
+
+@pytest.fixture(autouse=True)
+def fresh_login_guard():
+    """Wrong-password counts must not carry over from one test to the next."""
+    from app.core.login_guard import guard
+    guard.reset()
+    yield
+    guard.reset()

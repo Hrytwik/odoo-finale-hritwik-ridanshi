@@ -1,4 +1,4 @@
-import { LogOut, Menu, Search } from 'lucide-react'
+import { KeyRound, LogOut, Menu, Search } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { BrandMark } from '@/components/common/BrandMark'
@@ -8,6 +8,7 @@ import type { components } from '@/lib/api'
 import { useLogout } from '@/lib/auth'
 import { useLiveEvents } from '@/lib/live'
 import { ROLE_LABEL, homeFor, navFor } from '@/lib/nav'
+import { ChangePasswordDialog } from './ChangePasswordDialog'
 import { CommandPalette } from './CommandPalette'
 import { DemoBadge } from './DemoBadge'
 import { NavList } from './NavList'
@@ -24,6 +25,7 @@ function isTyping(el: Element | null): boolean {
 export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const [palette, setPalette] = useState(false)
+  const [account, setAccount] = useState(false)
   const logout = useLogout()
   const items = navFor(me.role)
   useLiveEvents()
@@ -71,6 +73,9 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
               <strong>{me.display_name}</strong>
               <span>{ROLE_LABEL[me.role]}</span>
             </span>
+            <Button variant="ghost" icon className="header-square" aria-label="Change password" title="Change password" onClick={() => setAccount(true)}>
+              <KeyRound size={18} aria-hidden />
+            </Button>
             <Button variant="ghost" icon className="header-square" aria-label="Log out" onClick={logout}>
               <LogOut size={18} aria-hidden />
             </Button>
@@ -91,6 +96,7 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
         </Dialog>
       </div>
       <CommandPalette open={palette} onClose={() => setPalette(false)} role={me.role} />
+      <ChangePasswordDialog open={account} onClose={() => setAccount(false)} username={me.username} />
     </div>
   )
 }
