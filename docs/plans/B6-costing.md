@@ -1,7 +1,7 @@
 # B6 — Costing (true cost per metre, month-end) Implementation Plan
 
 > **Summary:** Replaces the example data behind `GET /costing/rolls/{code}`, `GET /costing/orders/{code}` and `GET /reports/month` with a real, tested costing engine: yarn + machine hours + operators' wages split by hours actually worked, handed to rolls and orders, rejected rolls' cost moved onto good rolls, and a month report (profit, cash, machines) that reconciles to the rupee. Cost is visible to owner and accountant only; the roll passport's `cost` becomes real for them. One additive contract field: `ProfitPanel.support_staff`.
-> **Last updated:** 2026-10-10 22:16 IST (Task 1 done and verified; Tasks 2-6 still to do)
+> **Last updated:** 2026-10-10 22:19 IST (Tasks 1-2 done and verified; Tasks 3-6 still to do)
 
 > **How this plan is executed:** inline, one task at a time (atomic-workflow): test first, the full suite twice at each boundary, the important behaviours mutation-checked. Steps use checkbox (`- [ ]`) syntax.
 
@@ -15,9 +15,11 @@
 
 ## Status
 
-Written 2026-10-10 21:31 IST after the design was approved section by section (spec §7). **What was verified before this plan was shown:** the engine (Tasks 1-3: `records`, `intervals`, `labour`, `runs`, `allocation`, `month`) and its 36 tests were written and run in a scratch folder outside the repository (36 passed); 14 deliberate breaks of the engine were each caught by a test, after three weak tests were strengthened (the wages month filter, the write-off month filter and the run-versus-downtime overlap each survived the first time). **What was NOT run yet:** `loader.py`, `service.py`, the router, the passport change, `costing_world.py` and the API tests (Tasks 4-5) have only been compile-checked; run them in a scratch copy first (atomic-workflow step 3) and expect small fixes. Tasks 2-6 are still to do.
+Written 2026-10-10 21:31 IST after the design was approved section by section (spec §7). **What was verified before this plan was shown:** the engine (Tasks 1-3: `records`, `intervals`, `labour`, `runs`, `allocation`, `month`) and its 36 tests were written and run in a scratch folder outside the repository (36 passed); 14 deliberate breaks of the engine were each caught by a test, after three weak tests were strengthened (the wages month filter, the write-off month filter and the run-versus-downtime overlap each survived the first time). **What was NOT run yet:** `loader.py`, `service.py`, the router, the passport change, `costing_world.py` and the API tests (Tasks 4-5) have only been compile-checked; run them in a scratch copy first (atomic-workflow step 3) and expect small fixes. Tasks 3-6 are still to do.
 
 Task 1 done and verified (2026-10-10 22:16 IST): the engine's `records`, `intervals` and `labour` modules and 16 tests (4 interval, 12 labour) added exactly as written in this plan; they failed first with `ModuleNotFoundError`, then passed; the six planned mutations of `labour.py` (divisor ignoring paid hours, idle and support swapped, everyone treated as an operator, an open run not capped at now, a half day paying in full, uncovered hours never reported) were each caught by a test and the file was restored afterwards; full suite 1,062 passed, twice (1,046 + 16); the interface Task 2 consumes (`labour.run_interval`, `intervals.hours`, the `records` classes) exists with the names the plan uses. No contract, database or route change.
+
+Task 2 done and verified (2026-10-10 22:19 IST): `engine/runs.py` and `engine/allocation.py` and 8 tests (the worked order at 17.50 and 18.33 a metre and 17.8125 per good metre, a run with no rolls going into the pool, no good roll, a roll dyed in two runs, a hand-mended rework, each final condition alone, run costs, and a 300-case property check that the good rolls always carry exactly the order total); they failed first (collection error) then passed; the five planned mutations (no reject redistribution, runs without rolls dropped, pool not spread, final ignoring open runs, a yarn return added instead of netted) were each caught and the files restored; full suite 1,070 passed, twice (1,062 + 8).
 
 ## Global Constraints
 
