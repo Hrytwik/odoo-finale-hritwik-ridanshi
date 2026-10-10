@@ -13,7 +13,7 @@ import type { Key } from '@/i18n/en'
 import { useI18n } from '@/i18n/I18nContext'
 import { api, call, type components } from '@/lib/api'
 import { todayIso } from '@/lib/dates'
-import { formatLakh, formatMoney, formatPercent, formatQty } from '@/lib/format'
+import { formatLakh, formatLocale, formatMoney, formatPercent, formatQty } from '@/lib/format'
 import { machineUse } from '@/lib/ownerReport'
 import { DataChecks } from './DataChecks'
 
@@ -22,7 +22,7 @@ type Report = components['schemas']['MonthReport']
 const monthName = (month: string, locale: string) => new Date(`${month}-01T00:00:00`).toLocaleDateString(locale, { month: 'long', year: 'numeric' })
 
 export default function OwnerDashboard() {
-  const { t, language } = useI18n()
+  const { t } = useI18n()
   const [month, setMonth] = useState(() => todayIso().slice(0, 7))
   // the key starts with "owner", so payment and attendance events from the live stream refetch it
   const report = useQuery({ queryKey: ['owner', 'month', month], queryFn: () => call(api.GET('/api/reports/month', { params: { query: { month } } })) })
@@ -30,7 +30,7 @@ export default function OwnerDashboard() {
   return (
     <>
       <PageHeader
-        eyebrow={t('owner.eyebrow', { month: monthName(month, language.speech) })}
+        eyebrow={t('owner.eyebrow', { month: monthName(month, formatLocale()) })}
         title={t('nav.monthEnd')}
         description={t('owner.description')}
         actions={

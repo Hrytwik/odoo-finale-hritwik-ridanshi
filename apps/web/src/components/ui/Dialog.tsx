@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { useI18n } from '@/i18n/I18nContext'
 import { cx } from '@/lib/cx'
 import { Button } from './Button'
 
@@ -17,6 +18,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
 
 export function Dialog({ open, onClose, title, side = 'center', children }: Props) {
   const titleId = useId()
+  const { t } = useI18n()
   const panel = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export function Dialog({ open, onClose, title, side = 'center', children }: Prop
       >
         <div className="dialog-header">
           <h2 id={titleId}>{title}</h2>
-          <Button variant="ghost" icon aria-label="Close" onClick={onClose}>
+          <Button variant="ghost" icon aria-label={t('common.close')} onClick={onClose}>
             <X size={18} aria-hidden />
           </Button>
         </div>

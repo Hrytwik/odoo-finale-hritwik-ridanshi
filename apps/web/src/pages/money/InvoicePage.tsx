@@ -48,7 +48,7 @@ export default function InvoicePage() {
                   <BrandMark size={18} />
                 </span>
                 <div>
-                  <strong>Everest Textile Mills</strong>
+                  <strong>{t('brand.full')}</strong>
                   <p className="muted text-sm">{t('money.invoice.word')}</p>
                 </div>
               </div>

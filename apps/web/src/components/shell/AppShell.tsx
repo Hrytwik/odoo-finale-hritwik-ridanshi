@@ -59,12 +59,12 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
         <Button variant="ghost" icon className="menu-button" aria-label={t('header.menu')} onClick={() => setOpen(true)}>
           <Menu size={20} aria-hidden />
         </Button>
-        <Link to={homeFor(me.role)} className="brand" aria-label="Everest Mills">
+        <Link to={homeFor(me.role)} className="brand" aria-label={t('brand.name')}>
           <span className="brand-mark">
             <BrandMark size={18} />
           </span>
           <span className="brand-text" aria-hidden>
-            Everest<span className="brand-more"> Mills</span>
+            {t('brand.first')}<span className="brand-more"> {t('brand.rest')}</span>
           </span>
         </Link>
         <DemoBadge />

@@ -37,7 +37,7 @@ export function LandingPage() {
           <span className="brand-mark">
             <BrandMark size={18} />
           </span>
-          Everest Mills
+          {t('brand.name')}
         </Link>
         <nav className="landing-nav" aria-label={t('landing.sections')}>
           {NAV.map(({ href, label, icon: Icon }) => (

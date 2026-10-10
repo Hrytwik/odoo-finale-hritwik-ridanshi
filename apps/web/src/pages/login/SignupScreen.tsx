@@ -25,7 +25,7 @@ export function SignupScreen() {
             <span className="brand-mark">
               <BrandMark size={18} />
             </span>
-            Everest Mills
+            {t('brand.name')}
           </span>
           <div className="stack-sm">
             <Typewriter before={t('signup.heroBefore')} phrases={phrases} />
