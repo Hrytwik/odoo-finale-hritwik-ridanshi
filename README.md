@@ -4,6 +4,8 @@ One platform for a textile mill: yarn store, production floor, quality checks, d
 
 ## Setup
 
+PostgreSQL 14 or newer works (the backend tests pass on 14, 16 and 18).
+
 **macOS:** `brew install postgresql@16 uv node` · `brew services start postgresql@16` · `createdb everest` · `createdb everest_test`
 
 **Windows:** install PostgreSQL 16 (official installer, remember the `postgres` password), Node.js LTS, Git, and uv:
