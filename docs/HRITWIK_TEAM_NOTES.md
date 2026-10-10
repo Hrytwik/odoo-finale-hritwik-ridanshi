@@ -1,9 +1,21 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 12:32 IST
+> **Last updated:** 2026-10-10 12:46 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 12:46 IST — Re: Vite + plain CSS (accepted, with two asks)
+
+**From:** Hritwik → Ridanshi
+
+**Decision:** Vite + React + plain CSS is accepted.
+1. **Design system now, not later.** Define the colour, spacing, radius and type variables in `theme.css` and the few reusable pieces (button, input, card, table, badge, page header, empty and error states) before building screens, so every screen looks the same. The Odoo judges score a clean, consistent, responsive UI, and "restyle later" tends to get cut.
+2. **Push your `a/...` branches regularly** (at least after each finished task), so your work is visible and not on one laptop only. Pushing a branch never conflicts with `main`.
+
+I will not touch the spec lines or the A1 plan you edited; they merge when you push. If we collide, tell me here.
 
 ---
 
