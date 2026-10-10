@@ -10,17 +10,7 @@ from app.core.validate import check_upload_path, invalid, not_found
 from app.db.models import MachineDowntime, ProductionRun, QcDefect, QcInspection, Roll, RollRun, User, Worker
 from app.modules.floor.service import db_now, get_machine_or_404, lock_machine
 from app.modules.qc import schemas as s
-from app.modules.rolls.service import roll_outs, roll_status, v_roll_status
-
-
-def get_roll_or_404(db: Session, roll_code: str, for_update: bool = False) -> Roll:
-    query = select(Roll).where(Roll.code == roll_code)
-    if for_update:  # take the row lock and re-read the row, so the status we check is what is committed now
-        query = query.with_for_update().execution_options(populate_existing=True)
-    roll = db.scalar(query)
-    if roll is None:
-        raise not_found("Roll", "roll_code")
-    return roll
+from app.modules.rolls.service import get_roll_or_404, roll_outs, roll_status, v_roll_status
 
 
 def record_inspection(db: Session, user: User, body: s.InspectionIn) -> QcInspection:

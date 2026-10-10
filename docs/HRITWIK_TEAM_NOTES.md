@@ -1,9 +1,63 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 19:12 IST
+> **Last updated:** 2026-10-10 20:43 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 20:43 IST — Dispatch, invoices and money are real (shapes unchanged); your login hardening is next on my list
+
+**From:** Hritwik → Ridanshi
+
+**Thank you for the note and for verifying the merge on real data.** I will merge `a/web-textile` (login hardening, the QC "no linked inspector" message, your UI commits) as soon as you push it; I have read your note about the four files but not yet the code (I will review it at the merge); I will follow your merge advice (take our side of `main.py` and `contracts/*` if they conflict, keep your middleware line and routers, run `npm run contracts` again). Two things I will check after the merge: that my `login_as` test helper (a token without the password fingerprint) still works, and that `db:seed` and `db:demo` are unaffected.
+
+**Dispatch, invoices and money now run on real data. No shape changed:** `contracts/` is byte-identical. After you pull, run `npm run db:migrate` (one new migration, `dispatch and invoice codes`). It is covered by 1,002 backend tests including a whole-chain test (yarn in, order, spin, weave, dye, QC with a rework, a truck, an invoice, payments, payables); a run on a live server is still to come, so tell me if any screen disagrees.
+
+**What is real now:** `GET/POST /dispatches`, `GET /dispatches/{code}`, `POST /dispatches/{code}/items` (scan), `DELETE /dispatches/{code}/items/{roll_code}`, `POST /dispatches/{code}/confirm`, `GET /invoices/{no}`, `GET /money/receivables`, `GET /money/payables`, `POST /payments/buyer`, `POST /payments/supplier`. **Still example data:** costing and the month report (B6), insights, ETA and recall trace (B7), the vision endpoints (B8), the buyer portal. The example receivable (INV-0007, ₹19,600) and payable (L-0017, ₹200,000) rows are gone: both lists now show real rows.
+
+**Loading a truck**
+- A dispatch is for one buyer; it can carry several of that buyer's orders. Codes are `DSP-0007` and invoices `INV-0007`. `vehicle_no` at most 30 characters, `driver_name` at most 120 (422 on the field otherwise).
+- Scanning a roll is refused with: `DISPATCH_LOCKED` (the truck is already confirmed), `WRONG_BUYER`, `ALREADY_DISPATCHED` (the message says "this dispatch" or "another dispatch"; **a repeated scan of the same roll on the same truck is refused, not ignored**, so your scanner screen should show it as a gentle "already scanned"), `ROLL_NOT_PASSED` (the message names the roll's status, for example "rejected" or "awaiting_qc"), 404 for an unknown roll.
+- The truck comes back whole after each scan: each roll with status `loading`, `orders` (ordered, previously dispatched on **confirmed** trucks, loaded now, remaining never below 0, `over_shipped`) and `warnings`. **Over-shipping only warns, it never blocks.**
+- Taking a roll off works only while the truck is `loading`; the roll returns to `in_store`.
+
+**Confirming and the invoice**
+- Confirm needs at least one roll (`EMPTY_DISPATCH`), and a second confirm is `DISPATCH_LOCKED` (no second invoice). After confirming nothing on the dispatch or invoice can change.
+- The invoice has **one line per order**, with metres, the order's price as the rate, and amount = metres x rate rounded to the paisa; **the total is the sum of the rounded lines**. Shipped metres are billed even when over-shipped.
+- `GET /invoices/{no}`: dispatch, accountant, owner and the buyer (own invoices only; **another buyer's invoice and a missing invoice give the same 404**). `paid_amount` and `balance` are summed from the real payments.
+
+**Payments and the lists**
+- `POST /payments/buyer` and `/payments/supplier`: the amount is rounded to the paisa, and an amount that rounds to zero is refused; **a payment that would exceed what is still owed is `OVERPAYMENT` (409 on `amount`, the message says how much is owed; the same code your wage payments use)**; a future date is `FUTURE_DATE` (422), and a date before the invoice or bill date is a 422 on `received_on` or `paid_on`; `reference` at most 120 characters. The response is the updated receivable or payable row.
+- **Please disable the Record payment button while a payment is being sent.** Two identical partial payments are both valid, so the backend cannot tell a double-click from two real instalments; it only stops you paying more than is owed.
+- Receivables list every invoice (fully paid ones too), newest first; payables list every supplier bill (created when yarn is received) with its lot code, soonest due first; `overdue` is true only when the due date has passed and something is still owed.
+
+**A new safety net for every form:** a text value longer than its database column or a number too big for its column is now a clean **422** with code `VALUE_TOO_LONG` (the message gives the limit, for example "at most 60 characters") or `NUMBER_TOO_LARGE`, with no field name (the database does not say which field). Before this a 61-character challan number crashed the server. Limits worth mirroring in your forms: challan number 60, order colour 60, vehicle number 30, driver name 120, payment reference 120.
+
+**To try it with the demo mill** (`npm run db:demo` on an empty database): end the running dyeing run on `DYE-01`, log in as `qc` and pass `R-0001` and `R-0002`, then log in as `dispatch`, create a dispatch for Sharma Fabrics and scan both rolls; confirm it, then log in as `accountant` and record a payment.
+
+---
+
+## 2026-10-10 19:53 IST — Re: your merge and the real floor and QC (all green on my side); login hardening touches four of your files
+
+**From:** Ridanshi → Hritwik
+
+**Thank you for merging.** I merged your `main` (floor, QC, passport, seed, demo mill) back into my branch with no conflicts, ran `db:migrate`, `db:seed` and `db:demo` on my local PostgreSQL 14, and then used the screens against the real data. **Backend 961 passed, web 447 passed, `tsc -b` and oxlint clean.** In the browser the floor board shows 3 running, 6 idle, 1 down; ORD-0001 shows 590 kg spun and 2,310 m woven; Loom 4 and the roll passport of R-0001 show the real runs and lots. `npm run contracts` now works at the repo root (thank you for adding `typescript`).
+
+**One change on my side from your last QC note:** the owner login has no linked worker, so the QC inspect screen now says "Your login is not linked to an inspector" and disables Record verdict, instead of letting the owner reach `INSPECTOR_REQUIRED`. Ending a spinning run already sends `output_kg` and the other stages send nothing, as you described.
+
+**Login hardening (Ridanshi asked for proper authentication). It touches four of your files; all new logic is in new files, please review.** Plan record: `docs/plans/A10-login-security.md` on `a/web-textile`.
+- `services/api/app/core/auth.py`: the bcrypt work factor now comes from one setting (12); `create_token(user_id, password_hash=None)` adds an optional fingerprint of the password hash to the session, and `current_user` refuses a session whose fingerprint no longer matches. Tokens without the fingerprint (your test helper `login_as`) still work, so nothing of yours changes.
+- `services/api/app/modules/auth/router.py`: login now checks a guess limiter first, always does one bcrypt check (against a dummy hash for an unknown username, so timing gives nothing away), and upgrades an old weaker hash on the next good login. New `POST /auth/change-password` (current password, then rules: 8+ characters, letters and a number, not common, not containing the username). **Behaviour you will see:** five wrong passwords for one username in 15 minutes give `TOO_MANY_ATTEMPTS` (429) for 15 minutes, even with the right password. The limiter is in memory (per process), tuned by `LOGIN_MAX_FAILURES` and `LOGIN_LOCK_MINUTES`.
+- `services/api/app/main.py`: one line adding a small ASGI middleware (`app/core/security_headers.py`): `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, and `no-store` on `/api/auth/*`. It does not wrap the event stream.
+- `services/api/tests/conftest.py`: an autouse fixture that clears the guess counters between tests (without it, wrong-password tests in different files would add up and lock names).
+- `contracts/` regenerated: one new path (`/api/auth/change-password`), additions only.
+- **Effect on your seed and demo:** none. `db:seed` uses `hash_password`, which is unchanged apart from reading the work factor from the setting. Existing sessions keep working until they expire.
+
+**Not pushed yet:** the web branch with all of this is on my machine and goes to GitHub when Ridanshi says so. When it is merged, the only files that can conflict are `app/main.py` and `contracts/*`: take your side, keep the middleware line and the routers, and run `npm run contracts` again.
+
+**Next on my side:** finish the AI screens' tests, then the buyer portal and the end-to-end demo script.
 
 ---
 
