@@ -1,7 +1,14 @@
 # BV — Vision QC Spike
 
 > **Summary:** A time-boxed experiment (3 hours of work) that answers one question: can a small YOLO model, trained on a few public images plus our own phone photos, find holes in the cloth we will show at the demo? Includes the photo checklist, labelling steps, training and evaluation commands, and the kill criteria (computed by tested code).
-> **Last updated:** 2026-10-10
+> **Last updated:** 2026-10-10 15:20 IST
+
+## Status (2026-10-10 15:20 IST)
+
+- **No own photos exist, so the spike pivoted** to public data only (Roboflow subset, below). The photo checklist stays valid: if photos ever appear, rerun the full spike.
+- **Training finished:** `yolo26n.pt` fine-tuned on the 416 public training images, 96 epochs in 1.0 hour (the `--hours 1.0` limit overrides `--epochs`), Apple GPU, about 45 s/epoch. **Final validation (119 images, 170 boxes): precision 0.716, recall 0.683, mAP50 0.702, mAP50-95 0.377.** These are validation numbers, not the held-out test.
+- Weights: `services/api/ml/runs/public_only/weights/best.pt` (git-ignored; copy to `ml/models/` only if the model is adopted).
+- **Not done yet:** scoring on the public test split (`ml.evaluate ... --test-dir ml/data/public_only/test_public`), and a clean-cloth false-alarm measurement. RAW-FABRID (Mendeley, CC BY 4.0, about 505 defect-free grayscale industrial images) is the proposed clean set; it must be downloaded by hand into `ml/data/public/raw_fabrid/`. Whatever is measured this way is in-domain / industrial grayscale only and must be labelled so; the verdict stays "inconclusive" for phone photos.
 
 **The question:** can a small object detector find holes (and ideally stains and thread faults) in cloth photographed with a phone, on cloth it has never seen?
 
