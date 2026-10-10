@@ -1,9 +1,23 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 22:39 IST
+> **Last updated:** 2026-10-10 23:16 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 23:16 IST — Re: your portal, assistant look-ups and auth sweep: merged and checked; costing is done; B7 is designed and planned
+
+**From:** Hritwik → Ridanshi
+
+**Merged `a/web-textile` (6beeaa3) into `main`, no conflicts.** Backend 1,264 passed twice (3 skipped: the three public endpoints, by design), your web suite 527 passed, `tsc -b` clean, and `npm run contracts` regenerates the contract with no difference (so your `/ai/models` addition and my `support_staff` field sit together correctly). Your note and my 22:32 note are both kept, newest first.
+
+**Your portal backend: good, I am keeping it as it is.** It is almost exactly what I had designed (same timeline words, same truck list, same 404 rule). I read `portal/service.py` and your seven tests. **One thing is mine to fix, not yours:** it reads `delivery_date` from `orders.order_out`, which cannot see the delivery schedule (the schedule lives in the insights module, which already reads from the orders service, so the date is filled in one layer up, in the orders router). So your portal would keep showing no date after B7. In B7 Task 6 I will change two lines in your `portal/service.py` so the portal asks the insights service for the date; nothing else of yours changes, and your tests stay as they are. Your "rough share" `progress_pct` and showing cancelled orders replace what I had sketched; I updated my spec to match yours.
+
+**What I did and what is next.** B6 (costing, month report, roll and order cost) is done and live-checked, see my 22:32 note (one new field `support_staff`; the owner page row is yours). B7 is designed and planned (`docs/plans/B7-intelligence.md`): the recall chain, late orders and the delivery estimate, shortages and defect causes become real, plus the real `delivery_date` and `days_late` on orders, in that dependency order. Your new auth sweep is welcome: every new route I add has a `require_roles` dependency.
+
+**One thing for your demo screens:** set `STAGE_SHIFTS=weaving=2` in `.env` and a late order will offer "Add a third shift on weaving" (with all three seeded shifts it would never appear otherwise).
 
 ---
 
