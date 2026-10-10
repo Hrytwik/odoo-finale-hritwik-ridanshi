@@ -1,0 +1,42 @@
+{
+  "created_at": "2026-10-10T09:57:27+00:00",
+  "settings": {
+    "weights": "ml/runs/public_only/weights/best.pt",
+    "data": "ml/data/public_only/data.yaml",
+    "test_dir": "ml/data/public_only/test_public",
+    "imgsz": 640,
+    "conf": 0.25,
+    "device": "mps",
+    "name": "public_only"
+  },
+  "test_photos": {
+    "defective": 59,
+    "clean": 0
+  },
+  "clean_false_alarm_rate": null,
+  "per_class": {
+    "hole": {
+      "found": 24,
+      "missed": 2,
+      "false_alarms": 4,
+      "recall": 0.9230769230769231,
+      "precision": 0.8571428571428571
+    },
+    "stain": {
+      "found": 18,
+      "missed": 11,
+      "false_alarms": 4,
+      "recall": 0.6206896551724138,
+      "precision": 0.8181818181818182
+    },
+    "thread_fault": {
+      "found": 8,
+      "missed": 24,
+      "false_alarms": 4,
+      "recall": 0.25,
+      "precision": 0.6666666666666666
+    }
+  },
+  "verdict": "inconclusive",
+  "reason": "only 0 clean test photos (need 30)"
+}
