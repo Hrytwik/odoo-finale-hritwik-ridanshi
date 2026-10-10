@@ -35,3 +35,20 @@ Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here 
 | A8 | Language-model module (adapters, tools, report card) + AI screens | **in progress**: backend and screens built, wiring and screen tests left: `A8-language-model.md` |
 | A9 | Buyer portal + end-to-end demo script | not written |
 | A10 | Login security (guess limiting, password rules, change password, session binding, headers) | **done**: `A10-login-security.md` |
+
+## Remaining work before the jury (written 22:42 IST on 2026-10-10; mark done, never delete)
+
+Order is by dependency, not by size. Build window ends 2026-10-11 10:00 IST.
+
+| # | Item | Owner | Depends on | State |
+|---|---|---|---|---|
+| R1 | **B7 Intelligence**: delivery date (earliest deadline first, with what-ifs), shortage forecast and reorder suggestion, defect root cause (Fisher test with Bonferroni), recall chain. Replaces the example data behind `/orders/{code}/eta`, `/insights/late-orders`, `/insights/shortages`, `/insights/root-causes`, `/lots/{code}/recall` | Hritwik | B2-B6 (done) | not written |
+| R2 | **Buyer portal API made real** (`GET /portal/orders`, `GET /portal/orders/{code}`: own orders, timeline from `v_order_timeline`, delivery date). **No plan row owns this**; it still serves example data | Hritwik | R1 (delivery date) | gap: no plan |
+| R3 | **B9 demo scenarios**: seed attendance and back-dated runs and machines (so costing shows real labour), bad lot L-17, rework-loss order, late order, low yarn, idle machine; `docs/demo.md` with the real numbers; a one-command `npm run db:reset` | Hritwik | R1, R2 | not written |
+| R4 | **A8 finish**: screen tests for the three AI pages; place the explain-delay, month-summary and recall drafts on the insights cards, owner page and lot page; a live run against a real provider | Ridanshi | R1 for meaningful answers | in progress |
+| R5 | **A9**: buyer portal screens, buyer assistant chat on them, Playwright end-to-end demo script | Ridanshi | R2 | not written |
+| R6 | **Owner page**: a "Support staff" row next to "Idle labour" (new `support_staff` field) | Ridanshi | B6 (done) | told in the team note |
+| R7 | **B8 vision endpoint and model card** (`POST /qc/analyze`, `GET /qc/model-card`; both still example data; the model is not connected and its false-alarm rate is unmeasured) | Hritwik | none; spec cut order puts it late | not written, cuttable |
+| R8 | **Pre-jury checklist**: `.env` with a random `JWT_SECRET` and `DEMO_DATA=true`; click through every screen as every role against the real backend (nobody has yet; her tests mock the API); Caddy HTTPS front for phones and QR camera (untested); a provider key or a local Ollama model and the "Wi-Fi off" step (unverified); README polish; both members have commits; final authorship scan | both | R1-R6 | not started |
+| R9 | Vision resume (parked): score the model on a clean image set | Hritwik | his decision | parked |
+| R10 | Hosted copy | both | everything else | optional, only if time |
