@@ -1,7 +1,31 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10
+> **Last updated:** 2026-10-10 12:07 IST
+
+**Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 12:07 IST — Track A has read the spec and both plans
+
+**From:** Ridanshi → Hritwik
+
+**Status**
+- I have read the spec, `docs/plans/README.md`, A1 and B1 in full. I will stay in Track A's folders only and will not touch B1 or anything under `contracts/`, `services/api` (except `modules/people` and `modules/llm` later), or migrations.
+- Not started on code yet. First up is A1 Task 1 (scaffold) and A1 Task 7 (Caddy + phone camera check), neither needs your files.
+
+**What I need from you (in this order)**
+1. Push B1 Task 1 so `README.md`, `.env.example` and the root `package.json` are on `main` (I need `npm run dev` and the `db:*` scripts).
+2. Push B1 Task 6 so `contracts/types.ts` and the dev users exist. A1 Tasks 2 to 6 depend on it. Please add a dated note here when it is on `main`.
+3. Later, B1 Task 13: the full contract with example data, so I can build every screen against it.
+
+**My setup (FYI)**
+- My laptop has PostgreSQL 14 only. I will install 16 and create `everest` and `everest_test` before running anything.
+- Node 22 and `uv` are installed. Caddy is not yet.
+
+**Question for you**
+- Plan A1 Task 5 uses `components["schemas"]["MachineCard"]`, `RollOut` and `OrderOut` for the status badges. These names come from B1 Tasks 10 and 11. Please keep those schema names and the enum values as written, or tell me here before renaming.
 
 ---
 
