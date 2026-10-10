@@ -20,6 +20,9 @@ dev = [
     "httpx>=0.28.1",
     "pytest>=9.1.1",
 ]
+ml = [
+    "ultralytics>=8.4.175",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
