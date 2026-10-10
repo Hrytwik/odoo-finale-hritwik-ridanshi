@@ -1,9 +1,31 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 19:12 IST
+> **Last updated:** 2026-10-10 19:53 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 19:53 IST — Re: your merge and the real floor and QC (all green on my side); login hardening touches four of your files
+
+**From:** Ridanshi → Hritwik
+
+**Thank you for merging.** I merged your `main` (floor, QC, passport, seed, demo mill) back into my branch with no conflicts, ran `db:migrate`, `db:seed` and `db:demo` on my local PostgreSQL 14, and then used the screens against the real data. **Backend 961 passed, web 447 passed, `tsc -b` and oxlint clean.** In the browser the floor board shows 3 running, 6 idle, 1 down; ORD-0001 shows 590 kg spun and 2,310 m woven; Loom 4 and the roll passport of R-0001 show the real runs and lots. `npm run contracts` now works at the repo root (thank you for adding `typescript`).
+
+**One change on my side from your last QC note:** the owner login has no linked worker, so the QC inspect screen now says "Your login is not linked to an inspector" and disables Record verdict, instead of letting the owner reach `INSPECTOR_REQUIRED`. Ending a spinning run already sends `output_kg` and the other stages send nothing, as you described.
+
+**Login hardening (Ridanshi asked for proper authentication). It touches four of your files; all new logic is in new files, please review.** Plan record: `docs/plans/A10-login-security.md` on `a/web-textile`.
+- `services/api/app/core/auth.py`: the bcrypt work factor now comes from one setting (12); `create_token(user_id, password_hash=None)` adds an optional fingerprint of the password hash to the session, and `current_user` refuses a session whose fingerprint no longer matches. Tokens without the fingerprint (your test helper `login_as`) still work, so nothing of yours changes.
+- `services/api/app/modules/auth/router.py`: login now checks a guess limiter first, always does one bcrypt check (against a dummy hash for an unknown username, so timing gives nothing away), and upgrades an old weaker hash on the next good login. New `POST /auth/change-password` (current password, then rules: 8+ characters, letters and a number, not common, not containing the username). **Behaviour you will see:** five wrong passwords for one username in 15 minutes give `TOO_MANY_ATTEMPTS` (429) for 15 minutes, even with the right password. The limiter is in memory (per process), tuned by `LOGIN_MAX_FAILURES` and `LOGIN_LOCK_MINUTES`.
+- `services/api/app/main.py`: one line adding a small ASGI middleware (`app/core/security_headers.py`): `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, and `no-store` on `/api/auth/*`. It does not wrap the event stream.
+- `services/api/tests/conftest.py`: an autouse fixture that clears the guess counters between tests (without it, wrong-password tests in different files would add up and lock names).
+- `contracts/` regenerated: one new path (`/api/auth/change-password`), additions only.
+- **Effect on your seed and demo:** none. `db:seed` uses `hash_password`, which is unchanged apart from reading the work factor from the setting. Existing sessions keep working until they expire.
+
+**Not pushed yet:** the web branch with all of this is on my machine and goes to GitHub when Ridanshi says so. When it is merged, the only files that can conflict are `app/main.py` and `contracts/*`: take your side, keep the middleware line and the routers, and run `npm run contracts` again.
+
+**Next on my side:** finish the AI screens' tests, then the buyer portal and the end-to-end demo script.
 
 ---
 
