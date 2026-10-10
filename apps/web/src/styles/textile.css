@@ -741,10 +741,13 @@ h1 {
 /* ---------- Chart ---------- */
 .chart {
   margin: 0;
+  /* a chart has a natural size: drawn wider than this it only gets taller and harder to read */
+  max-width: 720px;
 }
 .chart-svg {
   width: 100%;
   height: auto;
+  max-height: 320px;
   display: block;
 }
 .chart-grid {
