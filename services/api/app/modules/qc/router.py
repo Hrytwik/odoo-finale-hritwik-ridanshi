@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
+from app.db.models import User
+from app.db.session import get_db
 from app.modules.floor import examples as floor_ex
 from app.modules.floor.schemas import RunOut
 from app.modules.qc import examples as ex
 from app.modules.qc import schemas as s
+from app.modules.qc import service
 
 router = APIRouter(tags=["qc"])
 inspectors = require_roles("qc", "owner")
@@ -22,9 +26,10 @@ def analyze(body: s.AnalyzeIn) -> s.AnalyzeOut:
     return ex.ANALYZE
 
 
-@router.post("/qc/inspections", response_model=s.InspectionOut, status_code=201, dependencies=[Depends(inspectors)])
-def record_inspection(body: s.InspectionIn) -> s.InspectionOut:
-    return ex.INSPECTION
+@router.post("/qc/inspections", response_model=s.InspectionOut, status_code=201)
+def record_inspection(body: s.InspectionIn, db: Session = Depends(get_db),
+                      user: User = Depends(inspectors)) -> s.InspectionOut:
+    return service.inspection_out(db, service.record_inspection(db, user, body))
 
 
 @router.post("/rework-runs", response_model=RunOut, status_code=201, dependencies=[Depends(rework_starters)])

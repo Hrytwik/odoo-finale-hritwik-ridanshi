@@ -1,6 +1,5 @@
 """Yarn store rules: receiving a lot (R1) and reading lots. Quantities are Decimal; only the JSON edge uses float."""
 import datetime as dt
-import re
 from decimal import Decimal
 
 from sqlalchemy import func, select, text
@@ -11,14 +10,13 @@ from app.core.codes import next_code
 from app.core.errors import AppError, commit
 from app.core.events import broadcaster
 from app.core.money import dec, q_kg, q_money, to_float
-from app.core.validate import exact_positive, invalid, not_found
+from app.core.validate import check_upload_path, exact_positive, invalid, not_found
 from app.db.models import (
     FabricRecipeLine, Machine, Order, ProductionRun, Supplier, SupplierBill, User, YarnLot, YarnMovement, YarnType,
 )
 from app.core.schemas import Ref
 from app.modules.store import schemas as s
 
-PHOTO_RE = re.compile(r"uploads/[0-9a-f]{32}\.(jpg|png|webp)")
 BILL_TERMS_DAYS = 30
 
 
@@ -45,8 +43,8 @@ def receive_lot(db: Session, user: User, body: s.LotReceiveIn) -> YarnLot:
         if order_id is None:
             raise not_found("Order", "intended_order_code")
     photo = body.challan_photo_path
-    if photo is not None and PHOTO_RE.fullmatch(photo) is None:
-        raise invalid("Use a photo uploaded through the app", "challan_photo_path")
+    if photo is not None:
+        check_upload_path(photo, "challan_photo_path")
     qty = exact_positive(body.qty_kg, "qty_kg", q_kg)
     cost = exact_positive(body.cost_per_kg, "cost_per_kg", q_money)
 

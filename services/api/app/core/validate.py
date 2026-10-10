@@ -1,4 +1,5 @@
 """Small shared checks that turn bad input into the standard error shape (see app/core/errors.py)."""
+import re
 from collections.abc import Callable
 from decimal import Decimal
 
@@ -23,3 +24,13 @@ def exact_positive(value, field: str, rounder: Callable[[Decimal], Decimal]) -> 
     if d <= 0:
         raise invalid("This rounds to zero; enter a larger number", field)
     return d
+
+
+_UPLOAD_PATH = re.compile(r"uploads/[0-9a-f]{32}\.(jpg|png|webp)")
+
+
+def check_upload_path(path: str, field: str) -> str:
+    """A photo path must be one the upload endpoint handed out (never a free-typed path or URL); full match."""
+    if _UPLOAD_PATH.fullmatch(path) is None:
+        raise invalid("Use a photo uploaded through the app", field)
+    return path

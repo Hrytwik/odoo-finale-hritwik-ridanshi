@@ -32,3 +32,8 @@ def list_rolls(db: Session, status: str | None = None, order_code: str | None = 
     if order_code is not None:
         query = query.join(Order, Order.id == Roll.order_id).where(Order.code == order_code)
     return roll_outs(db, list(db.scalars(query)))
+
+
+def roll_status(db: Session, roll_id: int) -> str:
+    """The roll's status from v_roll_status (read it AFTER taking the roll's row lock when a rule depends on it)."""
+    return db.scalar(select(v_roll_status.c.status).where(v_roll_status.c.roll_id == roll_id))
