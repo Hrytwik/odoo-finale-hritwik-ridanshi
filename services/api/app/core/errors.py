@@ -1,8 +1,10 @@
+import re
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm import Session
 
 
@@ -49,12 +51,28 @@ def map_integrity_error(exc: IntegrityError) -> AppError:
     return AppError("INVALID_VALUE", f"Value not allowed ({name or 'constraint'})", status=422)
 
 
+def map_data_error(exc: DataError) -> AppError:
+    """A value the database refused to store: text longer than its column (22001), a number larger than its column
+    (22003), or any other bad value. The database message does not say which field, so `field` is empty."""
+    sqlstate = getattr(exc.orig, "sqlstate", None)
+    if sqlstate == "22001":
+        limit = re.search(r"character varying\((\d+)\)", str(exc.orig))
+        suffix = f" (at most {limit.group(1)} characters)" if limit else ""
+        return AppError("VALUE_TOO_LONG", f"A text value is too long{suffix}", status=422)
+    if sqlstate == "22003":
+        return AppError("NUMBER_TOO_LARGE", "A number is too large", status=422)
+    return AppError("INVALID_VALUE", "A value is not allowed", status=422)
+
+
 def commit(db: Session) -> None:
     try:
         db.commit()
     except IntegrityError as exc:
         db.rollback()
         raise map_integrity_error(exc) from exc
+    except DataError as exc:
+        db.rollback()
+        raise map_data_error(exc) from exc
 
 
 def flush(db: Session) -> None:
@@ -65,9 +83,20 @@ def flush(db: Session) -> None:
     except IntegrityError as exc:
         db.rollback()
         raise map_integrity_error(exc) from exc
+    except DataError as exc:
+        db.rollback()
+        raise map_data_error(exc) from exc
 
 
 def install_error_handlers(app: FastAPI) -> None:
+    @app.exception_handler(DataError)
+    async def _data_error(_: Request, exc: DataError) -> JSONResponse:
+        # a data error raised outside commit()/flush() (for example by an automatic flush during a query); the request's
+        # session is closed, and so rolled back, when the response is sent
+        mapped = map_data_error(exc)
+        body = ErrorBody(code=mapped.code, message=mapped.message, field=mapped.field)
+        return JSONResponse(status_code=mapped.status, content=body.model_dump())
+
     @app.exception_handler(AppError)
     async def _app_error(_: Request, exc: AppError) -> JSONResponse:
         body = ErrorBody(code=exc.code, message=exc.message, field=exc.field)
