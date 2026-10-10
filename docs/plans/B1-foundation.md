@@ -1461,6 +1461,10 @@ import pytest
 
 from app.config import settings
 
+JPEG = b"\xff\xd8\xff fake"
+PNG = b"\x89PNG\r\n\x1a\n fake"
+WEBP = b"RIFF\x00\x00\x00\x00WEBP fake"
+
 
 @pytest.fixture(autouse=True)
 def tmp_uploads(tmp_path, monkeypatch):
@@ -1470,11 +1474,18 @@ def tmp_uploads(tmp_path, monkeypatch):
 
 def test_upload_and_fetch_jpeg(client, login_as, tmp_uploads):
     login_as("qc")
-    r = client.post("/api/uploads", files={"file": ("roll.jpg", io.BytesIO(b"\xff\xd8\xff fake"), "image/jpeg")})
+    r = client.post("/api/uploads", files={"file": ("roll.jpg", io.BytesIO(JPEG), "image/jpeg")})
     assert r.status_code == 200
     body = r.json()
     assert body["path"].startswith("uploads/") and body["url"].startswith("/api/uploads/")
-    assert client.get(body["url"]).content == b"\xff\xd8\xff fake"
+    assert client.get(body["url"]).content == JPEG
+
+
+@pytest.mark.parametrize("content_type,data,ext", [("image/png", PNG, ".png"), ("image/webp", WEBP, ".webp")])
+def test_png_and_webp_accepted(client, login_as, content_type, data, ext):
+    login_as("qc")
+    r = client.post("/api/uploads", files={"file": ("a", io.BytesIO(data), content_type)})
+    assert r.status_code == 200 and r.json()["url"].endswith(ext)
 
 
 def test_upload_requires_login(client):
@@ -1482,10 +1493,26 @@ def test_upload_requires_login(client):
     assert r.status_code == 401
 
 
+def test_download_requires_login(client):
+    assert client.get("/api/uploads/" + "a" * 32 + ".jpg").status_code == 401
+
+
 def test_non_image_rejected(client, login_as):
     login_as("qc")
     r = client.post("/api/uploads", files={"file": ("a.txt", io.BytesIO(b"hello"), "text/plain")})
     assert r.status_code == 422 and r.json()["code"] == "UNSUPPORTED_FILE"
+
+
+def test_declared_image_with_other_content_rejected(client, login_as):
+    login_as("qc")
+    r = client.post("/api/uploads", files={"file": ("a.jpg", io.BytesIO(b"<html>hi</html>"), "image/jpeg")})
+    assert r.status_code == 422 and r.json()["code"] == "UNSUPPORTED_FILE"
+
+
+def test_png_bytes_declared_as_jpeg_rejected(client, login_as):
+    login_as("qc")
+    r = client.post("/api/uploads", files={"file": ("a.jpg", io.BytesIO(PNG), "image/jpeg")})
+    assert r.status_code == 422
 
 
 def test_empty_file_rejected(client, login_as):
@@ -1496,21 +1523,34 @@ def test_empty_file_rejected(client, login_as):
 
 def test_oversized_file_rejected(client, login_as):
     login_as("qc")
-    big = io.BytesIO(b"\0" * (10 * 1024 * 1024 + 1))
+    big = io.BytesIO(JPEG + b"\0" * (10 * 1024 * 1024))
     r = client.post("/api/uploads", files={"file": ("a.jpg", big, "image/jpeg")})
     assert r.status_code == 413 and r.json()["code"] == "FILE_TOO_LARGE"
+
+
+def test_exactly_10_mb_is_accepted(client, login_as):
+    login_as("qc")
+    data = JPEG + b"\0" * (10 * 1024 * 1024 - len(JPEG))
+    r = client.post("/api/uploads", files={"file": ("a.jpg", io.BytesIO(data), "image/jpeg")})
+    assert r.status_code == 200
 
 
 @pytest.mark.parametrize("name", ["../secret.jpg", "..%2Fsecret.jpg", "abc.jpg", "x" * 32 + ".exe"])
 def test_bad_names_are_404(client, login_as, name):
     login_as("qc")
     assert client.get(f"/api/uploads/{name}").status_code == 404
+
+
+def test_valid_looking_name_that_does_not_exist_is_404(client, login_as):
+    login_as("qc")
+    assert client.get("/api/uploads/" + "0" * 32 + ".jpg").status_code == 404
 ```
 
 `services/api/tests/test_events.py`:
 ```python
 import asyncio
 import threading
+import time
 
 from app.core.events import Broadcaster
 
@@ -1519,8 +1559,15 @@ def test_publish_from_worker_thread_reaches_subscriber():
     async def scenario():
         b = Broadcaster()
         q = b.subscribe()
-        threading.Thread(target=b.publish, args=("machine.changed", 4)).start()
-        msg = await asyncio.wait_for(q.get(), timeout=2)
+        waiter = asyncio.ensure_future(q.get())
+        await asyncio.sleep(0.05)  # the loop is now idle, blocked waiting for a message
+
+        def publish_later():
+            time.sleep(0.2)  # publish only once the loop is definitely asleep in select()
+            b.publish("machine.changed", 4)
+
+        threading.Thread(target=publish_later).start()
+        msg = await asyncio.wait_for(waiter, timeout=2)
         b.unsubscribe(q)
         return msg
 
@@ -1541,6 +1588,71 @@ def test_full_queue_drops_instead_of_blocking():
 
 def test_events_requires_login(client):
     assert client.get("/api/events").status_code == 401
+```
+
+`services/api/tests/test_events_live.py` (tests the real HTTP stream against a real uvicorn server on a local port; `TestClient` cannot read an endless response):
+```python
+"""The live stream, tested over a real HTTP connection to a real uvicorn server.
+
+TestClient cannot read an endless response, so this starts uvicorn in a thread on a free port,
+opens the stream with httpx, and publishes from the test thread, exactly as route handlers
+(which run in worker threads) publish in production.
+"""
+import json
+import socket
+import threading
+import time
+
+import httpx
+import pytest
+import uvicorn
+
+from app.core.auth import COOKIE_NAME, create_token
+from app.core.events import broadcaster
+from app.main import app
+
+
+@pytest.fixture
+def live_server():
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning"))
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    deadline = time.time() + 10
+    while not server.started and time.time() < deadline:
+        time.sleep(0.05)
+    assert server.started, "uvicorn did not start"
+    yield f"http://127.0.0.1:{port}"
+    server.should_exit = True
+    thread.join(timeout=10)
+
+
+def _wait_for_subscribers(n: int, timeout: float = 5.0) -> bool:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if len(broadcaster._subs) == n:
+            return True
+        time.sleep(0.05)
+    return False
+
+
+def test_stream_delivers_events_and_cleans_up_on_disconnect(live_server):
+    cookies = {COOKIE_NAME: create_token(1)}
+    assert _wait_for_subscribers(0)
+    with httpx.stream("GET", f"{live_server}/api/events", cookies=cookies, timeout=10) as response:
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/event-stream")
+        assert _wait_for_subscribers(1), "stream never subscribed"
+        threading.Thread(target=broadcaster.publish, args=("machine.changed", 4)).start()
+        data_line = next(line for line in response.iter_lines() if line.startswith("data:"))
+        assert json.loads(data_line.removeprefix("data:").strip()) == {"type": "machine.changed", "id": 4}
+    assert _wait_for_subscribers(0), "subscription leaked after the client disconnected"
+
+
+def test_stream_refuses_anonymous_clients(live_server):
+    assert httpx.get(f"{live_server}/api/events", timeout=5).status_code == 401
 ```
 
 `services/api/tests/test_contract.py`:
@@ -1678,6 +1790,17 @@ def upload_root() -> Path:
     return root
 
 
+def looks_like(ext: str, data: bytes) -> bool:
+    """Check the file's own first bytes, not just the type the browser claimed."""
+    if ext == ".jpg":
+        return data.startswith(b"\xff\xd8\xff")
+    if ext == ".png":
+        return data.startswith(b"\x89PNG\r\n\x1a\n")
+    if ext == ".webp":
+        return data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+    return False
+
+
 @router.post("", response_model=UploadOut, dependencies=[Depends(current_user)])
 async def upload(file: UploadFile) -> UploadOut:
     ext = ALLOWED.get(file.content_type or "")
@@ -1688,6 +1811,8 @@ async def upload(file: UploadFile) -> UploadOut:
         raise AppError("EMPTY_FILE", "The file is empty", field="file", status=422)
     if len(data) > MAX_BYTES:
         raise AppError("FILE_TOO_LARGE", "Photos must be 10 MB or smaller", field="file", status=413)
+    if not looks_like(ext, data):
+        raise AppError("UNSUPPORTED_FILE", "That file is not a valid photo", field="file", status=422)
     name = f"{uuid.uuid4().hex}{ext}"
     (upload_root() / name).write_bytes(data)
     return UploadOut(path=f"uploads/{name}", url=f"/api/uploads/{name}")
@@ -1717,7 +1842,9 @@ from app.modules.uploads.router import router as uploads_router
 - [ ] **Step 7: Run the tests**
 
 Run: `cd services/api && uv run pytest`
-Expected: PASS
+Expected: PASS (54 in total for the whole suite)
+
+Optional proof the tests guard what they claim (restore each file afterwards): (a) delete the `broadcaster.unsubscribe(queue)` line in the events router → the live test must FAIL (leaked subscription); (b) replace `loop.call_soon_threadsafe(_offer, queue, message)` with `_offer(queue, message)` → `test_publish_from_worker_thread_reaches_subscriber` must FAIL with a timeout; (c) make `looks_like` always return True → the two content-sniffing upload tests must FAIL.
 
 - [ ] **Step 8: Write `services/api/scripts/export_openapi.py`**
 
@@ -1798,7 +1925,7 @@ if __name__ == "__main__":
 
 Run (repo root): `npm run contracts && npm run db:seed`
 Expected: `wrote .../contracts/openapi.json`, then `contracts/types.ts` written by openapi-typescript, then `dev users ready`.
-Check: `npm run dev:api`, then `curl -i -X POST localhost:8000/api/auth/login -H 'content-type: application/json' -d '{"username":"owner","password":"everest123"}'` returns 200 with a `set-cookie` header.
+Check: `npm run dev:api`, then `curl -i -X POST localhost:8000/api/auth/login -H 'content-type: application/json' -d '{"username":"owner","password":"everest123"}'` returns 200 with a `set-cookie` header. (On Windows PowerShell use `curl.exe`, not `curl`, which is an alias for something else.)
 
 - [ ] **Step 11: Commit (then Hritwik pushes `main`)**
 
