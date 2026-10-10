@@ -38,6 +38,14 @@ def _template(order: Order, reason: str) -> str:
             "We are working to get it to you as soon as we can and will keep you updated here.")
 
 
+_PLAIN = {ord(c): "-" for c in "\u2010\u2011\u2012\u2013"} | {ord(c): " " for c in "\u00a0\u202f\u2009"}
+
+
+def plain(text: str) -> str:
+    """Hyphens and spaces as ordinary characters, so an order code in the text can be copied and searched."""
+    return text.translate(_PLAIN)
+
+
 def draft(db: Session, order_code: str, reason: str) -> s.DraftOut:
     """A sentence for the buyer. Written by the language model when one is set up, otherwise from a fixed template."""
     order = get_order_or_404(db, order_code)
@@ -50,7 +58,7 @@ def draft(db: Session, order_code: str, reason: str) -> s.DraftOut:
         except AdapterError:
             text = ""
         if text:
-            return s.DraftOut(message=text[:400], drafted_by_ai=True)
+            return s.DraftOut(message=plain(text)[:400], drafted_by_ai=True)
     return s.DraftOut(message=_template(order, reason), drafted_by_ai=False)
 
 

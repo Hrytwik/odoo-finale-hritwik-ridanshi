@@ -133,3 +133,11 @@ def test_a_bad_notice_is_refused(client, login_as, db, body):
     order = make_order(db)
     login_as("owner")
     assert client.post(f"/api/orders/{order.code}/delay-notice", json=body).status_code == 422
+
+
+def test_special_hyphens_and_spaces_from_the_model_become_ordinary_ones(client, login_as, db, monkeypatch):
+    order = make_order(db)
+    with_model(monkeypatch, FakeAdapter("Your order ORD\u20110001 is late\u202ftoday\u00a0sorry."))
+    login_as("owner")
+    r = client.post(f"/api/orders/{order.code}/delay-notice/draft", json={"reason": "other"})
+    assert r.json()["message"] == "Your order ORD-0001 is late today sorry."

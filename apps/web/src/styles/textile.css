@@ -1313,3 +1313,24 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 .notice-list li:last-child {
   border-bottom: 0;
 }
+
+/* ---------- A new login's details, shown once ---------- */
+.credential-box {
+  margin: 0;
+  padding: var(--space-4);
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+}
+.credential-box dt {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.credential-box dd {
+  margin: 0 0 var(--space-3);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 1.25rem;
+  font-weight: 600;
+  word-break: break-all;
+}

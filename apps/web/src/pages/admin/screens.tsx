@@ -5,6 +5,7 @@ import { useMe } from '@/lib/auth'
 import { formatKg, formatMoney } from '@/lib/format'
 import { ROLE_LABEL } from '@/lib/nav'
 import { MasterScreen, type Values } from './MasterScreen'
+import { WorkerLoginCell } from './WorkerLogin'
 
 type Schemas = components['schemas']
 const num = (v: string) => Number(v.trim())
@@ -234,6 +235,7 @@ export function Workers() {
       update={(r, v) => call(api.PATCH('/api/workers/{item_id}', { params: { path: { item_id: r.id } }, body: common(v) }))}
       empty={{ title: 'No workers yet', description: 'Add the people who work on the floor.' }}
       alsoInvalidate={[['people']]}
+      rowActions={(r) => <WorkerLoginCell worker={r} />}
     />
   )
 }
