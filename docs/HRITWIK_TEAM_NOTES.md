@@ -1,12 +1,49 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 12:55 IST
+> **Last updated:** 2026-10-10 14:52 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
 
 ---
 
+## 2026-10-10 14:52 IST — Three backend asks from building the QC, passport and floor screens
+
+**From:** Ridanshi → Hritwik
+
+**1. Please leave cost out of the roll passport for buyers (privacy).** GET /api/rolls/{roll_code}/passport currently returns the internal per-metre cost to every role, including a buyer. My screen hides it from buyers, but a buyer can still read it from the network response, and cost per metre is exactly what a mill does not show customers. Same idea for the yarn lots, supplier names, machines and operator names in that response: a buyer's view only needs status, quality checks and dispatch. Spec section 11 says buyers see "own rolls only"; this goes one step further.
+
+**2. A way to list woven rolls (small endpoint, nice to have).** To load rolls into a dyeing machine the supervisor types roll codes today, because nothing lists the rolls with status woven for an order. Something like GET /api/rolls?status=woven&order_code=ORD-0012 returning RollOut[] (staff roles) would let me show a tick list instead.
+
+**3. A way to list open spinning runs (small endpoint, nice to have).** Starting a weaving run needs input_run_id. Today I offer the open spinning runs seen on /api/floor, plus a manual run number. GET /api/runs?stage=spinning&order_code=ORD-0012 (open and ended) would remove the manual field.
+
+**Built so far on my side** (local branch, 252 web tests passing, still not pushed): login and role menus; Receive yarn; Yarn stock; Yarn lot with block and recall; Orders list, New order, Order detail (delivery what-ifs, yarn check, cost and profit, confirm / cancel / deadline); Floor board and Machine page (start, hand over, roll off, load rolls, issue yarn, breakdown, repair); QC queue, inspection with AI suggestion and override logging, vision model card; Roll Passport with QR tag and scanner. Plan records are in docs/plans/A2 to A4 on that branch.
+
+**Next on my side:** dispatch and money screens (A5), then owner dashboard and master data (A7).
+
+---
+## 2026-10-10 14:24 IST — Neon from India is too slow; I moved my dev database to local PostgreSQL 14 (213 backend tests pass)
+
+**From:** Ridanshi → Hritwik
+
+**What I measured** (supersedes the "all green on Neon" entry of 12:54, which was about correctness, not speed)
+- With my dev database on Neon (AWS us-east-2, free plan) every API call took **4 to 7 seconds** from my laptop in India, and the first login took about 25 seconds. A bare `psql` connect plus `select 1` took **5.8 s, then 21.5 s, then 57.6 s**, getting worse. The 68 backend tests took 95 s.
+- So Neon is fine for correctness but unusable for building and demoing a UI that has to feel fast. Your plan to demo on a local PostgreSQL is right.
+
+**What I did**
+- My dev and test databases are now local: `everest` and `everest_test` on the PostgreSQL 14 that was already on my laptop (via `DATABASE_URL` and `TEST_DATABASE_URL` in my `.env`; the Neon settings are saved in a git-ignored `.env.neon`).
+- **PostgreSQL 14 works.** The spec says 16, so this is a data point for you: all four migrations (`b4052240ca17`, `65be43458fea`, `3a6545d5245d`, `ae46451bab35`) apply on a fresh database, `npm run db:seed` works, and `npm run test:api` gives **213 passed, 1 warning, in 8.1 s**.
+- With the local database a login takes 0.33 s and other calls 15 to 40 ms.
+
+**For you**
+- Nothing needed. If you ever want the minimum Postgres version stated in the README, "14 or newer" is now tested.
+- Same warning as before: `StarletteDeprecationWarning ... install httpx2 instead` from `fastapi/testclient.py`. Harmless.
+
+**Track A status** (code is still on my local branch; I will push when my Track A tasks are done)
+- Built and tested against your contract: login and role menus, app shell, live-update hook, Receive yarn, Yarn stock, Orders list, New order, Order detail (progress, delivery date with what-ifs, yarn check, cost and profit, confirm / cancel / change deadline). 128 web tests pass, plus the 12 for the order detail.
+- Next: Lot page with recall, then plan A3 (floor screens).
+
+---
 ## 2026-10-10 12:55 IST — Full API contract is ready (B1 done)
 
 **From:** Hritwik → Ridanshi
