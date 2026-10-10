@@ -2,8 +2,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import wovenUrl from '@/assets/art/woven-plaid.svg'
 import { BrandMark } from '@/components/common/BrandMark'
+import { Typewriter } from '@/components/motion/Typewriter'
 import { homeFor } from '@/lib/nav'
 import { SignupForm } from './SignupForm'
+
+// the same sentence twice: the effect types it, holds, deletes and types it again, so the words never change
+const PHRASES = ['roll by roll.', 'roll by roll.']
 
 /** The page where a buyer creates their own login. Staff logins are made by the owner, so this is for buyers only. */
 export function SignupScreen() {
@@ -21,7 +25,7 @@ export function SignupScreen() {
             Everest Mills
           </span>
           <div className="stack-sm">
-            <h2 style={{ color: 'var(--color-on-ink)' }}>Follow your orders, roll by roll.</h2>
+            <Typewriter before="Follow your orders," phrases={PHRASES} />
             <p style={{ maxWidth: '40ch' }}>See where each order stands, when it should reach you, and ask questions in plain words.</p>
           </div>
         </div>
