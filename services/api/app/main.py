@@ -20,6 +20,7 @@ from app.modules.people.router import router as people_router
 from app.modules.portal.router import router as portal_router
 from app.modules.rolls.router import router as rolls_router
 from app.modules.qc.router import router as qc_router
+from app.modules.qclog.router import router as qclog_router
 from app.modules.store.router import router as store_router
 from app.modules.uploads.router import router as uploads_router
 
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
     api.include_router(orders_router)
     api.include_router(floor_router)
     api.include_router(qc_router)
+    api.include_router(qclog_router)
     api.include_router(passport_router)
     api.include_router(dispatch_router)
     api.include_router(money_router)
