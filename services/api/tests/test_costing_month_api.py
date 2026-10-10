@@ -4,6 +4,7 @@ import datetime as dt
 import pytest
 from app.db.models import BuyerPayment, SupplierPayment, WagePayment
 from tests.costing_world import build_world
+from tests.test_llm_api import Fake, use
 
 
 @pytest.fixture
@@ -72,3 +73,24 @@ def test_a_month_with_nothing_in_it_and_a_future_month_are_zeros_not_errors(clie
 def test_a_bad_month_is_a_422(client, login_as, month):
     login_as("owner")
     assert client.get(f"/api/reports/month?month={month}").status_code == 422
+
+
+@pytest.mark.parametrize("month", ["0000-01", "0001-01", "1899-12", "2101-01", "9999-12"])
+def test_a_month_outside_1900_to_2100_is_a_clean_422_not_a_crash(client, login_as, month):
+    login_as("owner")
+    response = client.get(f"/api/reports/month?month={month}")
+    assert response.status_code == 422 and response.json()["field"] == "month"
+
+
+@pytest.mark.parametrize("month", ["1900-01", "2100-12"])
+def test_the_edge_months_are_allowed(client, login_as, month):
+    login_as("owner")
+    assert client.get(f"/api/reports/month?month={month}").status_code == 200
+
+
+def test_the_assistants_month_summary_also_refuses_an_impossible_year_cleanly(client, login_as):
+    """The assistant reads the month report through the same code, and its own month pattern allows 0000-01."""
+    use(Fake("unused"))
+    login_as("owner")
+    response = client.post("/api/ai/month-summary", json={"month": "0000-01"})
+    assert response.status_code == 422 and response.json()["field"] == "month"

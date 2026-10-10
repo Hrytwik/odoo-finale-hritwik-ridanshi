@@ -6,6 +6,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.validate import parse_month
 from app.db.models import Attendance, WagePayment, Worker
 from app.modules.people.schemas import WageRow
 
@@ -15,7 +16,7 @@ CENT = Decimal("0.01")
 
 
 def month_bounds(month: str) -> tuple[dt.date, dt.date]:
-    year, mon = (int(p) for p in month.split("-"))
+    year, mon = parse_month(month)
     return dt.date(year, mon, 1), dt.date(year, mon, calendar.monthrange(year, mon)[1])
 
 

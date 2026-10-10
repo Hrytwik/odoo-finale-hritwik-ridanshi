@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.clock import today_ist
 from app.core.money import q_kg, q_money, to_float
+from app.core.validate import parse_month
 from app.db.models import (
     BuyerPayment, Invoice, InvoiceLine, Order, Roll, SupplierBill, SupplierPayment, WagePayment,
 )
@@ -112,8 +113,7 @@ def roll_cost(db: Session, roll_code: str) -> RollCost:
 
 
 def month_report(db: Session, month: str) -> MonthReport:
-    year, mon = (int(p) for p in month.split("-"))
-    first, after, span = month_window(year, mon)
+    first, after, span = month_window(*parse_month(month))
     last = after - dt.timedelta(days=1)
     now = db_now(db)
     b = loader.load_month(db, first, after, span, now)

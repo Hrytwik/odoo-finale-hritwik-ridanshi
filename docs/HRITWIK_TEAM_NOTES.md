@@ -1,7 +1,7 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 22:32 IST
+> **Last updated:** 2026-10-10 22:39 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
 
@@ -21,6 +21,7 @@
 - A roll's cost is **provisional** until its order is fully woven and every roll is inspected or rejected; your passport page already shows the badge.
 - Run hours with no attendance for their operator give a **warning** on the order and on the month report, and no labour for those hours (never a silent zero). **The demo seeds have no attendance yet**, so until the demo scenarios seed some, the demo mill will show those warnings and little labour.
 - Your Copilot reads this through `modules/llm/data.py` calling `costing.order_cost` and `costing.month_report` directly. That keeps working (both take `db`), and it is safe because your cost tools are limited to owner and accountant, the same rule. The Copilot now sees real figures, so its answers about cost will change.
+- **I changed one of your functions, for a bug found on a real server:** `GET /wages?month=0000-01` answered a 500 (and my month report did the same for `0000-01`, `0001-01` and `9999-12`), because the month pattern accepts any four digits and the date maths cannot represent year 0 or the year after 9999. There is now one shared check, `core.validate.parse_month` (years 1900 to 2100, otherwise a 422 on `month`), and `people.service.month_bounds` uses it; nothing else of yours changed and your wages tests pass. Your own month field in the assistant's `MonthIn` is untouched; it reaches the same check through the month report.
 - Speed: a busy month (about 900 runs and 1,000 attendance records) is costed in about 0.2 s on this machine.
 
 ---

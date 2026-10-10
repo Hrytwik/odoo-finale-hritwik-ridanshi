@@ -356,3 +356,9 @@ def test_rupees_and_paise_are_kept_exactly(client, login_as, db):
     assert wage_of(client, w)["earned"] == 999.99
     assert pay(client, w, 999.99).status_code == 201
     assert wage_of(client, w)["owed"] == 0
+
+
+@pytest.mark.parametrize("month", ["0000-01", "9999-12", "1899-12"])
+def test_wages_for_an_impossible_month_is_a_422_not_a_crash(client, login_as, month):
+    login_as("accountant")
+    assert client.get(f"/api/wages?month={month}").status_code == 422

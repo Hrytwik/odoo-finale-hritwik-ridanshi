@@ -1,7 +1,9 @@
 """Spec §7.2, hand-worked: shift A is 06:00-14:00 (8 hours) and the daily wage is 800."""
+import datetime as dt
 from fractions import Fraction as F
 
 from app.modules.costing.engine.labour import split_labour
+from app.modules.costing.engine.records import Shift
 from tests.costing_records import A, B, C, SHIFTS, at, present, run, worker
 
 NOW = at(30, 12)
@@ -84,3 +86,14 @@ def test_pay_is_always_fully_accounted_for():
     labour = split([present(1, 3), present(1, 3, B, "half_day"), present(2, 3, B), present(3, 3, A)], runs,
                    worker(1), worker(2, "inspector"), worker(3))
     assert sum(labour.per_run.values()) + labour.idle + labour.support == labour.pay == 800 + 400 + 800 + 800
+
+
+def test_two_overlapping_shifts_each_pay_their_own_record_but_coverage_is_counted_once():
+    """Shifts A (06:00-14:00) and a custom 12:00-20:00 overlap for two hours. A worker marked present for both is paid
+    for both records (the wages page does the same), a 2 h run inside the overlap takes a share from each, and the
+    run's hours are covered, not covered twice."""
+    late = Shift(9, "L", dt.time(12), dt.time(20))
+    labour = split_labour([present(1, 3, A), present(1, 3, late)], {1: worker(1)}, {**SHIFTS, 9: late},
+                          [run(1, 1, at(3, 12), at(3, 14))], NOW)
+    assert labour.per_run == {1: 400}                     # 800 x 2/8 from each record
+    assert labour.pay == 1600 and labour.idle == 1200 and labour.uncovered == {}

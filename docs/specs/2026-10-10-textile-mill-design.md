@@ -1,7 +1,7 @@
 # Everest Textile Mills — System Design
 
 > **Summary:** Full design for the textile mill platform: architecture (React + Vite + FastAPI + Postgres), 29-table data model, business rules, per-roll costing, delay/shortage/root-cause engines, vision QC, provider-agnostic LLM layer, screens, API surface, two-track split, testing and demo.
-> **Last updated:** 2026-10-10 21:27 IST (§7 costing revised after the B6 design review; new rule R18; engine arithmetic is exact fractions)
+> **Last updated:** 2026-10-10 22:39 IST (§7 costing built and live-checked; month range rule added; R18)
 > **Status:** Draft for team review
 
 ---
@@ -230,7 +230,7 @@ Everything is exact (`fractions.Fraction`, so a third of 800 stays a third) insi
 
 ### 7.5 The month report
 
-The month is 00:00 IST on the 1st to 00:00 IST on the next 1st (up to now for the current month). Each cost counts in the month it is incurred: yarn on the day issued, machine cost for the hours inside the month (a run 22:00 on 31 Oct to 04:00 on 1 Nov at 60/h puts 120 in October and 240 in November), wages on the day worked (the attendance record's date).
+The month is 00:00 IST on the 1st to 00:00 IST on the next 1st (up to now for the current month). A month outside 1900-01 to 2100-12 is a 422 on `month` (also for the wages page and the assistant's month summary). Each cost counts in the month it is incurred: yarn on the day issued, machine cost for the hours inside the month (a run 22:00 on 31 Oct to 04:00 on 1 Nov at 60/h puts 120 in October and 240 in November), wages on the day worked (the attendance record's date).
 
 - **Profit panel:** `invoiced` (invoices issued in the month) − `yarn_issued` (issues − returns in the month × lot cost/kg) − `wages_earned` (exactly `GET /wages` `total_earned`, taken from `people.service.wage_rows`) − `machine_running_cost` − `stock_writeoffs` (negative adjustments × lot cost/kg; positive ones are not credited) = `profit`. `idle_labour` and `support_staff` are lines **inside** wages_earned, not subtracted again.
 - **Cash panel:** `received_from_buyers` (received_on in the month), `paid_to_suppliers` (paid_on in the month), `paid_wages` (wage payments paid in the month, whatever period they cover), `net_cash`; `receivables_outstanding` and `payables_outstanding` at the end of the month (at now for the current month), rebuilt from the dates. Wages still owed are on the wages page, not here.
@@ -247,9 +247,9 @@ Computed on request, no stored totals, no migration, read-only (no locks, no eve
 - `modules/costing/loader.py`: reads rows into plain records. For one order it must also load the other runs of the same operators in the same windows (labour is split across all of a worker's runs, whatever the order).
 - `modules/costing/service.py`: rounding and the response shapes; `router.py`: the three real handlers.
 - Contract: one additive field, `ProfitPanel.support_staff`; everything else byte-identical. Track A's `Owner.test.tsx` fixture needs the field and the owner page a row.
-- Known and accepted: the loader's queries are not one snapshot (a write landing between them can skew one figure for that instant; the next request is right). Speed is **unmeasured**: to be timed on a built month of about 900 runs and the number recorded in the plan.
+- Known and accepted: the loader's queries are not one snapshot (a write landing between them can skew one figure for that instant; the next request is right). Speed was measured: a month of 901 runs and 1,080 attendance records is costed in 0.16 s (`tests/test_costing_speed.py` guards a 15 s budget).
 
-### 7.7 Build order (B6; also in `docs/plans/B6-costing.md` once written)
+### 7.7 Build order (B6, done; see `docs/plans/B6-costing.md`)
 
 1. Engine: labour split. 2. Engine: rolls and orders. 3. Engine: month and machines. 4. Loader and service, the roll and order endpoints, the passport. 5. The month endpoint, the contract change, the note to Track A. 6. Property test, speed, live check, docs and memory. (1 → 2 → 3; 4 needs 1 and 2; 5 needs 3 and 4; 6 last.)
 
