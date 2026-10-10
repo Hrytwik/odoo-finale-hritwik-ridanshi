@@ -1,7 +1,7 @@
 # Everest Textile Mills — System Design
 
 > **Summary:** Full design for the textile mill platform: architecture (React + Vite + FastAPI + Postgres), 29-table data model, business rules, per-roll costing, delay/shortage/root-cause engines, vision QC, provider-agnostic LLM layer, screens, API surface, two-track split, testing and demo.
-> **Last updated:** 2026-10-10 23:46 IST (§7 costing and §8 intelligence built and live-checked)
+> **Last updated:** 2026-10-11 02:24 IST (§9 vision QC built and live-checked as B8; earlier: §7 costing and §8 intelligence built and live-checked)
 > **Status:** Draft for team review
 
 ---
@@ -317,6 +317,8 @@ Computed on request, no stored values, no migration, read-only (no locks, no eve
 ---
 
 ## 9. Vision QC
+
+> **Built (B8, 2026-10-11):** see `2026-10-11-vision-endpoint-design.md`. The model ships as an unvalidated first version (verdict inconclusive: the test set has no clean photos), shown as such on screen and on the model card.
 
 - **Flow:** inspector photographs a stretch of the roll → `POST /api/qc/analyze` → boxes with defect type and confidence drawn over the photo → inspector confirms or overrides (R9). QC works fully without the model.
 - **Detected classes:** hole, stain, thread_fault. **Colour mismatch** is marked by the inspector (a detector cannot know the target shade; phone cameras shift colour). Stretch: photograph roll + approved swatch in one frame and compute ΔE (CIEDE2000).

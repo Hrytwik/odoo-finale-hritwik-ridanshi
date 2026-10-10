@@ -32,6 +32,8 @@ test-results/
 # ML artefacts (large files stay out of git)
 # our own cloth photos and their labels (large; shared by hand, never committed)
 services/api/ml/data/
+# pictures made by `python -m ml.show_examples` (regenerable; derived from the public test photos)
+services/api/ml/demo_examples/
 # downloaded Kaggle fabric set (3,000 images; credit it before any use in the product)
 /Dataset/
 # (YOLO training writes to ./runs and ./datasets wherever it is started)
