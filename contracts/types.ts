@@ -159,6 +159,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/lots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Lots */
+        get: operations["list_lots_api_lots_get"];
+        put?: never;
+        /** Receive Lot */
+        post: operations["receive_lot_api_lots_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lots/{lot_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Lot */
+        get: operations["get_lot_api_lots__lot_code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lots/{lot_code}/block": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Block Lot */
+        post: operations["block_lot_api_lots__lot_code__block_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lots/{lot_code}/recall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lot Recall */
+        get: operations["lot_recall_api_lots__lot_code__recall_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/machines": {
         parameters: {
             query?: never;
@@ -194,6 +263,144 @@ export interface paths {
         patch: operations["update_machines_api_machines__item_id__patch"];
         trace?: never;
     };
+    "/api/movements/adjust": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adjust Stock */
+        post: operations["adjust_stock_api_movements_adjust_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/movements/issue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Issue Yarn */
+        post: operations["issue_yarn_api_movements_issue_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/movements/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Return Yarn */
+        post: operations["return_yarn_api_movements_return_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Orders */
+        get: operations["list_orders_api_orders_get"];
+        put?: never;
+        /** Create Order */
+        post: operations["create_order_api_orders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{order_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Order */
+        get: operations["get_order_api_orders__order_code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change Deadline */
+        patch: operations["change_deadline_api_orders__order_code__patch"];
+        trace?: never;
+    };
+    "/api/orders/{order_code}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Order */
+        post: operations["cancel_order_api_orders__order_code__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{order_code}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Order */
+        post: operations["confirm_order_api_orders__order_code__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{order_code}/yarn-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Yarn Check */
+        get: operations["yarn_check_api_orders__order_code__yarn_check_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/shifts": {
         parameters: {
             query?: never;
@@ -227,6 +434,23 @@ export interface paths {
         head?: never;
         /** Update/Shifts */
         patch: operations["update_shifts_api_shifts__item_id__patch"];
+        trace?: never;
+    };
+    "/api/stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stock */
+        get: operations["stock_api_stock_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/suppliers": {
@@ -407,6 +631,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AdjustIn */
+        AdjustIn: {
+            /** Lot Code */
+            lot_code: string;
+            /** Note */
+            note: string;
+            /** Qty Kg */
+            qty_kg: number;
+        };
+        /** BlockIn */
+        BlockIn: {
+            /** Reason */
+            reason: string;
+        };
         /** Body_upload_api_uploads_post */
         Body_upload_api_uploads_post: {
             /** File */
@@ -446,6 +684,14 @@ export interface components {
             name?: string | null;
             /** Phone */
             phone?: string | null;
+        };
+        /** DeadlineIn */
+        DeadlineIn: {
+            /**
+             * Deadline
+             * Format: date
+             */
+            deadline: string;
         };
         /** FabricTypeIn */
         FabricTypeIn: {
@@ -497,12 +743,100 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** IssueIn */
+        IssueIn: {
+            /** Lot Code */
+            lot_code: string;
+            /** Qty Kg */
+            qty_kg: number;
+            /** Run Id */
+            run_id: number;
+        };
         /** LoginIn */
         LoginIn: {
             /** Password */
             password: string;
             /** Username */
             username: string;
+        };
+        /** LotDetail */
+        LotDetail: {
+            /** Blocked Reason */
+            blocked_reason: string | null;
+            /** Challan No */
+            challan_no: string;
+            /** Challan Photo Url */
+            challan_photo_url: string | null;
+            /** Cost Per Kg */
+            cost_per_kg: number;
+            /** Id */
+            id: number;
+            /** Intended Order Code */
+            intended_order_code: string | null;
+            /** Is Blocked */
+            is_blocked: boolean;
+            /** Lot Code */
+            lot_code: string;
+            /** Movements */
+            movements: components["schemas"]["MovementOut"][];
+            /** On Hand Kg */
+            on_hand_kg: number;
+            /** Qty Received Kg */
+            qty_received_kg: number;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            supplier: components["schemas"]["Ref"];
+            yarn_type: components["schemas"]["YarnTypeRef"];
+        };
+        /** LotOut */
+        LotOut: {
+            /** Blocked Reason */
+            blocked_reason: string | null;
+            /** Challan No */
+            challan_no: string;
+            /** Challan Photo Url */
+            challan_photo_url: string | null;
+            /** Cost Per Kg */
+            cost_per_kg: number;
+            /** Id */
+            id: number;
+            /** Intended Order Code */
+            intended_order_code: string | null;
+            /** Is Blocked */
+            is_blocked: boolean;
+            /** Lot Code */
+            lot_code: string;
+            /** On Hand Kg */
+            on_hand_kg: number;
+            /** Qty Received Kg */
+            qty_received_kg: number;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            supplier: components["schemas"]["Ref"];
+            yarn_type: components["schemas"]["YarnTypeRef"];
+        };
+        /** LotReceiveIn */
+        LotReceiveIn: {
+            /** Challan No */
+            challan_no: string;
+            /** Challan Photo Path */
+            challan_photo_path?: string | null;
+            /** Cost Per Kg */
+            cost_per_kg: number;
+            /** Intended Order Code */
+            intended_order_code?: string | null;
+            /** Qty Kg */
+            qty_kg: number;
+            /** Supplier Id */
+            supplier_id: number;
+            /** Yarn Type Id */
+            yarn_type_id: number;
         };
         /** MachineIn */
         MachineIn: {
@@ -579,6 +913,167 @@ export interface components {
             /** Worker Id */
             worker_id: number | null;
         };
+        /** MovementOut */
+        MovementOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** By */
+            by: string;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "receipt" | "issue" | "return" | "adjustment";
+            /** Lot Code */
+            lot_code: string;
+            /** Machine Code */
+            machine_code: string | null;
+            /** Note */
+            note: string | null;
+            /** Order Code */
+            order_code: string | null;
+            /** Qty Kg */
+            qty_kg: number;
+            /** Run Id */
+            run_id: number | null;
+        };
+        /** OrderIn */
+        OrderIn: {
+            /** Buyer Id */
+            buyer_id: number;
+            /** Colour */
+            colour: string;
+            /**
+             * Deadline
+             * Format: date
+             */
+            deadline: string;
+            /** Fabric Type Id */
+            fabric_type_id: number;
+            /** Price Per Metre */
+            price_per_metre: number;
+            /** Qty Metres */
+            qty_metres: number;
+        };
+        /** OrderOut */
+        OrderOut: {
+            buyer: components["schemas"]["Ref"];
+            /** Code */
+            code: string;
+            /** Colour */
+            colour: string;
+            /** Confirmed At */
+            confirmed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Days Late */
+            days_late: number | null;
+            /**
+             * Deadline
+             * Format: date
+             */
+            deadline: string;
+            /** Delivery Date */
+            delivery_date: string | null;
+            fabric_type: components["schemas"]["Ref"];
+            /** Id */
+            id: number;
+            /** Price Per Metre */
+            price_per_metre: number;
+            progress: components["schemas"]["Progress"];
+            /** Qty Metres */
+            qty_metres: number;
+            /** Short Kg */
+            short_kg: number;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "draft" | "cancelled" | "waiting_to_start" | "spinning" | "weaving" | "dyeing" | "quality_check" | "ready_to_ship" | "partly_dispatched" | "dispatched";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "draft" | "confirmed" | "cancelled";
+            /**
+             * Yarn Status
+             * @enum {string}
+             */
+            yarn_status: "can_start" | "short" | "not_needed";
+        };
+        /** Progress */
+        Progress: {
+            /** Dispatched M */
+            dispatched_m: number;
+            /** Dyed M */
+            dyed_m: number;
+            /** Need Kg */
+            need_kg: number;
+            /** Passed M */
+            passed_m: number;
+            /** Rejected M */
+            rejected_m: number;
+            /** Spun Kg */
+            spun_kg: number;
+            /** Woven M */
+            woven_m: number;
+        };
+        /** RecallBuyer */
+        RecallBuyer: {
+            /** Buyer Id */
+            buyer_id: number;
+            /** Buyer Name */
+            buyer_name: string;
+            /** Dispatch Codes */
+            dispatch_codes: string[];
+            /** Dispatched Roll Count */
+            dispatched_roll_count: number;
+            /** Roll Count */
+            roll_count: number;
+        };
+        /** RecallOut */
+        RecallOut: {
+            /** Buyers */
+            buyers: components["schemas"]["RecallBuyer"][];
+            /** Dispatched */
+            dispatched: components["schemas"]["RecallRoll"][];
+            /** In Store */
+            in_store: components["schemas"]["RecallRoll"][];
+            /** Is Blocked */
+            is_blocked: boolean;
+            /** Loading */
+            loading: components["schemas"]["RecallRoll"][];
+            /** Lot Code */
+            lot_code: string;
+            /** On Floor */
+            on_floor: components["schemas"]["RecallRoll"][];
+        };
+        /** RecallRoll */
+        RecallRoll: {
+            /** Buyer Name */
+            buyer_name: string;
+            /** Dispatch Code */
+            dispatch_code: string | null;
+            /** Metres */
+            metres: number;
+            /** Order Code */
+            order_code: string;
+            /** Roll Code */
+            roll_code: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "woven" | "dyeing" | "awaiting_qc" | "awaiting_rework" | "in_rework" | "in_store" | "rejected" | "loading" | "dispatched";
+        };
         /** RecipeLineIn */
         RecipeLineIn: {
             /** Kg Per Metre */
@@ -594,6 +1089,22 @@ export interface components {
             yarn_type_code: string;
             /** Yarn Type Id */
             yarn_type_id: number;
+        };
+        /** Ref */
+        Ref: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
+        /** ReturnIn */
+        ReturnIn: {
+            /** Lot Code */
+            lot_code: string;
+            /** Qty Kg */
+            qty_kg: number;
+            /** Run Id */
+            run_id: number;
         };
         /** ShiftIn */
         ShiftIn: {
@@ -633,6 +1144,20 @@ export interface components {
             end_time?: string | null;
             /** Start Time */
             start_time?: string | null;
+        };
+        /** StockRow */
+        StockRow: {
+            /** Below Reorder */
+            below_reorder: boolean;
+            /** Free Kg */
+            free_kg: number;
+            /** On Hand Kg */
+            on_hand_kg: number;
+            /** Outstanding Kg */
+            outstanding_kg: number;
+            /** Reorder Level Kg */
+            reorder_level_kg: number;
+            yarn_type: components["schemas"]["YarnTypeRef"];
         };
         /** SupplierIn */
         SupplierIn: {
@@ -773,6 +1298,29 @@ export interface components {
             /** Role */
             role?: ("operator" | "inspector" | "storekeeper" | "supervisor" | "dispatch" | "helper") | null;
         };
+        /** YarnCheckLine */
+        YarnCheckLine: {
+            /** Available Kg */
+            available_kg: number;
+            /** Issued Kg */
+            issued_kg: number;
+            /** Need Kg */
+            need_kg: number;
+            /** Outstanding Kg */
+            outstanding_kg: number;
+            /** Short Kg */
+            short_kg: number;
+            yarn_type: components["schemas"]["YarnTypeRef"];
+        };
+        /** YarnCheckOut */
+        YarnCheckOut: {
+            /** Can Start */
+            can_start: boolean;
+            /** Lines */
+            lines: components["schemas"]["YarnCheckLine"][];
+            /** Order Code */
+            order_code: string;
+        };
         /** YarnTypeIn */
         YarnTypeIn: {
             /** Code */
@@ -810,6 +1358,17 @@ export interface components {
             name?: string | null;
             /** Reorder Level Kg */
             reorder_level_kg?: number | null;
+        };
+        /** YarnTypeRef */
+        YarnTypeRef: {
+            /** Code */
+            code: string;
+            /** Colour */
+            colour: string;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
         };
     };
     responses: never;
@@ -1105,6 +1664,168 @@ export interface operations {
             };
         };
     };
+    list_lots_api_lots_get: {
+        parameters: {
+            query?: {
+                yarn_type_id?: number | null;
+                blocked?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receive_lot_api_lots_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LotReceiveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lot_api_lots__lot_code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lot_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    block_lot_api_lots__lot_code__block_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lot_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lot_recall_api_lots__lot_code__recall_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lot_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecallOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_machines_api_machines_get: {
         parameters: {
             query?: never;
@@ -1180,6 +1901,329 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MachineOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adjust_stock_api_movements_adjust_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    issue_yarn_api_movements_issue_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    return_yarn_api_movements_return_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_orders_api_orders_get: {
+        parameters: {
+            query?: {
+                state?: string | null;
+                buyer_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_order_api_orders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_order_api_orders__order_code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_deadline_api_orders__order_code__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeadlineIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_order_api_orders__order_code__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_order_api_orders__order_code__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    yarn_check_api_orders__order_code__yarn_check_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YarnCheckOut"];
                 };
             };
             /** @description Validation Error */
@@ -1277,6 +2321,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stock_api_stock_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockRow"][];
                 };
             };
         };

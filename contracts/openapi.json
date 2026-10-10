@@ -1,6 +1,50 @@
 {
   "components": {
     "schemas": {
+      "AdjustIn": {
+        "properties": {
+          "lot_code": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Lot Code",
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          },
+          "qty_kg": {
+            "maximum": 1000000.0,
+            "minimum": -1000000.0,
+            "title": "Qty Kg",
+            "type": "number"
+          }
+        },
+        "required": [
+          "lot_code",
+          "qty_kg",
+          "note"
+        ],
+        "title": "AdjustIn",
+        "type": "object"
+      },
+      "BlockIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "BlockIn",
+        "type": "object"
+      },
       "Body_upload_api_uploads_post": {
         "properties": {
           "file": {
@@ -175,6 +219,20 @@
         "title": "BuyerPatch",
         "type": "object"
       },
+      "DeadlineIn": {
+        "properties": {
+          "deadline": {
+            "format": "date",
+            "title": "Deadline",
+            "type": "string"
+          }
+        },
+        "required": [
+          "deadline"
+        ],
+        "title": "DeadlineIn",
+        "type": "object"
+      },
       "FabricTypeIn": {
         "properties": {
           "name": {
@@ -342,6 +400,33 @@
         "title": "Health",
         "type": "object"
       },
+      "IssueIn": {
+        "properties": {
+          "lot_code": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Lot Code",
+            "type": "string"
+          },
+          "qty_kg": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1000000.0,
+            "title": "Qty Kg",
+            "type": "number"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "lot_code",
+          "run_id",
+          "qty_kg"
+        ],
+        "title": "IssueIn",
+        "type": "object"
+      },
       "LoginIn": {
         "properties": {
           "password": {
@@ -362,6 +447,265 @@
           "password"
         ],
         "title": "LoginIn",
+        "type": "object"
+      },
+      "LotDetail": {
+        "properties": {
+          "blocked_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked Reason"
+          },
+          "challan_no": {
+            "title": "Challan No",
+            "type": "string"
+          },
+          "challan_photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Challan Photo Url"
+          },
+          "cost_per_kg": {
+            "title": "Cost Per Kg",
+            "type": "number"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "intended_order_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intended Order Code"
+          },
+          "is_blocked": {
+            "title": "Is Blocked",
+            "type": "boolean"
+          },
+          "lot_code": {
+            "title": "Lot Code",
+            "type": "string"
+          },
+          "movements": {
+            "items": {
+              "$ref": "#/components/schemas/MovementOut"
+            },
+            "title": "Movements",
+            "type": "array"
+          },
+          "on_hand_kg": {
+            "title": "On Hand Kg",
+            "type": "number"
+          },
+          "qty_received_kg": {
+            "title": "Qty Received Kg",
+            "type": "number"
+          },
+          "received_at": {
+            "format": "date-time",
+            "title": "Received At",
+            "type": "string"
+          },
+          "supplier": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "yarn_type": {
+            "$ref": "#/components/schemas/YarnTypeRef"
+          }
+        },
+        "required": [
+          "id",
+          "lot_code",
+          "yarn_type",
+          "supplier",
+          "qty_received_kg",
+          "on_hand_kg",
+          "cost_per_kg",
+          "challan_no",
+          "challan_photo_url",
+          "intended_order_code",
+          "received_at",
+          "is_blocked",
+          "blocked_reason",
+          "movements"
+        ],
+        "title": "LotDetail",
+        "type": "object"
+      },
+      "LotOut": {
+        "properties": {
+          "blocked_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked Reason"
+          },
+          "challan_no": {
+            "title": "Challan No",
+            "type": "string"
+          },
+          "challan_photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Challan Photo Url"
+          },
+          "cost_per_kg": {
+            "title": "Cost Per Kg",
+            "type": "number"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "intended_order_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intended Order Code"
+          },
+          "is_blocked": {
+            "title": "Is Blocked",
+            "type": "boolean"
+          },
+          "lot_code": {
+            "title": "Lot Code",
+            "type": "string"
+          },
+          "on_hand_kg": {
+            "title": "On Hand Kg",
+            "type": "number"
+          },
+          "qty_received_kg": {
+            "title": "Qty Received Kg",
+            "type": "number"
+          },
+          "received_at": {
+            "format": "date-time",
+            "title": "Received At",
+            "type": "string"
+          },
+          "supplier": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "yarn_type": {
+            "$ref": "#/components/schemas/YarnTypeRef"
+          }
+        },
+        "required": [
+          "id",
+          "lot_code",
+          "yarn_type",
+          "supplier",
+          "qty_received_kg",
+          "on_hand_kg",
+          "cost_per_kg",
+          "challan_no",
+          "challan_photo_url",
+          "intended_order_code",
+          "received_at",
+          "is_blocked",
+          "blocked_reason"
+        ],
+        "title": "LotOut",
+        "type": "object"
+      },
+      "LotReceiveIn": {
+        "properties": {
+          "challan_no": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Challan No",
+            "type": "string"
+          },
+          "challan_photo_path": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Challan Photo Path"
+          },
+          "cost_per_kg": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100000000.0,
+            "title": "Cost Per Kg",
+            "type": "number"
+          },
+          "intended_order_code": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intended Order Code"
+          },
+          "qty_kg": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1000000.0,
+            "title": "Qty Kg",
+            "type": "number"
+          },
+          "supplier_id": {
+            "title": "Supplier Id",
+            "type": "integer"
+          },
+          "yarn_type_id": {
+            "title": "Yarn Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "yarn_type_id",
+          "supplier_id",
+          "qty_kg",
+          "cost_per_kg",
+          "challan_no"
+        ],
+        "title": "LotReceiveIn",
         "type": "object"
       },
       "MachineIn": {
@@ -593,6 +937,474 @@
         "title": "Me",
         "type": "object"
       },
+      "MovementOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "receipt",
+              "issue",
+              "return",
+              "adjustment"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "lot_code": {
+            "title": "Lot Code",
+            "type": "string"
+          },
+          "machine_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Machine Code"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "order_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Code"
+          },
+          "qty_kg": {
+            "title": "Qty Kg",
+            "type": "number"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          }
+        },
+        "required": [
+          "id",
+          "lot_code",
+          "kind",
+          "qty_kg",
+          "run_id",
+          "order_code",
+          "machine_code",
+          "at",
+          "by",
+          "note"
+        ],
+        "title": "MovementOut",
+        "type": "object"
+      },
+      "OrderIn": {
+        "properties": {
+          "buyer_id": {
+            "title": "Buyer Id",
+            "type": "integer"
+          },
+          "colour": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Colour",
+            "type": "string"
+          },
+          "deadline": {
+            "format": "date",
+            "title": "Deadline",
+            "type": "string"
+          },
+          "fabric_type_id": {
+            "title": "Fabric Type Id",
+            "type": "integer"
+          },
+          "price_per_metre": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100000000.0,
+            "title": "Price Per Metre",
+            "type": "number"
+          },
+          "qty_metres": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1000000.0,
+            "title": "Qty Metres",
+            "type": "number"
+          }
+        },
+        "required": [
+          "buyer_id",
+          "fabric_type_id",
+          "colour",
+          "qty_metres",
+          "price_per_metre",
+          "deadline"
+        ],
+        "title": "OrderIn",
+        "type": "object"
+      },
+      "OrderOut": {
+        "properties": {
+          "buyer": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "colour": {
+            "title": "Colour",
+            "type": "string"
+          },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "days_late": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Late"
+          },
+          "deadline": {
+            "format": "date",
+            "title": "Deadline",
+            "type": "string"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date"
+          },
+          "fabric_type": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "price_per_metre": {
+            "title": "Price Per Metre",
+            "type": "number"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/Progress"
+          },
+          "qty_metres": {
+            "title": "Qty Metres",
+            "type": "number"
+          },
+          "short_kg": {
+            "title": "Short Kg",
+            "type": "number"
+          },
+          "stage": {
+            "enum": [
+              "draft",
+              "cancelled",
+              "waiting_to_start",
+              "spinning",
+              "weaving",
+              "dyeing",
+              "quality_check",
+              "ready_to_ship",
+              "partly_dispatched",
+              "dispatched"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "draft",
+              "confirmed",
+              "cancelled"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "yarn_status": {
+            "enum": [
+              "can_start",
+              "short",
+              "not_needed"
+            ],
+            "title": "Yarn Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "buyer",
+          "fabric_type",
+          "colour",
+          "qty_metres",
+          "price_per_metre",
+          "deadline",
+          "state",
+          "stage",
+          "created_at",
+          "confirmed_at",
+          "progress",
+          "yarn_status",
+          "short_kg",
+          "delivery_date",
+          "days_late"
+        ],
+        "title": "OrderOut",
+        "type": "object"
+      },
+      "Progress": {
+        "properties": {
+          "dispatched_m": {
+            "title": "Dispatched M",
+            "type": "number"
+          },
+          "dyed_m": {
+            "title": "Dyed M",
+            "type": "number"
+          },
+          "need_kg": {
+            "title": "Need Kg",
+            "type": "number"
+          },
+          "passed_m": {
+            "title": "Passed M",
+            "type": "number"
+          },
+          "rejected_m": {
+            "title": "Rejected M",
+            "type": "number"
+          },
+          "spun_kg": {
+            "title": "Spun Kg",
+            "type": "number"
+          },
+          "woven_m": {
+            "title": "Woven M",
+            "type": "number"
+          }
+        },
+        "required": [
+          "need_kg",
+          "spun_kg",
+          "woven_m",
+          "dyed_m",
+          "passed_m",
+          "rejected_m",
+          "dispatched_m"
+        ],
+        "title": "Progress",
+        "type": "object"
+      },
+      "RecallBuyer": {
+        "properties": {
+          "buyer_id": {
+            "title": "Buyer Id",
+            "type": "integer"
+          },
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "dispatch_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Dispatch Codes",
+            "type": "array"
+          },
+          "dispatched_roll_count": {
+            "title": "Dispatched Roll Count",
+            "type": "integer"
+          },
+          "roll_count": {
+            "title": "Roll Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "buyer_id",
+          "buyer_name",
+          "roll_count",
+          "dispatched_roll_count",
+          "dispatch_codes"
+        ],
+        "title": "RecallBuyer",
+        "type": "object"
+      },
+      "RecallOut": {
+        "properties": {
+          "buyers": {
+            "items": {
+              "$ref": "#/components/schemas/RecallBuyer"
+            },
+            "title": "Buyers",
+            "type": "array"
+          },
+          "dispatched": {
+            "items": {
+              "$ref": "#/components/schemas/RecallRoll"
+            },
+            "title": "Dispatched",
+            "type": "array"
+          },
+          "in_store": {
+            "items": {
+              "$ref": "#/components/schemas/RecallRoll"
+            },
+            "title": "In Store",
+            "type": "array"
+          },
+          "is_blocked": {
+            "title": "Is Blocked",
+            "type": "boolean"
+          },
+          "loading": {
+            "items": {
+              "$ref": "#/components/schemas/RecallRoll"
+            },
+            "title": "Loading",
+            "type": "array"
+          },
+          "lot_code": {
+            "title": "Lot Code",
+            "type": "string"
+          },
+          "on_floor": {
+            "items": {
+              "$ref": "#/components/schemas/RecallRoll"
+            },
+            "title": "On Floor",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lot_code",
+          "is_blocked",
+          "on_floor",
+          "in_store",
+          "loading",
+          "dispatched",
+          "buyers"
+        ],
+        "title": "RecallOut",
+        "type": "object"
+      },
+      "RecallRoll": {
+        "properties": {
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "dispatch_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dispatch Code"
+          },
+          "metres": {
+            "title": "Metres",
+            "type": "number"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "roll_code": {
+            "title": "Roll Code",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "woven",
+              "dyeing",
+              "awaiting_qc",
+              "awaiting_rework",
+              "in_rework",
+              "in_store",
+              "rejected",
+              "loading",
+              "dispatched"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "roll_code",
+          "order_code",
+          "buyer_name",
+          "metres",
+          "status",
+          "dispatch_code"
+        ],
+        "title": "RecallRoll",
+        "type": "object"
+      },
       "RecipeLineIn": {
         "properties": {
           "kg_per_metre": {
@@ -634,6 +1446,51 @@
           "kg_per_metre"
         ],
         "title": "RecipeLineOut",
+        "type": "object"
+      },
+      "Ref": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Ref",
+        "type": "object"
+      },
+      "ReturnIn": {
+        "properties": {
+          "lot_code": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Lot Code",
+            "type": "string"
+          },
+          "qty_kg": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1000000.0,
+            "title": "Qty Kg",
+            "type": "number"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "lot_code",
+          "run_id",
+          "qty_kg"
+        ],
+        "title": "ReturnIn",
         "type": "object"
       },
       "ShiftIn": {
@@ -721,6 +1578,43 @@
           }
         },
         "title": "ShiftPatch",
+        "type": "object"
+      },
+      "StockRow": {
+        "properties": {
+          "below_reorder": {
+            "title": "Below Reorder",
+            "type": "boolean"
+          },
+          "free_kg": {
+            "title": "Free Kg",
+            "type": "number"
+          },
+          "on_hand_kg": {
+            "title": "On Hand Kg",
+            "type": "number"
+          },
+          "outstanding_kg": {
+            "title": "Outstanding Kg",
+            "type": "number"
+          },
+          "reorder_level_kg": {
+            "title": "Reorder Level Kg",
+            "type": "number"
+          },
+          "yarn_type": {
+            "$ref": "#/components/schemas/YarnTypeRef"
+          }
+        },
+        "required": [
+          "yarn_type",
+          "on_hand_kg",
+          "outstanding_kg",
+          "free_kg",
+          "reorder_level_kg",
+          "below_reorder"
+        ],
+        "title": "StockRow",
         "type": "object"
       },
       "SupplierIn": {
@@ -1193,6 +2087,69 @@
         "title": "WorkerPatch",
         "type": "object"
       },
+      "YarnCheckLine": {
+        "properties": {
+          "available_kg": {
+            "title": "Available Kg",
+            "type": "number"
+          },
+          "issued_kg": {
+            "title": "Issued Kg",
+            "type": "number"
+          },
+          "need_kg": {
+            "title": "Need Kg",
+            "type": "number"
+          },
+          "outstanding_kg": {
+            "title": "Outstanding Kg",
+            "type": "number"
+          },
+          "short_kg": {
+            "title": "Short Kg",
+            "type": "number"
+          },
+          "yarn_type": {
+            "$ref": "#/components/schemas/YarnTypeRef"
+          }
+        },
+        "required": [
+          "yarn_type",
+          "need_kg",
+          "issued_kg",
+          "outstanding_kg",
+          "available_kg",
+          "short_kg"
+        ],
+        "title": "YarnCheckLine",
+        "type": "object"
+      },
+      "YarnCheckOut": {
+        "properties": {
+          "can_start": {
+            "title": "Can Start",
+            "type": "boolean"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/YarnCheckLine"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_code",
+          "can_start",
+          "lines"
+        ],
+        "title": "YarnCheckOut",
+        "type": "object"
+      },
       "YarnTypeIn": {
         "properties": {
           "code": {
@@ -1318,6 +2275,34 @@
           }
         },
         "title": "YarnTypePatch",
+        "type": "object"
+      },
+      "YarnTypeRef": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "colour": {
+            "title": "Colour",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "colour"
+        ],
+        "title": "YarnTypeRef",
         "type": "object"
       }
     }
@@ -1671,6 +2656,250 @@
         ]
       }
     },
+    "/api/lots": {
+      "get": {
+        "operationId": "list_lots_api_lots_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "yarn_type_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Yarn Type Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "blocked",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Blocked"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LotOut"
+                  },
+                  "title": "Response List Lots Api Lots Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Lots",
+        "tags": [
+          "store"
+        ]
+      },
+      "post": {
+        "operationId": "receive_lot_api_lots_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LotReceiveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LotOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Receive Lot",
+        "tags": [
+          "store"
+        ]
+      }
+    },
+    "/api/lots/{lot_code}": {
+      "get": {
+        "operationId": "get_lot_api_lots__lot_code__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lot_code",
+            "required": true,
+            "schema": {
+              "title": "Lot Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LotDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Lot",
+        "tags": [
+          "store"
+        ]
+      }
+    },
+    "/api/lots/{lot_code}/block": {
+      "post": {
+        "operationId": "block_lot_api_lots__lot_code__block_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lot_code",
+            "required": true,
+            "schema": {
+              "title": "Lot Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LotOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Block Lot",
+        "tags": [
+          "store"
+        ]
+      }
+    },
+    "/api/lots/{lot_code}/recall": {
+      "get": {
+        "operationId": "lot_recall_api_lots__lot_code__recall_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lot_code",
+            "required": true,
+            "schema": {
+              "title": "Lot Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecallOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lot Recall",
+        "tags": [
+          "store"
+        ]
+      }
+    },
     "/api/machines": {
       "get": {
         "operationId": "list_machines_api_machines_get",
@@ -1787,6 +3016,455 @@
         ]
       }
     },
+    "/api/movements/adjust": {
+      "post": {
+        "operationId": "adjust_stock_api_movements_adjust_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Adjust Stock",
+        "tags": [
+          "store"
+        ]
+      }
+    },
+    "/api/movements/issue": {
+      "post": {
+        "operationId": "issue_yarn_api_movements_issue_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Issue Yarn",
+        "tags": [
+          "store"
+        ]
+      }
+    },
+    "/api/movements/return": {
+      "post": {
+        "operationId": "return_yarn_api_movements_return_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReturnIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Return Yarn",
+        "tags": [
+          "store"
+        ]
+      }
+    },
+    "/api/orders": {
+      "get": {
+        "operationId": "list_orders_api_orders_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "in": "query",
+            "name": "buyer_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Buyer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrderOut"
+                  },
+                  "title": "Response List Orders Api Orders Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Orders",
+        "tags": [
+          "orders"
+        ]
+      },
+      "post": {
+        "operationId": "create_order_api_orders_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Order",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/orders/{order_code}": {
+      "get": {
+        "operationId": "get_order_api_orders__order_code__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_code",
+            "required": true,
+            "schema": {
+              "title": "Order Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Order",
+        "tags": [
+          "orders"
+        ]
+      },
+      "patch": {
+        "operationId": "change_deadline_api_orders__order_code__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_code",
+            "required": true,
+            "schema": {
+              "title": "Order Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeadlineIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Deadline",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/orders/{order_code}/cancel": {
+      "post": {
+        "operationId": "cancel_order_api_orders__order_code__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_code",
+            "required": true,
+            "schema": {
+              "title": "Order Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Order",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/orders/{order_code}/confirm": {
+      "post": {
+        "operationId": "confirm_order_api_orders__order_code__confirm_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_code",
+            "required": true,
+            "schema": {
+              "title": "Order Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Order",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/orders/{order_code}/yarn-check": {
+      "get": {
+        "operationId": "yarn_check_api_orders__order_code__yarn_check_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_code",
+            "required": true,
+            "schema": {
+              "title": "Order Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YarnCheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Yarn Check",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
     "/api/shifts": {
       "get": {
         "operationId": "list_shifts_api_shifts_get",
@@ -1900,6 +3578,31 @@
         "summary": "Update/Shifts",
         "tags": [
           "master data"
+        ]
+      }
+    },
+    "/api/stock": {
+      "get": {
+        "operationId": "stock_api_stock_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StockRow"
+                  },
+                  "title": "Response Stock Api Stock Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Stock",
+        "tags": [
+          "store"
         ]
       }
     },
