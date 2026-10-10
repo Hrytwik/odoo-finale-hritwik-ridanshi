@@ -1269,3 +1269,12 @@ h1 {
     animation: none;
   }
 }
+
+/* Edge and Chrome add their own "show password" eye; the app has its own, so hide the browser's to avoid two */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+input[type='password']::-webkit-credentials-auto-fill-button {
+  display: none !important;
+}
