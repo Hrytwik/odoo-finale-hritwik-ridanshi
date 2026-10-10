@@ -80,6 +80,15 @@ Settings: `yolo26n.pt`, `device=mps`, small fixed batch, early stopping. Output 
 
 Optional variant B: add the public **Roboflow "Fabric Defect Detection Subset"** (594 images, classes colour/hole/thread, needs a free account) to the training set, and compare variant A (own photos only) with B on the same test set. **Do not include any public data in a committed model until its licence has been read on its official page and credited in the README.** AITEX (245 strips of 4096×256 px with pixel masks, 7 fabrics) needs tiling and mask-to-box conversion, so it is lower priority.
 
+## Public data actually used: Roboflow "Fabric Defect Detection Subset" (checked 2026-10-10)
+
+- **Licence: CC BY 4.0**, stated in the dataset's own `README.dataset.txt` and `data.yaml`. It needs attribution, which is in the root README (credits). Source: https://universe.roboflow.com/first-workspace-gan/fabric-defect-detection-subset
+- 594 images, all 640×640: 416 train, 119 valid, 59 test. Boxes: `hole` 245, `color` 280, `thread` 326. Median box is about 4% of the image.
+- **Every image contains at least one defect: there are no clean images.** A model trained on it alone would learn to always find something, so it cannot pass the false-alarm criterion without clean examples of our own.
+- `color` boxes are dark ink-like smears on white cloth (judged from 3 samples), so they are mapped to our `stain`. Mapping (tested): color→stain, hole→hole, thread→thread_fault. The "hole" examples are frayed, torn patches rather than clean round holes.
+- Place it at `services/api/ml/data/public/roboflow_subset/` (git-ignored). Build the training set with `uv run --group ml python -m ml.prepare_data --own ml/data/own --public ml/data/public/roboflow_subset --out ml/data/combined` (variant B), or without `--public` (variant A).
+- Its own `test` split is **not** our test: the kill criteria use our own held-out photos only.
+
 ## Phase 4 — Evaluate and decide
 
 ```

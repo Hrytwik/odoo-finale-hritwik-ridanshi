@@ -43,3 +43,8 @@ Running the tests erases every table in `TEST_DATABASE_URL`, so the test setup r
 | `npm run dev` | API + web together |
 | `npm run test:api` | backend tests (real Postgres `everest_test`) |
 | `npm run contracts` | regenerate `contracts/openapi.json` and `contracts/types.ts` |
+
+## Credits
+
+- Defect-detection experiments use [Ultralytics YOLO](https://docs.ultralytics.com/) (AGPL-3.0).
+- Public training images: "Fabric Defect Detection Subset" by First Workspace Gan, Roboflow Universe, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): https://universe.roboflow.com/first-workspace-gan/fabric-defect-detection-subset
