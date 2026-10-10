@@ -9,7 +9,7 @@ Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here 
 
 | # | Plan | Status |
 |---|---|---|
-| B1 | Foundation — API skeleton, all 29 tables, login, uploads, live events, master data, full API contract with example data | in progress: Tasks 1–8 of 13 done, plus the test-database guard (branch `b/foundation`) |
+| B1 | Foundation — API skeleton, all 29 tables, login, uploads, live events, master data, full API contract with example data | in progress: Tasks 1–9 of 13 done, plus the test-database guard (branch `b/foundation`) |
 | BV | Vision spike — cloth photos, labelling, YOLO fine-tune, 3-hour kill criteria (runs in parallel from the start) | not written |
 | B2 | Store & orders — receiving, ledger, stock and yarn-need views, yarn check, order lifecycle | not written |
 | B3 | Floor — runs, hand-over, roll off, dyeing loads, breakdowns, machine status view, live events | not written |

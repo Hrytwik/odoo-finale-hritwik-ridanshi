@@ -55,6 +55,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/buyers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List/Buyers */
+        get: operations["list_buyers_api_buyers_get"];
+        put?: never;
+        /** Create/Buyers */
+        post: operations["create_buyers_api_buyers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/buyers/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update/Buyers */
+        patch: operations["update_buyers_api_buyers__item_id__patch"];
+        trace?: never;
+    };
     "/api/events": {
         parameters: {
             query?: never;
@@ -72,6 +107,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fabric-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Fabric Types */
+        get: operations["list_fabric_types_api_fabric_types_get"];
+        put?: never;
+        /** Create Fabric Type */
+        post: operations["create_fabric_type_api_fabric_types_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fabric-types/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Fabric Type */
+        patch: operations["update_fabric_type_api_fabric_types__item_id__patch"];
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -87,6 +157,111 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/machines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List/Machines */
+        get: operations["list_machines_api_machines_get"];
+        put?: never;
+        /** Create/Machines */
+        post: operations["create_machines_api_machines_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/machines/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update/Machines */
+        patch: operations["update_machines_api_machines__item_id__patch"];
+        trace?: never;
+    };
+    "/api/shifts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List/Shifts */
+        get: operations["list_shifts_api_shifts_get"];
+        put?: never;
+        /** Create/Shifts */
+        post: operations["create_shifts_api_shifts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shifts/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update/Shifts */
+        patch: operations["update_shifts_api_shifts__item_id__patch"];
+        trace?: never;
+    };
+    "/api/suppliers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List/Suppliers */
+        get: operations["list_suppliers_api_suppliers_get"];
+        put?: never;
+        /** Create/Suppliers */
+        post: operations["create_suppliers_api_suppliers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/suppliers/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update/Suppliers */
+        patch: operations["update_suppliers_api_suppliers__item_id__patch"];
         trace?: never;
     };
     "/api/uploads": {
@@ -123,6 +298,111 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Users */
+        get: operations["list_users_api_users_get"];
+        put?: never;
+        /** Create User */
+        post: operations["create_user_api_users_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update User */
+        patch: operations["update_user_api_users__item_id__patch"];
+        trace?: never;
+    };
+    "/api/workers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List/Workers */
+        get: operations["list_workers_api_workers_get"];
+        put?: never;
+        /** Create/Workers */
+        post: operations["create_workers_api_workers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workers/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update/Workers */
+        patch: operations["update_workers_api_workers__item_id__patch"];
+        trace?: never;
+    };
+    "/api/yarn-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List/Yarn-Types */
+        get: operations["list_yarn_types_api_yarn_types_get"];
+        put?: never;
+        /** Create/Yarn-Types */
+        post: operations["create_yarn_types_api_yarn_types_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yarn-types/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update/Yarn-Types */
+        patch: operations["update_yarn_types_api_yarn_types__item_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -131,6 +411,79 @@ export interface components {
         Body_upload_api_uploads_post: {
             /** File */
             file: string;
+        };
+        /** BuyerIn */
+        BuyerIn: {
+            /** Contact Name */
+            contact_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone?: string | null;
+        };
+        /** BuyerOut */
+        BuyerOut: {
+            /** Contact Name */
+            contact_name: string | null;
+            /** Email */
+            email: string | null;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string | null;
+        };
+        /** BuyerPatch */
+        BuyerPatch: {
+            /** Contact Name */
+            contact_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Phone */
+            phone?: string | null;
+        };
+        /** FabricTypeIn */
+        FabricTypeIn: {
+            /** Name */
+            name: string;
+            /** Recipe */
+            recipe: components["schemas"]["RecipeLineIn"][];
+            /**
+             * Wastage Pct
+             * @default 5
+             */
+            wastage_pct: number;
+            /** Width In */
+            width_in: number;
+        };
+        /** FabricTypeOut */
+        FabricTypeOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Recipe */
+            recipe: components["schemas"]["RecipeLineOut"][];
+            /** Wastage Pct */
+            wastage_pct: number;
+            /** Width In */
+            width_in: number;
+        };
+        /** FabricTypePatch */
+        FabricTypePatch: {
+            /** Name */
+            name?: string | null;
+            /** Recipe */
+            recipe?: components["schemas"]["RecipeLineIn"][] | null;
+            /** Wastage Pct */
+            wastage_pct?: number | null;
+            /** Width In */
+            width_in?: number | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -151,6 +504,63 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** MachineIn */
+        MachineIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Rated Output Per Hour */
+            rated_output_per_hour: number;
+            /**
+             * Running Cost Per Hour
+             * @default 0
+             */
+            running_cost_per_hour: number;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "spinning" | "weaving" | "dyeing";
+        };
+        /** MachineOut */
+        MachineOut: {
+            /** Active */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Rated Output Per Hour */
+            rated_output_per_hour: number;
+            /** Running Cost Per Hour */
+            running_cost_per_hour: number;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "spinning" | "weaving" | "dyeing";
+        };
+        /** MachinePatch */
+        MachinePatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Code */
+            code?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Rated Output Per Hour */
+            rated_output_per_hour?: number | null;
+            /** Running Cost Per Hour */
+            running_cost_per_hour?: number | null;
+        };
         /** Me */
         Me: {
             /** Buyer Id */
@@ -169,12 +579,138 @@ export interface components {
             /** Worker Id */
             worker_id: number | null;
         };
+        /** RecipeLineIn */
+        RecipeLineIn: {
+            /** Kg Per Metre */
+            kg_per_metre: number;
+            /** Yarn Type Id */
+            yarn_type_id: number;
+        };
+        /** RecipeLineOut */
+        RecipeLineOut: {
+            /** Kg Per Metre */
+            kg_per_metre: number;
+            /** Yarn Type Code */
+            yarn_type_code: string;
+            /** Yarn Type Id */
+            yarn_type_id: number;
+        };
+        /** ShiftIn */
+        ShiftIn: {
+            /**
+             * End Time
+             * Format: time
+             */
+            end_time: string;
+            /** Name */
+            name: string;
+            /**
+             * Start Time
+             * Format: time
+             */
+            start_time: string;
+        };
+        /** ShiftOut */
+        ShiftOut: {
+            /**
+             * End Time
+             * Format: time
+             */
+            end_time: string;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Start Time
+             * Format: time
+             */
+            start_time: string;
+        };
+        /** ShiftPatch */
+        ShiftPatch: {
+            /** End Time */
+            end_time?: string | null;
+            /** Start Time */
+            start_time?: string | null;
+        };
+        /** SupplierIn */
+        SupplierIn: {
+            /**
+             * Lead Time Days
+             * @default 7
+             */
+            lead_time_days: number;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone?: string | null;
+        };
+        /** SupplierOut */
+        SupplierOut: {
+            /** Id */
+            id: number;
+            /** Lead Time Days */
+            lead_time_days: number;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string | null;
+        };
+        /** SupplierPatch */
+        SupplierPatch: {
+            /** Lead Time Days */
+            lead_time_days?: number | null;
+            /** Name */
+            name?: string | null;
+            /** Phone */
+            phone?: string | null;
+        };
         /** UploadOut */
         UploadOut: {
             /** Path */
             path: string;
             /** Url */
             url: string;
+        };
+        /** UserIn */
+        UserIn: {
+            /** Buyer Id */
+            buyer_id?: number | null;
+            /** Password */
+            password: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "owner" | "accountant" | "store" | "supervisor" | "qc" | "dispatch" | "buyer";
+            /** Username */
+            username: string;
+            /** Worker Id */
+            worker_id?: number | null;
+        };
+        /** UserOut */
+        UserOut: {
+            /** Buyer Id */
+            buyer_id: number | null;
+            /** Id */
+            id: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "owner" | "accountant" | "store" | "supervisor" | "qc" | "dispatch" | "buyer";
+            /** Username */
+            username: string;
+            /** Worker Id */
+            worker_id: number | null;
+        };
+        /** UserPatch */
+        UserPatch: {
+            /** Password */
+            password?: string | null;
+            /** Worker Id */
+            worker_id?: number | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -188,6 +724,92 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** WorkerIn */
+        WorkerIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Daily Wage */
+            daily_wage: number;
+            /** Name */
+            name: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "operator" | "inspector" | "storekeeper" | "supervisor" | "dispatch" | "helper";
+        };
+        /** WorkerOut */
+        WorkerOut: {
+            /** Active */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Daily Wage */
+            daily_wage: number;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "operator" | "inspector" | "storekeeper" | "supervisor" | "dispatch" | "helper";
+        };
+        /** WorkerPatch */
+        WorkerPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Daily Wage */
+            daily_wage?: number | null;
+            /** Name */
+            name?: string | null;
+            /** Role */
+            role?: ("operator" | "inspector" | "storekeeper" | "supervisor" | "dispatch" | "helper") | null;
+        };
+        /** YarnTypeIn */
+        YarnTypeIn: {
+            /** Code */
+            code: string;
+            /** Colour */
+            colour: string;
+            /** Name */
+            name: string;
+            /**
+             * Reorder Level Kg
+             * @default 0
+             */
+            reorder_level_kg: number;
+        };
+        /** YarnTypeOut */
+        YarnTypeOut: {
+            /** Code */
+            code: string;
+            /** Colour */
+            colour: string;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Reorder Level Kg */
+            reorder_level_kg: number;
+        };
+        /** YarnTypePatch */
+        YarnTypePatch: {
+            /** Code */
+            code?: string | null;
+            /** Colour */
+            colour?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Reorder Level Kg */
+            reorder_level_kg?: number | null;
         };
     };
     responses: never;
@@ -269,6 +891,94 @@ export interface operations {
             };
         };
     };
+    list_buyers_api_buyers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuyerOut"][];
+                };
+            };
+        };
+    };
+    create_buyers_api_buyers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuyerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuyerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_buyers_api_buyers__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuyerPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuyerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     events_api_events_get: {
         parameters: {
             query?: never;
@@ -284,6 +994,94 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    list_fabric_types_api_fabric_types_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FabricTypeOut"][];
+                };
+            };
+        };
+    };
+    create_fabric_type_api_fabric_types_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FabricTypeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FabricTypeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_fabric_type_api_fabric_types__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FabricTypePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FabricTypeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };
@@ -303,6 +1101,270 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Health"];
+                };
+            };
+        };
+    };
+    list_machines_api_machines_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MachineOut"][];
+                };
+            };
+        };
+    };
+    create_machines_api_machines_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MachineIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MachineOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_machines_api_machines__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MachinePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MachineOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_shifts_api_shifts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftOut"][];
+                };
+            };
+        };
+    };
+    create_shifts_api_shifts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShiftIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_shifts_api_shifts__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShiftPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_suppliers_api_suppliers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierOut"][];
+                };
+            };
+        };
+    };
+    create_suppliers_api_suppliers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_suppliers_api_suppliers__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -357,6 +1419,270 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users_api_users_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"][];
+                };
+            };
+        };
+    };
+    create_user_api_users_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_api_users__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_workers_api_workers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkerOut"][];
+                };
+            };
+        };
+    };
+    create_workers_api_workers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_workers_api_workers__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkerPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_yarn_types_api_yarn_types_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YarnTypeOut"][];
+                };
+            };
+        };
+    };
+    create_yarn_types_api_yarn_types_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YarnTypeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YarnTypeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_yarn_types_api_yarn_types__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YarnTypePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YarnTypeOut"];
+                };
             };
             /** @description Validation Error */
             422: {

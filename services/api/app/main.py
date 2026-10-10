@@ -5,6 +5,7 @@ from app.config import settings
 from app.core.errors import install_error_handlers
 from app.modules.auth.router import router as auth_router
 from app.modules.events.router import router as events_router
+from app.modules.master.router import router as master_router
 from app.modules.uploads.router import router as uploads_router
 
 
@@ -25,6 +26,7 @@ def create_app() -> FastAPI:
     api.include_router(auth_router)
     api.include_router(events_router)
     api.include_router(uploads_router)
+    api.include_router(master_router)
     application.include_router(api)
     return application
 

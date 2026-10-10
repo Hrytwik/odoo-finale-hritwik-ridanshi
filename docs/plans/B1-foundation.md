@@ -3150,6 +3150,10 @@ def test_buyer_cannot_read_master_data(client, login_as):
     assert client.get("/api/suppliers").status_code == 403
 
 
+def test_not_logged_in_is_401(client):
+    assert client.get("/api/suppliers").status_code == 401
+
+
 def test_patch_updates_only_sent_fields(client, login_as):
     login_as("owner")
     created = client.post("/api/machines", json={
@@ -3193,6 +3197,23 @@ def test_fabric_type_needs_recipe_and_no_duplicate_yarns(client, login_as, db):
     assert client.post("/api/fabric-types", json={**base, "recipe": dup}).status_code == 422
 
 
+def test_recipe_with_unknown_yarn_type_is_404(client, login_as):
+    login_as("owner")
+    r = client.post("/api/fabric-types", json={"name": "Ghost", "width_in": 60, "wastage_pct": 5,
+                                               "recipe": [{"yarn_type_id": 999999, "kg_per_metre": 0.1}]})
+    assert r.status_code == 404
+
+
+def test_patching_the_recipe_replaces_it(client, login_as, db):
+    login_as("owner")
+    a, b = make_yarn_type(db), make_yarn_type(db)
+    ft = client.post("/api/fabric-types", json={"name": "Denim", "width_in": 60, "wastage_pct": 5,
+                                                "recipe": [{"yarn_type_id": a.id, "kg_per_metre": 0.2}]}).json()
+    r = client.patch(f"/api/fabric-types/{ft['id']}", json={"recipe": [{"yarn_type_id": b.id, "kg_per_metre": 0.3}]})
+    assert r.status_code == 200
+    assert [(x["yarn_type_id"], x["kg_per_metre"]) for x in r.json()["recipe"]] == [(b.id, 0.3)]
+
+
 def test_wastage_over_50_rejected(client, login_as, db):
     login_as("owner")
     yt = make_yarn_type(db)
@@ -3211,6 +3232,18 @@ def test_user_create_hashes_password_and_validates_links(client, login_as):
     assert bad.status_code == 422
 
 
+def test_created_user_can_log_in(client, login_as):
+    login_as("owner")
+    client.post("/api/users", json={"username": "newowner", "password": "secret12", "role": "owner"})
+    client.cookies.clear()
+    assert client.post("/api/auth/login", json={"username": "newowner", "password": "secret12"}).status_code == 200
+
+
+def test_only_owner_can_list_users(client, login_as):
+    login_as("accountant")
+    assert client.get("/api/users").status_code == 403
+
+
 def test_user_password_over_72_bytes_is_422_not_500(client, login_as):
     login_as("owner")
     r = client.post("/api/users", json={"username": "longpw", "password": "é" * 40, "role": "owner"})
@@ -3221,6 +3254,35 @@ def test_shift_start_equals_end_rejected(client, login_as):
     login_as("owner")
     r = client.post("/api/shifts", json={"name": "Z", "start_time": "06:00", "end_time": "06:00"})
     assert r.status_code == 422
+
+
+def test_patching_a_required_field_to_null_is_422_not_500(client, login_as):
+    login_as("owner")
+    b = client.post("/api/buyers", json={"name": "Null Test"}).json()
+    r = client.patch(f"/api/buyers/{b['id']}", json={"name": None})
+    assert r.status_code == 422, r.text
+
+
+def test_patch_to_another_records_unique_value_is_409(client, login_as):
+    login_as("owner")
+    client.post("/api/buyers", json={"name": "First"})
+    second = client.post("/api/buyers", json={"name": "Second"}).json()
+    r = client.patch(f"/api/buyers/{second['id']}", json={"name": "First"})
+    assert r.status_code == 409 and r.json()["field"] == "name"
+
+
+def test_session_is_usable_after_a_rejected_write(client, login_as):
+    login_as("owner")
+    client.post("/api/buyers", json={"name": "Dup"})
+    assert client.post("/api/buyers", json={"name": "Dup"}).status_code == 409
+    assert client.post("/api/buyers", json={"name": "Other"}).status_code == 201
+
+
+def test_shift_patch_that_makes_times_equal_is_rejected_cleanly(client, login_as):
+    login_as("owner")
+    s = client.post("/api/shifts", json={"name": "A", "start_time": "06:00", "end_time": "14:00"}).json()
+    r = client.patch(f"/api/shifts/{s['id']}", json={"end_time": "06:00"})
+    assert r.status_code == 422 and r.json()["code"] == "INVALID_VALUE", r.text
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
