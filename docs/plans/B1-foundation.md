@@ -738,7 +738,7 @@ git commit -m "Add database session, migrations and real-Postgres test harness"
 
 ---
 
-### Task 4: Reference and people tables (12 tables)
+### Task 4: Reference and people tables (11 tables)
 
 **Files:**
 - Create: `services/api/app/db/models/master.py`, `services/api/app/db/models/people.py`
@@ -2064,7 +2064,7 @@ git commit -m "Add orders, production runs, rolls and QC tables"
 
 ---
 
-### Task 8: Store, dispatch, money and AI-settings tables (10 tables)
+### Task 8: Store, dispatch, money and AI-settings tables (11 tables)
 
 **Files:**
 - Create: `services/api/app/db/models/store.py`, `services/api/app/db/models/trade.py`, `services/api/app/db/models/ai.py`
