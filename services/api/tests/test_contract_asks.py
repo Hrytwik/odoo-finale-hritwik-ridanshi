@@ -5,9 +5,20 @@ STAFF_ROLES = ["owner", "accountant", "store", "supervisor", "qc", "dispatch"]
 
 # ---- 1. buyers must not receive internal data from the roll passport ------------------------
 
-def test_a_buyer_never_receives_cost_lots_machines_or_operators(client, login_as):
-    login_as("buyer")
-    p = client.get("/api/rolls/R-0142/passport").json()
+def _life_for(db, buyer=None):
+    from tests.factories import make_inspection
+    from tests.test_passport import Life
+
+    life = Life(db, buyer=buyer)
+    make_inspection(db, life.roll, "pass", photo_path="uploads/" + "ab12" * 8 + ".jpg",
+                    ai_suggestion={"model_version": "yolo-1", "verdict": "pass", "boxes": []})
+    return life
+
+
+def test_a_buyer_never_receives_cost_lots_machines_or_operators(client, db, login_as):
+    buyer_user = login_as("buyer")
+    life = _life_for(db, buyer_user.buyer)
+    p = client.get(f"/api/rolls/{life.roll.code}/passport").json()
     assert p["cost"] is None
     assert p["yarn_lots"] == []
     assert p["runs"] == []
@@ -17,23 +28,29 @@ def test_a_buyer_never_receives_cost_lots_machines_or_operators(client, login_as
         assert insp["ai_suggestion"] is None and insp["photo_url"] is None
 
 
-def test_a_buyer_still_sees_status_order_and_dispatch(client, login_as):
-    login_as("buyer")
-    p = client.get("/api/rolls/R-0142/passport").json()
+def test_a_buyer_still_sees_status_order_and_dispatch(client, db, login_as):
+    buyer_user = login_as("buyer")
+    life = _life_for(db, buyer_user.buyer)
+    p = client.get(f"/api/rolls/{life.roll.code}/passport").json()
     assert p["roll"]["status"] and p["order_code"] and p["deadline"]
 
 
 @pytest.mark.parametrize("role", STAFF_ROLES)
-def test_staff_keep_the_full_passport(client, login_as, role):
+def test_staff_keep_the_full_passport(client, db, login_as, role):
     login_as(role)
-    p = client.get("/api/rolls/R-0142/passport").json()
-    assert p["cost"] is not None and p["yarn_lots"] and p["runs"]
+    life = _life_for(db)
+    p = client.get(f"/api/rolls/{life.roll.code}/passport").json()
+    assert p["yarn_lots"] and p["runs"]              # cost is empty until costing (B6)
 
 
-def test_the_buyer_response_text_contains_no_secrets(client, login_as):
-    login_as("buyer")
-    text = client.get("/api/rolls/R-0142/passport").text
-    for secret in ("Vardhman", "Ravi Kumar", "Meena Devi", "LOOM-04", "SPIN-01", "per_metre", "5955"):
+def test_the_buyer_response_text_contains_no_secrets(client, db, login_as):
+    buyer_user = login_as("buyer")
+    life = _life_for(db, buyer_user.buyer)
+    text = client.get(f"/api/rolls/{life.roll.code}/passport").text
+    assert life.roll.code in text                    # a real passport, not an error page
+    secrets = [life.supplier.name, life.spin.operator.name, life.weave.operator.name, life.loom.code,
+               life.spin_machine.code, life.lot.lot_code, "per_metre", "uploads/", "yolo-1"]
+    for secret in secrets:
         assert secret not in text, secret
 
 

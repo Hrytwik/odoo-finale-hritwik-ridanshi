@@ -3,7 +3,7 @@ import pytest
 
 @pytest.mark.parametrize("role,path", [
     ("supervisor", "/api/floor"), ("qc", "/api/qc/queue"),
-    ("qc", "/api/qc/model-card"), ("owner", "/api/rolls/R-0142/passport"), ("buyer", "/api/rolls/R-0142/passport"),
+    ("qc", "/api/qc/model-card"),
 ])
 def test_example_data_served(client, login_as, role, path):
     login_as(role)
