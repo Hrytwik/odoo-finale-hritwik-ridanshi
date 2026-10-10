@@ -28,7 +28,7 @@
 `| A2 | Store & orders screens | **done**: `A2-store-orders-screens.md` |
 `| A3 | Floor screens | **done**: `A3-floor-screens.md` |
 `| A4 | QC + Roll Passport screens | **done**: `A4-qc-and-roll-passport.md` |
-`| A5 | Dispatch, invoices, money screens | **done**: \`A5-dispatch-invoices-money.md\` |
+| A5 | Dispatch, invoices, money screens | **done**: `A5-dispatch-invoices-money.md` |
 `| A6 | People module (API + screens) | not written |
 `| A7 | Owner dashboard, insights, master-data screens | not written |
 `| A8 | Language-model module (adapters, tools, report card) + AI screens | not written |
