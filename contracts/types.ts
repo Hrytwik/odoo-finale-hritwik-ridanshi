@@ -4,6 +4,158 @@
  */
 
 export interface paths {
+    "/api/ai/buyer-assistant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buyer Assistant */
+        post: operations["buyer_assistant_api_ai_buyer_assistant_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/copilot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Copilot */
+        post: operations["copilot_api_ai_copilot_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/explain-delay/{order_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Explain Delay
+         * @description Words the delivery estimate and the two tested what-ifs. It cannot propose a fix that the code did not test.
+         */
+        post: operations["explain_delay_api_ai_explain_delay__order_code__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/month-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Month Summary */
+        post: operations["month_summary_api_ai_month_summary_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/recall-drafts/{lot_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recall Drafts
+         * @description A short message for each buyer who received rolls made from this yarn lot. A person reads and sends them.
+         */
+        post: operations["recall_drafts_api_ai_recall_drafts__lot_code__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/report-card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report Cards
+         * @description The most recent runs, newest first, so two models can be compared.
+         */
+        get: operations["report_cards_api_ai_report_card_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/report-card/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Report Card
+         * @description Asks the model the questions in `reportcard` and marks each answer against the figure read from the data just now.
+         */
+        post: operations["run_report_card_api_ai_report_card_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Settings */
+        get: operations["get_settings_api_ai_settings_get"];
+        /**
+         * Put Settings
+         * @description Saves the provider, model and address. The key is encrypted before it is stored and is never sent back.
+         */
+        put: operations["put_settings_api_ai_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/attendance": {
         parameters: {
             query?: never;
@@ -1449,6 +1601,37 @@ export interface components {
             /** Received From Buyers */
             received_from_buyers: number;
         };
+        /** ChatIn */
+        ChatIn: {
+            /**
+             * History
+             * @default []
+             */
+            history: components["schemas"]["ChatTurnIn"][];
+            /** Question */
+            question: string;
+        };
+        /** ChatOut */
+        ChatOut: {
+            /** Answer */
+            answer: string;
+            /** Model */
+            model: string;
+            /** Provider */
+            provider: string;
+            /** Sources */
+            sources: components["schemas"]["SourceOut"][];
+        };
+        /** ChatTurnIn */
+        ChatTurnIn: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Text */
+            text: string;
+        };
         /** ClassResult */
         ClassResult: {
             /**
@@ -1575,6 +1758,17 @@ export interface components {
              */
             started_at: string;
         };
+        /** DraftOut */
+        DraftOut: {
+            /** Model */
+            model: string;
+            /** Provider */
+            provider: string;
+            /** Sources */
+            sources: components["schemas"]["SourceOut"][];
+            /** Text */
+            text: string;
+        };
         /** EtaOut */
         EtaOut: {
             /** Bottleneck Stage */
@@ -1599,6 +1793,17 @@ export interface components {
             stages: components["schemas"]["StageFinish"][];
             /** What Ifs */
             what_ifs: components["schemas"]["WhatIf"][];
+        };
+        /** EvalDetail */
+        EvalDetail: {
+            /** Answer */
+            answer: string;
+            /** Expected */
+            expected: string;
+            /** Passed */
+            passed: boolean;
+            /** Question */
+            question: string;
         };
         /** FabricTypeIn */
         FabricTypeIn: {
@@ -2042,6 +2247,11 @@ export interface components {
             /** Trained At */
             trained_at: string | null;
         };
+        /** MonthIn */
+        MonthIn: {
+            /** Month */
+            month: string;
+        };
         /** MonthReport */
         MonthReport: {
             cash: components["schemas"]["CashPanel"];
@@ -2433,6 +2643,24 @@ export interface components {
             /** Roll Count */
             roll_count: number;
         };
+        /** RecallDraft */
+        RecallDraft: {
+            /** Buyer Name */
+            buyer_name: string;
+            /** Message */
+            message: string;
+        };
+        /** RecallDraftsOut */
+        RecallDraftsOut: {
+            /** Drafts */
+            drafts: components["schemas"]["RecallDraft"][];
+            /** Model */
+            model: string;
+            /** Provider */
+            provider: string;
+            /** Sources */
+            sources: components["schemas"]["SourceOut"][];
+        };
         /** RecallOut */
         RecallOut: {
             /** Buyers */
@@ -2507,6 +2735,26 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+        };
+        /** ReportCardOut */
+        ReportCardOut: {
+            /** Details */
+            details: components["schemas"]["EvalDetail"][];
+            /** Id */
+            id: number;
+            /** Model */
+            model: string;
+            /** Provider */
+            provider: string;
+            /**
+             * Run At
+             * Format: date-time
+             */
+            run_at: string;
+            /** Score */
+            score: number;
+            /** Total */
+            total: number;
         };
         /** ReturnIn */
         ReturnIn: {
@@ -2665,6 +2913,50 @@ export interface components {
             /** Roll Code */
             roll_code: string;
         };
+        /** SettingsIn */
+        SettingsIn: {
+            /** Api Key */
+            api_key?: string | null;
+            /** Base Url */
+            base_url?: string | null;
+            /** Model */
+            model: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "anthropic" | "openai_compatible";
+            /**
+             * Supports Tools
+             * @default true
+             */
+            supports_tools: boolean;
+            /**
+             * Supports Vision
+             * @default false
+             */
+            supports_vision: boolean;
+        };
+        /** SettingsOut */
+        SettingsOut: {
+            /** Api Key Set */
+            api_key_set: boolean;
+            /** Base Url */
+            base_url: string | null;
+            /** Configured */
+            configured: boolean;
+            /** Model */
+            model: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "anthropic" | "openai_compatible";
+            /** Supports Tools */
+            supports_tools: boolean;
+            /** Supports Vision */
+            supports_vision: boolean;
+        };
         /** ShiftIn */
         ShiftIn: {
             /**
@@ -2720,6 +3012,17 @@ export interface components {
             suggested_kg: number;
             supplier: components["schemas"]["Ref"] | null;
             yarn_type: components["schemas"]["YarnTypeRef"];
+        };
+        /** SourceOut */
+        SourceOut: {
+            /** Input */
+            input: {
+                [key: string]: unknown;
+            };
+            /** Summary */
+            summary: string;
+            /** Tool */
+            tool: string;
         };
         /** StageFinish */
         StageFinish: {
@@ -3067,6 +3370,260 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    buyer_assistant_api_ai_buyer_assistant_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    copilot_api_ai_copilot_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    explain_delay_api_ai_explain_delay__order_code__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    month_summary_api_ai_month_summary_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MonthIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recall_drafts_api_ai_recall_drafts__lot_code__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lot_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecallDraftsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_cards_api_ai_report_card_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportCardOut"][];
+                };
+            };
+        };
+    };
+    run_report_card_api_ai_report_card_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportCardOut"];
+                };
+            };
+        };
+    };
+    get_settings_api_ai_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+        };
+    };
+    put_settings_api_ai_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_attendance_api_attendance_get: {
         parameters: {
             query: {

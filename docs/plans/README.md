@@ -31,5 +31,5 @@ Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here 
 | A5 | Dispatch, invoices, money screens | **done**: `A5-dispatch-invoices-money.md` |
 | A6 | People module (API + screens) | **done**: `A6-people.md` |
 | A7 | Owner dashboard, insights, master-data screens | **done**: `A7-owner-insights-master-data.md` |
-| A8 | Language-model module (adapters, tools, report card) + AI screens | not written |
+| A8 | Language-model module (adapters, tools, report card) + AI screens | **in progress**: backend and screens built, wiring and screen tests left: `A8-language-model.md` |
 | A9 | Buyer portal + end-to-end demo script | not written |
