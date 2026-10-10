@@ -22,7 +22,7 @@ export default function ComponentsPreview() {
   const [pending, setPending] = useState(false)
 
   return (
-    <main style={{ maxWidth: 960, margin: '0 auto', padding: 'var(--space-4)' }} className="stack">
+    <div className="stack">
       <PageHeader
         title="Component preview"
         description="Everything the screens are built from. Colours and spacing come from styles/theme.css."
@@ -144,6 +144,6 @@ export default function ComponentsPreview() {
           </div>
         </div>
       </Dialog>
-    </main>
+    </div>
   )
 }

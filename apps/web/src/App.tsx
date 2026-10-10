@@ -1,6 +1,11 @@
-import ComponentsPreview from './pages/dev/ComponentsPreview'
+import { RouterProvider } from 'react-router-dom'
+import { Providers } from './providers'
+import { router } from './router'
 
-// Temporary: the router and app shell replace this in A1 Task 5.
 export default function App() {
-  return <ComponentsPreview />
+  return (
+    <Providers>
+      <RouterProvider router={router} />
+    </Providers>
+  )
 }

@@ -1,7 +1,7 @@
 # A1 — Web Foundation Implementation Plan
 
 > **Summary:** Track A's first plan: React + Vite app scaffold, typed API client generated from `contracts/`, standard error handling, the form pattern (no double submits, server errors under fields), role-based navigation, login and session gate, responsive app shell with plain-CSS design-system components and a page for every route in spec §11, live-update hook, and the HTTPS phone-camera check.
-> **Last updated:** 2026-10-10 12:31 IST (stack changed from Next.js + Tailwind + shadcn/ui to React + Vite + plain CSS; see the change box below)
+> **Last updated:** 2026-10-10 13:03 IST (stack changed from Next.js + Tailwind + shadcn/ui to React + Vite + plain CSS; see the change box below)
 
 > **STACK CHANGE (Ridanshi, 2026-10-10 12:28 IST):** the web app is **React 19 + TypeScript on Vite** with **React Router** and **plain CSS** (no Next.js, no Tailwind, no shadcn/ui). Wherever a task below shows Next.js or Tailwind code, use this mapping:
 >
@@ -14,7 +14,7 @@
 > | Tailwind classes, shadcn/ui components | plain CSS: tokens in `src/styles/theme.css`, base in `base.css`, component styles in `components.css`; our own components in `src/components/ui/` |
 > | env `LAN_IP` for `allowedDevOrigins` | not needed: Vite is configured with `allowedHosts: true` |
 >
-> **Status:** Task 1, Task 2 (error layer; typed client waits for `contracts/types.ts`), Task 3 and the Task 7 files are built and tested on branch `a/web-scaffold`. Code samples in Tasks 4 to 6 still show the Next.js version and get rewritten as each task is built.
+> **Status (2026-10-10 13:03 IST):** built and tested on branch `a/web-scaffold`: Task 1, Task 2, Task 3, Task 4 (login, role menus, session handling), Task 5 except the status-badge file, Task 6 (live events) and the Task 7 files. **Not done:** the status badges (they need `MachineCard`, `RollOut` and `OrderOut` from Hritwik's contract, B1 Tasks 10 and 11) and the real-phone camera test (needs Caddy installed and a phone). **Deviations from the text below:** the 34 routes are one table in `src/routes.ts` rendered by `src/router.tsx` instead of 34 page files; page components live under `src/pages`; the Tasks 4 to 6 code samples below still show Next.js and are superseded by the code in `apps/web`. Extras: Motion Primitives components adapted to plain CSS (`src/components/motion`), Haikei SVG art (`src/assets/art`), bundled Inter and Fraunces fonts.
 
 **How to use this plan:** work through the tasks in order (Task 7 has no dependencies and can be done at any point). Each task is a test-first cycle; tick the checkbox steps as you go and commit at the end of each task.
 

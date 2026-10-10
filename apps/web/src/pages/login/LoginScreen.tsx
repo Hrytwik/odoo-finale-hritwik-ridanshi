@@ -1,0 +1,60 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { Waypoints } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import meshUrl from '@/assets/art/glow-mesh.svg'
+import wavesUrl from '@/assets/art/waves-teal.svg'
+import { BorderTrail } from '@/components/motion/BorderTrail'
+import { GlowEffect } from '@/components/motion/GlowEffect'
+import { Spotlight } from '@/components/motion/Spotlight'
+import { homeFor, safeNext } from '@/lib/nav'
+import { LoginForm } from './LoginForm'
+
+export function LoginScreen() {
+  const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const queryClient = useQueryClient()
+
+  return (
+    <main className="login">
+      <section className="login-art spotlight-host">
+        <img src={wavesUrl} alt="" />
+        <Spotlight size={360} />
+        <div className="login-art-copy">
+          <span className="brand" style={{ color: 'var(--color-on-ink)' }}>
+            <span className="brand-mark">
+              <Waypoints size={16} aria-hidden />
+            </span>
+            Everest Mills
+          </span>
+          <div className="stack-sm">
+            <h2>Every roll, from yarn to invoice.</h2>
+            <p style={{ color: 'var(--color-on-ink-muted)', maxWidth: '38ch' }}>
+              One place for the store, the floor, quality, dispatch and the books. Scan a roll and see its whole life.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="login-panel" style={{ backgroundImage: `url(${meshUrl})` }}>
+        <div className="login-wrap">
+          <GlowEffect blur={36} duration={10} scale={1.05} style={{ opacity: 0.6, borderRadius: 24 }} />
+          <div className="login-card">
+            <BorderTrail size={90} duration={7} />
+            <div className="card-body stack">
+              <div className="stack-sm">
+                <h1>Welcome back</h1>
+                <p className="muted text-sm">Log in to continue to Everest Mills.</p>
+              </div>
+              <LoginForm
+                onSuccess={(me) => {
+                  queryClient.setQueryData(['me'], me)
+                  navigate(safeNext(params.get('next')) ?? homeFor(me.role), { replace: true })
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  )
+}

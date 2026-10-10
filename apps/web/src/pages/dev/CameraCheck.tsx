@@ -24,7 +24,7 @@ export default function CameraCheck() {
   }
 
   return (
-    <main style={{ padding: 16, display: 'grid', gap: 12 }}>
+    <div style={{ display: 'grid', gap: 12 }}>
       <h1>Camera check</h1>
       <p>
         Secure context: <strong>{String(secure)}</strong>
@@ -45,6 +45,6 @@ export default function CameraCheck() {
       <p data-testid="status">
         <strong>{status}</strong>
       </p>
-    </main>
+    </div>
   )
 }
