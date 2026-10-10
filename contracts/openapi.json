@@ -640,6 +640,56 @@
         "title": "ChangePasswordIn",
         "type": "object"
       },
+      "ChannelOut": {
+        "description": "How the message would also reach this buyer on WhatsApp, shown to the owner before sending.",
+        "properties": {
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To"
+          },
+          "tracking_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tracking Url"
+          },
+          "whatsapp_ready": {
+            "title": "Whatsapp Ready",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "whatsapp_ready",
+          "to",
+          "problem",
+          "tracking_url"
+        ],
+        "title": "ChannelOut",
+        "type": "object"
+      },
       "ChatIn": {
         "properties": {
           "history": {
@@ -2419,6 +2469,124 @@
         "title": "Me",
         "type": "object"
       },
+      "MessagingSettingsIn": {
+        "properties": {
+          "account_sid": {
+            "anyOf": [
+              {
+                "maxLength": 60,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Sid"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token"
+          },
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "from_number": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Number"
+          },
+          "public_url": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Url"
+          }
+        },
+        "title": "MessagingSettingsIn",
+        "type": "object"
+      },
+      "MessagingSettingsOut": {
+        "properties": {
+          "account_sid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Sid"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "from_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Number"
+          },
+          "public_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Url"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "token_set": {
+            "title": "Token Set",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_sid",
+          "token_set",
+          "from_number",
+          "public_url",
+          "enabled",
+          "ready"
+        ],
+        "title": "MessagingSettingsOut",
+        "type": "object"
+      },
       "ModelCard": {
         "properties": {
           "available": {
@@ -2755,6 +2923,27 @@
           "reason_label": {
             "title": "Reason Label",
             "type": "string"
+          },
+          "whatsapp_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Detail"
+          },
+          "whatsapp_status": {
+            "enum": [
+              "not_sent",
+              "sent",
+              "failed",
+              "skipped"
+            ],
+            "title": "Whatsapp Status",
+            "type": "string"
           }
         },
         "required": [
@@ -2764,7 +2953,9 @@
           "reason_label",
           "message",
           "created_at",
-          "read"
+          "read",
+          "whatsapp_status",
+          "whatsapp_detail"
         ],
         "title": "NoticeOut",
         "type": "object"
@@ -5085,6 +5276,63 @@
         "title": "SupplierPaymentIn",
         "type": "object"
       },
+      "TestIn": {
+        "properties": {
+          "to": {
+            "maxLength": 40,
+            "minLength": 5,
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to"
+        ],
+        "title": "TestIn",
+        "type": "object"
+      },
+      "TestOut": {
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "status": {
+            "enum": [
+              "sent",
+              "failed",
+              "skipped"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To"
+          }
+        },
+        "required": [
+          "status",
+          "detail",
+          "to"
+        ],
+        "title": "TestOut",
+        "type": "object"
+      },
       "TimelineEvent": {
         "properties": {
           "at": {
@@ -5877,6 +6125,9 @@
       },
       "app__modules__notices__schemas__DraftOut": {
         "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/ChannelOut"
+          },
           "drafted_by_ai": {
             "title": "Drafted By Ai",
             "type": "boolean"
@@ -5888,7 +6139,8 @@
         },
         "required": [
           "message",
-          "drafted_by_ai"
+          "drafted_by_ai",
+          "channel"
         ],
         "title": "DraftOut",
         "type": "object"
@@ -7784,6 +8036,108 @@
         ]
       }
     },
+    "/api/messaging/settings": {
+      "get": {
+        "operationId": "get_messaging_settings_api_messaging_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagingSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Messaging Settings",
+        "tags": [
+          "notices"
+        ]
+      },
+      "put": {
+        "description": "Saves the WhatsApp connection. The token is encrypted before it is stored and is never sent back.",
+        "operationId": "put_messaging_settings_api_messaging_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessagingSettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagingSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Messaging Settings",
+        "tags": [
+          "notices"
+        ]
+      }
+    },
+    "/api/messaging/test": {
+      "post": {
+        "operationId": "test_message_api_messaging_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Message",
+        "tags": [
+          "notices"
+        ]
+      }
+    },
     "/api/money/payables": {
       "get": {
         "operationId": "payables_api_money_payables_get",
@@ -8295,7 +8649,7 @@
     },
     "/api/orders/{order_code}/delay-notice/draft": {
       "post": {
-        "description": "A sentence for the buyer, for the owner to read and edit before sending.",
+        "description": "A sentence for the buyer, for the owner to read and edit before sending, and how it would also reach them on WhatsApp.",
         "operationId": "draft_notice_api_orders__order_code__delay_notice_draft_post",
         "parameters": [
           {

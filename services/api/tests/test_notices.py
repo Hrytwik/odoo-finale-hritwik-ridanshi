@@ -50,7 +50,7 @@ def test_with_a_model_the_sentence_is_written_by_it_from_the_reason_only(client,
     with_model(monkeypatch, adapter)
     login_as("owner")
     r = client.post(f"/api/orders/{order.code}/delay-notice/draft", json={"reason": "machine_breakdown"})
-    assert r.json() == {"message": "We are sorry: your order is delayed by a machine repair.", "drafted_by_ai": True}
+    assert r.json()["message"] == "We are sorry: your order is delayed by a machine repair." and r.json()["drafted_by_ai"] is True
     assert "Machine breakdown" in adapter.prompts[0] and order.code in adapter.prompts[0]
 
 
@@ -159,7 +159,7 @@ def test_a_cut_off_draft_is_retried_with_more_room_and_never_shown_half_written(
     with_model(monkeypatch, adapter)
     login_as("owner")
     r = client.post(f"/api/orders/{order.code}/delay-notice/draft", json={"reason": "machine_breakdown"})
-    assert r.json() == {"message": "Your order is delayed because of a machine repair.", "drafted_by_ai": True}
+    assert r.json()["message"] == "Your order is delayed because of a machine repair." and r.json()["drafted_by_ai"] is True
     assert adapter.calls == [700, 1400]
 
 

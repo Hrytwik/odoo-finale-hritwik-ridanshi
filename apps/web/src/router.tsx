@@ -38,6 +38,7 @@ const SCREENS: Record<string, ComponentType> = {
   'people/wages': lazy(() => import('@/pages/people/Wages')),
   copilot: lazy(() => import('@/pages/ai/Copilot')),
   'settings/ai': lazy(() => import('@/pages/ai/AiSettings')),
+  'settings/whatsapp': lazy(() => import('@/pages/ai/WhatsAppSettings')),
   'settings/ai/report-card': lazy(() => import('@/pages/ai/ReportCard')),
   dispatch: lazy(() => import('@/pages/dispatch/DispatchList')),
   'dispatch/:code': lazy(() => import('@/pages/dispatch/DispatchDetail')),

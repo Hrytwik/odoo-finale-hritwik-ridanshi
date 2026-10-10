@@ -2,9 +2,10 @@ import { BellRing } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { ActionDialog } from '@/components/common/ActionDialog'
+import { WhatsAppPreview } from '@/components/common/WhatsAppPreview'
 import { Button } from '@/components/ui/Button'
 import { Field, Select, Textarea } from '@/components/ui/Field'
-import { api, call, errorMessage } from '@/lib/api'
+import { api, call, errorMessage, type components } from '@/lib/api'
 import { useMe } from '@/lib/auth'
 import { useSubmitLock } from '@/lib/forms'
 
@@ -21,6 +22,7 @@ const DELAY_REASONS = [
   { value: 'other', label: 'Other' },
 ] as const
 type Reason = (typeof DELAY_REASONS)[number]['value']
+type Channel = components['schemas']['ChannelOut']
 
 /** "Tell the buyer about a delay": the owner picks one reason, a sentence is drafted, the owner can edit it, then it goes to the buyer's bell. */
 export function DelayNoticeButton({ orderCode, buyerName }: { orderCode: string; buyerName: string }) {
@@ -42,6 +44,7 @@ function DelayNoticeDialog({ orderCode, buyerName, onClose }: { orderCode: strin
   const [reason, setReason] = useState<Reason | ''>('')
   const [message, setMessage] = useState('')
   const [byModel, setByModel] = useState<boolean | null>(null)
+  const [channel, setChannel] = useState<Channel | null>(null)
   const [drafting, setDrafting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { run, pending } = useSubmitLock()
@@ -57,6 +60,7 @@ function DelayNoticeDialog({ orderCode, buyerName, onClose }: { orderCode: strin
       const d = await call(api.POST('/api/orders/{order_code}/delay-notice/draft', { ...path, body: { reason: next } }))
       setMessage(d.message)
       setByModel(d.drafted_by_ai)
+      setChannel(d.channel)
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -70,8 +74,10 @@ function DelayNoticeDialog({ orderCode, buyerName, onClose }: { orderCode: strin
       if (!message.trim()) return setError('The message cannot be empty')
       setError(null)
       try {
-        await call(api.POST('/api/orders/{order_code}/delay-notice', { ...path, body: { reason, message } }))
-        toast.success(`${buyerName} has been told`)
+        const sent = await call(api.POST('/api/orders/{order_code}/delay-notice', { ...path, body: { reason, message } }))
+        if (sent.whatsapp_status === 'sent') toast.success(`${buyerName} has been told, in the app and on WhatsApp`)
+        else if (sent.whatsapp_status === 'failed') toast.warning(`${buyerName} was told in the app. WhatsApp: ${sent.whatsapp_detail ?? 'it was not delivered'}`)
+        else toast.success(`${buyerName} has been told in the app. Not sent on WhatsApp: ${sent.whatsapp_detail ?? 'it is not connected'}`)
         onClose()
       } catch (err) {
         setError(errorMessage(err))
@@ -104,6 +110,13 @@ function DelayNoticeDialog({ orderCode, buyerName, onClose }: { orderCode: strin
         <Field label="Message to the buyer" hint={byModel ? 'Written by the AI. Read it, and change anything you like, before you send.' : 'A standard message. Change anything you like before you send.'}>
           {(c) => <Textarea {...c} rows={4} maxLength={400} value={message} onChange={(e) => setMessage(e.target.value)} />}
         </Field>
+      )}
+      {reason && !drafting && channel && message !== '' && (
+        <div className="stack-sm">
+          <p className="eyebrow">Also on WhatsApp</p>
+          <WhatsAppPreview message={message} withTracking={!!channel.tracking_url} />
+          <p className={channel.whatsapp_ready ? 'muted text-sm' : 'text-sm text-danger'}>{channel.whatsapp_ready ? `It will also be sent to ${channel.to}.` : channel.problem}</p>
+        </div>
       )}
     </ActionDialog>
   )

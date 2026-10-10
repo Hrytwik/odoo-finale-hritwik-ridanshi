@@ -13,7 +13,8 @@ const post = vi.mocked(api.POST)
 beforeEach(() => vi.clearAllMocks())
 
 describe('Tell the buyer about a delay (owner)', () => {
-  const draftReply = { message: 'Your order ORD-0001 is delayed because one of our machines needs repair.', drafted_by_ai: true }
+  const channel = { whatsapp_ready: true, to: '+91 ••••• ••345', problem: null, tracking_url: 'https://mill.example/portal/orders/ORD-0001' }
+  const draftReply = { message: 'Your order ORD-0001 is delayed because one of our machines needs repair.', drafted_by_ai: true, channel }
 
   function open(role = 'owner', extra: Record<string, unknown> = {}) {
     mockApi({
@@ -95,5 +96,42 @@ describe("the buyer's bell", () => {
     renderPage(<NotificationBell />)
     await userEvent.click(await screen.findByRole('button', { name: 'Notifications' }))
     expect(await screen.findByText(/Nothing yet/)).toBeInTheDocument()
+  })
+})
+
+
+describe('the WhatsApp part of the delay dialog', () => {
+  const draft = (channel: object) => ({ message: 'Your order is delayed: a power cut.', drafted_by_ai: false, channel })
+  const open = async (channel: object, sent: object = { id: 1, whatsapp_status: 'sent', whatsapp_detail: null }) => {
+    mockApi({
+      GET: { '/api/auth/me': me('owner') },
+      POST: { '/api/orders/{order_code}/delay-notice/draft': draft(channel), '/api/orders/{order_code}/delay-notice': sent },
+    })
+    renderPage(<DelayNoticeButton orderCode="ORD-0001" buyerName="Sharma Fabrics" />)
+    await userEvent.click(await screen.findByRole('button', { name: /tell the buyer about a delay/i }))
+    await userEvent.selectOptions(within(await screen.findByRole('dialog')).getByLabelText('Reason for the delay'), 'power_cut')
+    return screen.findByRole('dialog')
+  }
+
+  it('shows the message as it will look on WhatsApp, with the tracking button, and where it will go', async () => {
+    const dialog = await open({ whatsapp_ready: true, to: '+91 ***** **345', problem: null, tracking_url: 'https://mill.example/portal/orders/ORD-0001' })
+    const preview = await within(dialog).findByRole('figure', { name: 'Preview of the WhatsApp message' })
+    expect(preview).toHaveTextContent('Your order is delayed: a power cut.')
+    expect(preview).toHaveTextContent('Track my order')
+    expect(within(dialog).getByText('It will also be sent to +91 ***** **345.')).toBeInTheDocument()
+  })
+
+  it('follows what the owner types in the message box', async () => {
+    const dialog = await open({ whatsapp_ready: true, to: '+91 ***** **345', problem: null, tracking_url: 'https://x/y' })
+    const box = await within(dialog).findByLabelText('Message to the buyer')
+    await userEvent.clear(box)
+    await userEvent.type(box, 'New words.')
+    expect(within(dialog).getByRole('figure')).toHaveTextContent('New words.')
+  })
+
+  it('says why it will not go on WhatsApp, and leaves out the tracking button when there is no address', async () => {
+    const dialog = await open({ whatsapp_ready: false, to: null, problem: 'Sharma Fabrics has no phone number. Add one under Buyers.', tracking_url: null })
+    expect(await within(dialog).findByText('Sharma Fabrics has no phone number. Add one under Buyers.')).toBeInTheDocument()
+    expect(within(dialog).getByRole('figure')).not.toHaveTextContent('Track my order')
   })
 })

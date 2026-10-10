@@ -1,4 +1,4 @@
-import { Bot, Boxes, ClipboardCheck, ClipboardList, Factory, FileText, Gauge, IdCard, Layers, LineChart, PackageCheck, PackagePlus, Ruler, Settings, ShieldCheck, ShoppingBag, Ticket, Truck, Users, Wallet, Warehouse, type LucideIcon } from 'lucide-react'
+import { Bot, Boxes, ClipboardCheck, ClipboardList, Factory, FileText, Gauge, IdCard, Layers, LineChart, MessageCircle, PackageCheck, PackagePlus, Ruler, Settings, ShieldCheck, ShoppingBag, Ticket, Truck, Users, Wallet, Warehouse, type LucideIcon } from 'lucide-react'
 import type { components } from '@contracts/types'
 
 export type Role = components['schemas']['Me']['role']
@@ -22,6 +22,7 @@ export const NAV: NavItem[] = [
   { href: '/owner/insights', label: 'Insights', group: 'Owner', roles: ['owner'], icon: LineChart },
   { href: '/copilot', label: 'Copilot', group: 'AI', roles: ['owner', 'accountant', 'supervisor'], icon: Bot },
   { href: '/settings/ai', label: 'AI settings', group: 'AI', roles: ['owner'], icon: Settings },
+  { href: '/settings/whatsapp', label: 'WhatsApp', group: 'AI', roles: ['owner'], icon: MessageCircle },
   { href: '/admin/suppliers', label: 'Suppliers', group: 'Master data', roles: ['owner'], icon: Truck },
   { href: '/admin/buyers', label: 'Buyers', group: 'Master data', roles: ['owner'], icon: ShoppingBag },
   { href: '/admin/buyer-invites', label: 'Buyer invites', group: 'Master data', roles: ['owner'], icon: Ticket },

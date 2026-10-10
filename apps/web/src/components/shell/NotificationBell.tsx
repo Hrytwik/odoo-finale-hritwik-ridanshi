@@ -59,6 +59,7 @@ export function NotificationBell() {
                     {n.order_code}
                   </Link>{' '}
                   · {n.reason_label} · {formatDateTime(n.created_at)}
+                  {n.whatsapp_status === 'sent' && <> · also sent on WhatsApp</>}
                 </p>
               </li>
             ))}

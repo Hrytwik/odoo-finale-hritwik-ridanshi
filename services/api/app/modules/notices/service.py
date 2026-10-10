@@ -1,5 +1,6 @@
 """Delay notices: the owner picks a reason from a short list, a sentence is drafted for the buyer, the owner may edit it,
-and on sending it appears in that buyer's bell. A buyer sees only notices for their own orders."""
+and on sending it appears in that buyer's bell and, when WhatsApp is connected, on their WhatsApp too. A buyer sees only
+notices for their own orders. A WhatsApp problem never stops the bell notice."""
 import datetime as dt
 
 from sqlalchemy import func, select, update
@@ -7,10 +8,12 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, commit
 from app.core.events import broadcaster
-from app.db.models import BuyerNotice, Order, User
+from app.db.models import BuyerNotice, MessagingSettings, Order, User
+from app.modules.llm import crypto
 from app.modules.llm.runtime import build_adapter, load_config
 from app.modules.llm.types import AdapterError, Turn
 from app.modules.notices import schemas as s
+from app.modules.notices import whatsapp
 from app.modules.orders.service import get_order_or_404
 
 # code -> (label shown to the owner, a plain phrase for the buyer that works inside "because ...")
@@ -32,13 +35,7 @@ SYSTEM = (
     "Reply with the notice only."
 )
 
-
-def _template(order: Order, reason: str) -> str:
-    return (f"Your order {order.code} may be delayed because {REASONS[reason][1]}. "
-            "We are working to get it to you as soon as we can and will keep you updated here.")
-
-
-_PLAIN = {ord(c): "-" for c in "\u2010\u2011\u2012\u2013"} | {ord(c): " " for c in "\u00a0\u202f\u2009"}
+_PLAIN = {ord(c): "-" for c in "‐‑‒–"} | {ord(c): " " for c in "   "}
 
 
 def plain(text: str) -> str:
@@ -46,9 +43,31 @@ def plain(text: str) -> str:
     return text.translate(_PLAIN)
 
 
+def _template(order: Order, reason: str) -> str:
+    return (f"Your order {order.code} may be delayed because {REASONS[reason][1]}. "
+            "We are working to get it to you as soon as we can and will keep you updated here.")
+
+
+def channel(db: Session, order: Order) -> s.ChannelOut:
+    """What the owner is told about WhatsApp for this buyer before sending: where it would go, or why it would not."""
+    config = whatsapp.load_config(db)
+    number = whatsapp.normalise_phone(order.buyer.phone)
+    tracking = f"{config.public_url.rstrip('/')}/portal/orders/{order.code}" if config.public_url else None
+    if not config.ready:
+        problem = "WhatsApp is not connected yet (owner: AI > WhatsApp)." if not config.enabled else "WhatsApp is switched on but its details are incomplete."
+    elif not order.buyer.phone or not order.buyer.phone.strip():
+        problem = f"{order.buyer.name} has no phone number. Add one under Buyers."
+    elif number is None:
+        problem = f"The phone number for {order.buyer.name} does not look right. Fix it under Buyers."
+    else:
+        problem = None
+    return s.ChannelOut(whatsapp_ready=problem is None, to=whatsapp.mask_phone(number) if number else None, problem=problem, tracking_url=tracking)
+
+
 def draft(db: Session, order_code: str, reason: str) -> s.DraftOut:
     """A sentence for the buyer. Written by the language model when one is set up, otherwise from a fixed template."""
     order = get_order_or_404(db, order_code)
+    info = channel(db, order)
     config = load_config(db)
     if config.configured:
         prompt = (f"Order {order.code}, {order.fabric_type.name} in {order.colour}, promised for {order.deadline:%d %B %Y}. "
@@ -64,13 +83,14 @@ def draft(db: Session, order_code: str, reason: str) -> s.DraftOut:
                 text = reply.text.strip()
                 break
         if text:
-            return s.DraftOut(message=plain(text)[:400], drafted_by_ai=True)
-    return s.DraftOut(message=_template(order, reason), drafted_by_ai=False)
+            return s.DraftOut(message=plain(text)[:400], drafted_by_ai=True, channel=info)
+    return s.DraftOut(message=_template(order, reason), drafted_by_ai=False, channel=info)
 
 
 def _out(notice: BuyerNotice, order_code: str) -> s.NoticeOut:
     return s.NoticeOut(id=notice.id, order_code=order_code, reason=notice.reason, reason_label=REASONS[notice.reason][0],
-                       message=notice.message, created_at=notice.created_at, read=notice.read_at is not None)
+                       message=notice.message, created_at=notice.created_at, read=notice.read_at is not None,
+                       whatsapp_status=notice.whatsapp_status, whatsapp_detail=notice.whatsapp_detail)
 
 
 def send(db: Session, user: User, order_code: str, body: s.NoticeIn) -> s.NoticeOut:
@@ -79,9 +99,20 @@ def send(db: Session, user: User, order_code: str, body: s.NoticeIn) -> s.Notice
         raise AppError("ORDER_NOT_CONFIRMED", "A delay notice can only be sent for a confirmed order", status=409)
     notice = BuyerNotice(order_id=order.id, buyer_id=order.buyer_id, kind="delay", reason=body.reason, message=body.message, sent_by=user.id)
     db.add(notice)
-    commit(db)
+    commit(db)  # the bell notice is saved first: whatever happens on WhatsApp cannot lose it
     db.refresh(notice)
     broadcaster.publish("notice.changed", notice.id)
+
+    config = whatsapp.load_config(db)
+    number = whatsapp.normalise_phone(order.buyer.phone)
+    info = channel(db, order)
+    if info.problem:
+        result = whatsapp.SendResult("skipped", info.problem)
+    else:
+        result = whatsapp.send_text(config, number or "", whatsapp.tracking_text(notice.message, config.public_url, order.code))
+    notice.whatsapp_status, notice.whatsapp_detail, notice.whatsapp_sid = result.status, (result.detail or None), result.sid
+    commit(db)
+    db.refresh(notice)
     return _out(notice, order.code)
 
 
@@ -99,3 +130,53 @@ def mark_all_read(db: Session, user: User) -> s.NotificationsOut:
                .values(read_at=dt.datetime.now(dt.UTC)))
     commit(db)
     return mine(db, user)
+
+
+# ---- the WhatsApp connection ----
+
+def _settings_out(db: Session) -> s.MessagingSettingsOut:
+    row = db.get(MessagingSettings, 1)
+    config = whatsapp.load_config(db)
+    return s.MessagingSettingsOut(account_sid=row.account_sid if row else None, token_set=bool(row and row.auth_token_encrypted),
+                                  from_number=row.from_number if row else None, public_url=row.public_url if row else None,
+                                  enabled=bool(row and row.enabled), ready=config.ready)
+
+
+def get_settings(db: Session) -> s.MessagingSettingsOut:
+    return _settings_out(db)
+
+
+def save_settings(db: Session, user: User, body: s.MessagingSettingsIn) -> s.MessagingSettingsOut:
+    row = db.get(MessagingSettings, 1)
+    if row is None:
+        row = MessagingSettings(id=1, provider="twilio_whatsapp", enabled=False)
+        db.add(row)
+    if body.account_sid is not None:
+        row.account_sid = body.account_sid or None
+    if body.from_number is not None:
+        number = whatsapp.normalise_phone(body.from_number.removeprefix("whatsapp:")) if body.from_number else None
+        if body.from_number and number is None:
+            raise AppError("VALIDATION_ERROR", "That sender number does not look right. Use the full number, like +14155238886", field="from_number", status=422)
+        row.from_number = number
+    if body.public_url is not None:
+        url = body.public_url.rstrip("/")
+        if url and not url.startswith(("http://", "https://")):
+            raise AppError("VALIDATION_ERROR", "The address must start with https:// (or http://)", field="public_url", status=422)
+        row.public_url = url or None
+    if body.auth_token is not None:
+        row.auth_token_encrypted = crypto.encrypt_key(body.auth_token) if body.auth_token else None
+    if body.enabled and not (row.account_sid and row.auth_token_encrypted and row.from_number):
+        raise AppError("VALIDATION_ERROR", "To switch WhatsApp on, fill in the Account SID, the Auth Token and the sender number", field="enabled", status=422)
+    row.enabled = body.enabled
+    row.updated_by = user.id
+    commit(db)
+    return _settings_out(db)
+
+
+def send_test(db: Session, body: s.TestIn) -> s.TestOut:
+    """One short message to a phone, so the owner can see that the connection works."""
+    number = whatsapp.normalise_phone(body.to)
+    if number is None:
+        raise AppError("VALIDATION_ERROR", "That phone number does not look right. Use the full number, like +91 98450 12345", field="to", status=422)
+    result = whatsapp.send_text(whatsapp.load_config(db), number, "Everest Mills: this is a test message. WhatsApp is connected.")
+    return s.TestOut(status=result.status, detail=result.detail, to=whatsapp.mask_phone(number))

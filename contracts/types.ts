@@ -775,6 +775,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/messaging/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Messaging Settings */
+        get: operations["get_messaging_settings_api_messaging_settings_get"];
+        /**
+         * Put Messaging Settings
+         * @description Saves the WhatsApp connection. The token is encrypted before it is stored and is never sent back.
+         */
+        put: operations["put_messaging_settings_api_messaging_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/messaging/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Message */
+        post: operations["test_message_api_messaging_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/money/payables": {
         parameters: {
             query?: never;
@@ -958,7 +996,7 @@ export interface paths {
         put?: never;
         /**
          * Draft Notice
-         * @description A sentence for the buyer, for the owner to read and edit before sending.
+         * @description A sentence for the buyer, for the owner to read and edit before sending, and how it would also reach them on WhatsApp.
          */
         post: operations["draft_notice_api_orders__order_code__delay_notice_draft_post"];
         delete?: never;
@@ -1790,6 +1828,20 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /**
+         * ChannelOut
+         * @description How the message would also reach this buyer on WhatsApp, shown to the owner before sending.
+         */
+        ChannelOut: {
+            /** Problem */
+            problem: string | null;
+            /** To */
+            to: string | null;
+            /** Tracking Url */
+            tracking_url: string | null;
+            /** Whatsapp Ready */
+            whatsapp_ready: boolean;
+        };
         /** ChatIn */
         ChatIn: {
             /**
@@ -2402,6 +2454,37 @@ export interface components {
             /** Worker Id */
             worker_id: number | null;
         };
+        /** MessagingSettingsIn */
+        MessagingSettingsIn: {
+            /** Account Sid */
+            account_sid?: string | null;
+            /** Auth Token */
+            auth_token?: string | null;
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /** From Number */
+            from_number?: string | null;
+            /** Public Url */
+            public_url?: string | null;
+        };
+        /** MessagingSettingsOut */
+        MessagingSettingsOut: {
+            /** Account Sid */
+            account_sid: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** From Number */
+            from_number: string | null;
+            /** Public Url */
+            public_url: string | null;
+            /** Ready */
+            ready: boolean;
+            /** Token Set */
+            token_set: boolean;
+        };
         /** ModelCard */
         ModelCard: {
             /** Available */
@@ -2512,6 +2595,13 @@ export interface components {
             reason: "yarn_shortage" | "machine_breakdown" | "power_cut" | "staff_shortage" | "quality_rework" | "dye_delay" | "transport" | "buyer_change" | "other";
             /** Reason Label */
             reason_label: string;
+            /** Whatsapp Detail */
+            whatsapp_detail: string | null;
+            /**
+             * Whatsapp Status
+             * @enum {string}
+             */
+            whatsapp_status: "not_sent" | "sent" | "failed" | "skipped";
         };
         /** NotificationsOut */
         NotificationsOut: {
@@ -3342,6 +3432,23 @@ export interface components {
             /** Reference */
             reference?: string | null;
         };
+        /** TestIn */
+        TestIn: {
+            /** To */
+            to: string;
+        };
+        /** TestOut */
+        TestOut: {
+            /** Detail */
+            detail: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "sent" | "failed" | "skipped";
+            /** To */
+            to: string | null;
+        };
         /** TimelineEvent */
         TimelineEvent: {
             /**
@@ -3619,6 +3726,7 @@ export interface components {
         };
         /** DraftOut */
         app__modules__notices__schemas__DraftOut: {
+            channel: components["schemas"]["ChannelOut"];
             /** Drafted By Ai */
             drafted_by_ai: boolean;
             /** Message */
@@ -5043,6 +5151,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MachineCard"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_messaging_settings_api_messaging_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagingSettingsOut"];
+                };
+            };
+        };
+    };
+    put_messaging_settings_api_messaging_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessagingSettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagingSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_message_api_messaging_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestOut"];
                 };
             };
             /** @description Validation Error */

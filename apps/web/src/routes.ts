@@ -37,6 +37,7 @@ export const ROUTES: RouteDef[] = [
   { path: 'owner/insights', title: 'Insights', description: 'Late orders, reorder suggestions and defect causes.', roles: OWNER },
   { path: 'copilot', title: 'Copilot', description: 'Ask questions about the mill in plain language.', roles: ['owner', 'accountant', 'supervisor'] },
   { path: 'settings/ai', title: 'AI settings', description: 'Choose the language model provider and model.', roles: OWNER },
+  { path: 'settings/whatsapp', title: 'WhatsApp', description: 'Connect WhatsApp so delay notices also reach buyers on their phones.', roles: OWNER },
   { path: 'settings/ai/report-card', title: 'AI report card', description: 'How the configured model scores on known questions.', roles: OWNER },
   { path: 'admin/suppliers', title: 'Suppliers', description: 'Yarn suppliers and lead times.', roles: OWNER },
   { path: 'admin/buyers', title: 'Buyers', description: 'Buyers and their contacts.', roles: OWNER },
