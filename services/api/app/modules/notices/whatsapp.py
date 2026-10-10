@@ -30,6 +30,7 @@ class WhatsAppConfig:
     from_number: str | None
     public_url: str | None
     enabled: bool
+    content_sid: str | None = None
 
     @property
     def ready(self) -> bool:
@@ -49,7 +50,7 @@ def load_config(db: Session) -> WhatsAppConfig:
     if row is None:
         return WhatsAppConfig(None, None, None, None, False)
     token = crypto.decrypt_key(row.auth_token_encrypted) if row.auth_token_encrypted else None
-    return WhatsAppConfig(row.account_sid, token, row.from_number, row.public_url, row.enabled)
+    return WhatsAppConfig(row.account_sid, token, row.from_number, row.public_url, row.enabled, row.content_sid)
 
 
 def normalise_phone(raw: str | None) -> str | None:
@@ -107,6 +108,7 @@ _HINTS = {
     63015: "This phone has not joined the sandbox yet. On that phone, send the join code to the sandbox number first.",
     21211: "That does not look like a valid phone number.",
     21608: "This phone has not joined the sandbox yet. On that phone, send the join code to the sandbox number first.",
+    21654: "Twilio needs this message sent as a template. In Twilio's Content Template Builder make a text template and paste its ID (starts with HX) into 'Message template ID' on this page.",
 }
 
 
@@ -118,13 +120,24 @@ def _trial_hint(message: str) -> str | None:
     return None
 
 
-def send_text(config: WhatsAppConfig, to_number: str, body: str, post: PostForm = post_form) -> SendResult:
+def build_form(config: WhatsAppConfig, to_number: str, message: str, link: str | None) -> dict[str, str]:
+    """What is posted to Twilio. With a template: the message and the link fill its two blanks ({{1}} and {{2}}).
+    Without one: a plain text message, with the tracking link on a line of its own."""
+    form = {"From": _with_prefix(config.from_number or ""), "To": _with_prefix(to_number)}
+    if config.content_sid:
+        form["ContentSid"] = config.content_sid
+        form["ContentVariables"] = json.dumps({"1": message.strip(), "2": link or "the Everest Mills website"})
+    else:
+        form["Body"] = message.strip() + (f"\n\nTrack my order: {link}" if link else "")
+    return form
+
+
+def send_text(config: WhatsAppConfig, to_number: str, message: str, link: str | None = None, post: PostForm = post_form) -> SendResult:
     """Sends one WhatsApp message. Never raises: the result says what happened."""
     if not config.ready:
         return SendResult("skipped", "WhatsApp is not connected")
     auth = base64.b64encode(f"{config.account_sid}:{config.auth_token}".encode()).decode()
-    reply = post(TWILIO_URL.format(sid=config.account_sid), {"Authorization": f"Basic {auth}"},
-                 {"From": _with_prefix(config.from_number or ""), "To": _with_prefix(to_number), "Body": body}, 20)
+    reply = post(TWILIO_URL.format(sid=config.account_sid), {"Authorization": f"Basic {auth}"}, build_form(config, to_number, message, link), 20)
     if reply.get("error"):
         if reply.get("http") in (401, 403):
             return SendResult("failed", "WhatsApp refused the account details. Check the Account SID and Auth Token.")

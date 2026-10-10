@@ -41,6 +41,7 @@ class MessagingSettings(IdMixin, Base):
     account_sid: Mapped[str | None] = mapped_column(String(60))
     auth_token_encrypted: Mapped[str | None] = mapped_column(Text)
     from_number: Mapped[str | None] = mapped_column(String(30))
+    content_sid: Mapped[str | None] = mapped_column(String(60))  # the message template to send through, when the sender needs one
     public_url: Mapped[str | None] = mapped_column(String(200))
     enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))

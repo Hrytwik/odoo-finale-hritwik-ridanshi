@@ -1,4 +1,4 @@
-﻿import { screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,8 +7,8 @@ import { api } from '@/lib/api/client'
 import { mockApi, renderPage } from '@/test/utils'
 import WhatsAppSettings from './WhatsAppSettings'
 
-const OFF = { account_sid: null, token_set: false, from_number: null, public_url: null, enabled: false, ready: false }
-const ON = { account_sid: 'ACtest123', token_set: true, from_number: '+14155238886', public_url: 'https://mill.example', enabled: true, ready: true }
+const OFF = { account_sid: null, token_set: false, from_number: null, content_sid: null, public_url: null, enabled: false, ready: false }
+const ON = { account_sid: 'ACtest123', token_set: true, from_number: '+14155238886', content_sid: null, public_url: 'https://mill.example', enabled: true, ready: true }
 const put = vi.mocked(api.PUT)
 const post = vi.mocked(api.POST)
 beforeEach(() => vi.clearAllMocks())
@@ -76,5 +76,23 @@ describe('WhatsApp settings', () => {
     await userEvent.type(screen.getByLabelText('Phone number'), '98450 12345')
     await userEvent.click(screen.getByRole('button', { name: /send a test message/i }))
     expect(await screen.findByText('This phone has not joined the sandbox yet.')).toBeInTheDocument()
+  })
+})
+
+describe('WhatsApp message template', () => {
+  it('sends the template id that is typed', async () => {
+    mockWithPut(OFF, OFF)
+    renderPage(<WhatsAppSettings />)
+    await screen.findByText('Not connected')
+    await userEvent.type(screen.getByLabelText(/Message template ID/), 'HX' + 'c'.repeat(32))
+    await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+    await vi.waitFor(() => expect(put).toHaveBeenCalled())
+    expect((put.mock.calls[0][1] as { body: Record<string, unknown> }).body).toMatchObject({ content_sid: 'HX' + 'c'.repeat(32) })
+  })
+
+  it('shows the template wording to create in Twilio', async () => {
+    mockWithPut(OFF, OFF)
+    renderPage(<WhatsAppSettings />)
+    expect(await screen.findByLabelText('Template body to create in Twilio')).toHaveTextContent('Everest Mills update: {{1}} Track your order: {{2}}')
   })
 })

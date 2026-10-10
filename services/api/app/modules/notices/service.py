@@ -109,7 +109,8 @@ def send(db: Session, user: User, order_code: str, body: s.NoticeIn) -> s.Notice
     if info.problem:
         result = whatsapp.SendResult("skipped", info.problem)
     else:
-        result = whatsapp.send_text(config, number or "", whatsapp.tracking_text(notice.message, config.public_url, order.code))
+        link = f"{config.public_url.rstrip('/')}/portal/orders/{order.code}" if config.public_url else None
+        result = whatsapp.send_text(config, number or "", notice.message, link)
     notice.whatsapp_status, notice.whatsapp_detail, notice.whatsapp_sid = result.status, (result.detail or None), result.sid
     commit(db)
     db.refresh(notice)
@@ -138,7 +139,8 @@ def _settings_out(db: Session) -> s.MessagingSettingsOut:
     row = db.get(MessagingSettings, 1)
     config = whatsapp.load_config(db)
     return s.MessagingSettingsOut(account_sid=row.account_sid if row else None, token_set=bool(row and row.auth_token_encrypted),
-                                  from_number=row.from_number if row else None, public_url=row.public_url if row else None,
+                                  from_number=row.from_number if row else None, content_sid=row.content_sid if row else None,
+                                  public_url=row.public_url if row else None,
                                   enabled=bool(row and row.enabled), ready=config.ready)
 
 
@@ -158,6 +160,11 @@ def save_settings(db: Session, user: User, body: s.MessagingSettingsIn) -> s.Mes
         if body.from_number and number is None:
             raise AppError("VALIDATION_ERROR", "That sender number does not look right. Use the full number, like +14155238886", field="from_number", status=422)
         row.from_number = number
+    if body.content_sid is not None:
+        sid = body.content_sid.strip()
+        if sid and not (sid.startswith("HX") and len(sid) == 34):
+            raise AppError("VALIDATION_ERROR", "A template ID starts with HX and is 34 characters long. Copy it from Twilio's Content Template Builder.", field="content_sid", status=422)
+        row.content_sid = sid or None
     if body.public_url is not None:
         url = body.public_url.rstrip("/")
         if url and not url.startswith(("http://", "https://")):
@@ -178,5 +185,6 @@ def send_test(db: Session, body: s.TestIn) -> s.TestOut:
     number = whatsapp.normalise_phone(body.to)
     if number is None:
         raise AppError("VALIDATION_ERROR", "That phone number does not look right. Use the full number, like +91 98450 12345", field="to", status=422)
-    result = whatsapp.send_text(whatsapp.load_config(db), number, "Everest Mills: this is a test message. WhatsApp is connected.")
+    config = whatsapp.load_config(db)
+    result = whatsapp.send_text(config, number, "This is a test message from Everest Mills. WhatsApp is connected.", config.public_url)
     return s.TestOut(status=result.status, detail=result.detail, to=whatsapp.mask_phone(number))

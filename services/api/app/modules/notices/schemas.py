@@ -58,6 +58,7 @@ class MessagingSettingsIn(BaseModel):
     # None keeps the saved token; an empty string removes it; anything else replaces it
     auth_token: Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)] | None = None
     from_number: Annotated[str, StringConstraints(strip_whitespace=True, max_length=40)] | None = None
+    content_sid: Annotated[str, StringConstraints(strip_whitespace=True, max_length=60)] | None = None
     public_url: Short | None = None
     enabled: bool = False
 
@@ -66,6 +67,7 @@ class MessagingSettingsOut(BaseModel):
     account_sid: str | None
     token_set: bool
     from_number: str | None
+    content_sid: str | None
     public_url: str | None
     enabled: bool
     ready: bool

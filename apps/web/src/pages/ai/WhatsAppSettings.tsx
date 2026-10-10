@@ -24,7 +24,7 @@ export default function WhatsAppSettings() {
         title="WhatsApp"
         description="Connect a Twilio WhatsApp account so a delay notice reaches the buyer on WhatsApp as well as in their notification bell. The mill works the same without it."
       />
-      <QueryBoundary query={settings}>{(s) => <Connection key={`${s.account_sid}-${s.token_set}-${s.from_number}-${s.public_url}-${s.enabled}`} current={s} />}</QueryBoundary>
+      <QueryBoundary query={settings}>{(s) => <Connection key={`${s.account_sid}-${s.token_set}-${s.from_number}-${s.content_sid}-${s.public_url}-${s.enabled}`} current={s} />}</QueryBoundary>
     </>
   )
 }
@@ -35,6 +35,7 @@ function Connection({ current }: { current: Settings }) {
   const [sid, setSid] = useState(current.account_sid ?? '')
   const [token, setToken] = useState('')
   const [from, setFrom] = useState(current.from_number ?? '')
+  const [contentSid, setContentSid] = useState(current.content_sid ?? '')
   const [url, setUrl] = useState(current.public_url ?? window.location.origin)
   const [enabled, setEnabled] = useState(current.enabled)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -48,7 +49,7 @@ function Connection({ current }: { current: Settings }) {
         await call(
           api.PUT('/api/messaging/settings', {
             // an empty token box means "keep the saved one"
-            body: { account_sid: sid.trim(), from_number: from.trim(), public_url: url.trim(), enabled, ...(token.trim() ? { auth_token: token.trim() } : {}) },
+            body: { account_sid: sid.trim(), from_number: from.trim(), content_sid: contentSid.trim(), public_url: url.trim(), enabled, ...(token.trim() ? { auth_token: token.trim() } : {}) },
           }),
         )
         toast.success('WhatsApp settings saved')
@@ -74,7 +75,8 @@ function Connection({ current }: { current: Settings }) {
             <li>Create a free account at twilio.com and open <strong>Messaging, Try it out, Send a WhatsApp message</strong>.</li>
             <li>On each phone that should receive messages, send the <strong>join code</strong> shown there to the sandbox number, once.</li>
             <li>Copy the <strong>Account SID</strong> and the <strong>Auth Token</strong> from your Twilio dashboard and paste them below. The token is stored encrypted and is never shown again.</li>
-            <li>Enter the sandbox number as the sender, switch it on, save, and send yourself a test message.</li>
+            <li>Enter the sandbox number as the sender. If Twilio answers "ContentSid Required" (error 21654), make a message template (next section) and paste its ID.</li>
+            <li>Switch it on, save, and send yourself a test message.</li>
             <li>Make sure each buyer has their phone number under <strong>Buyers</strong>.</li>
           </ol>
         </div>
@@ -98,6 +100,14 @@ function Connection({ current }: { current: Settings }) {
           <Field label="WhatsApp sender number" error={errors.from_number} hint="The sandbox number from Twilio, for example +14155238886.">
             {(c) => <Input {...c} autoComplete="off" value={from} onChange={(e) => setFrom(e.target.value)} />}
           </Field>
+          <Field
+            label="Message template ID (only if Twilio asks for one)"
+            error={errors.content_sid}
+            hint="Starts with HX. In Twilio: Content Template Builder, create a Text template named everest_update, language English, with this body, and copy its Content SID."
+          >
+            {(c) => <Input {...c} autoComplete="off" autoCapitalize="none" placeholder="HX..." value={contentSid} onChange={(e) => setContentSid(e.target.value)} />}
+          </Field>
+          <pre className="template-sample" aria-label="Template body to create in Twilio">Everest Mills update: {'{{1}}'} Track your order: {'{{2}}'}</pre>
           <Field label="Address buyers use to follow their order" error={errors.public_url} hint="Put in the message as the tracking link. Use the address buyers can reach, for example your HTTPS address.">
             {(c) => <Input {...c} autoComplete="off" autoCapitalize="none" value={url} onChange={(e) => setUrl(e.target.value)} />}
           </Field>

@@ -2495,6 +2495,18 @@
             ],
             "title": "Auth Token"
           },
+          "content_sid": {
+            "anyOf": [
+              {
+                "maxLength": 60,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Sid"
+          },
           "enabled": {
             "default": false,
             "title": "Enabled",
@@ -2541,6 +2553,17 @@
             ],
             "title": "Account Sid"
           },
+          "content_sid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Sid"
+          },
           "enabled": {
             "title": "Enabled",
             "type": "boolean"
@@ -2580,6 +2603,7 @@
           "account_sid",
           "token_set",
           "from_number",
+          "content_sid",
           "public_url",
           "enabled",
           "ready"

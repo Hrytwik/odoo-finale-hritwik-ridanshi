@@ -1439,3 +1439,14 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   flex-direction: column;
   gap: var(--space-2);
 }
+
+.template-sample {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+}

@@ -2460,6 +2460,8 @@ export interface components {
             account_sid?: string | null;
             /** Auth Token */
             auth_token?: string | null;
+            /** Content Sid */
+            content_sid?: string | null;
             /**
              * Enabled
              * @default false
@@ -2474,6 +2476,8 @@ export interface components {
         MessagingSettingsOut: {
             /** Account Sid */
             account_sid: string | null;
+            /** Content Sid */
+            content_sid: string | null;
             /** Enabled */
             enabled: boolean;
             /** From Number */

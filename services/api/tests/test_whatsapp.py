@@ -93,14 +93,14 @@ BODY = {"account_sid": "ACtest123", "auth_token": "secret-token-value", "from_nu
 
 def test_before_anything_is_saved_whatsapp_is_off(client, login_as):
     login_as("owner")
-    assert client.get("/api/messaging/settings").json() == {"account_sid": None, "token_set": False, "from_number": None, "public_url": None, "enabled": False, "ready": False}
+    assert client.get("/api/messaging/settings").json() == {"account_sid": None, "token_set": False, "from_number": None, "content_sid": None, "public_url": None, "enabled": False, "ready": False}
 
 
 def test_saving_stores_the_token_encrypted_and_never_returns_it(client, login_as, db):
     login_as("owner")
     r = client.put("/api/messaging/settings", json=BODY)
     assert r.status_code == 200
-    assert r.json() == {"account_sid": "ACtest123", "token_set": True, "from_number": "+14155238886", "public_url": "https://mill.example", "enabled": True, "ready": True}
+    assert r.json() == {"account_sid": "ACtest123", "token_set": True, "from_number": "+14155238886", "content_sid": None, "public_url": "https://mill.example", "enabled": True, "ready": True}
     assert "secret-token-value" not in json.dumps(r.json())
     from app.db.models import MessagingSettings
     row = db.get(MessagingSettings, 1)
@@ -142,7 +142,7 @@ def test_the_test_message_goes_to_the_number_given(client, login_as, monkeypatch
     login_as("owner")
     client.put("/api/messaging/settings", json=BODY)
     sent = []
-    monkeypatch.setattr(whatsapp, "send_text", lambda config, to, body, post=None: sent.append((to, body)) or whatsapp.SendResult("sent", None, "SM9"))
+    monkeypatch.setattr(whatsapp, "send_text", lambda config, to, message, link=None, post=None: sent.append((to, message)) or whatsapp.SendResult("sent", None, "SM9"))
     r = client.post("/api/messaging/test", json={"to": "98450 12345"})
     assert r.json() == {"status": "sent", "detail": None, "to": "+91 ••••• ••345"} and sent[0][0] == "+919845012345"
 
@@ -165,8 +165,8 @@ def connected(client, login_as):
 def outbox(monkeypatch):
     sent = []
 
-    def fake(config, to, body, post=None):
-        sent.append({"to": to, "body": body})
+    def fake(config, to, message, link=None, post=None):
+        sent.append({"to": to, "message": message, "link": link})
         return whatsapp.SendResult("sent", None, "SM1")
 
     monkeypatch.setattr(whatsapp, "send_text", fake)
@@ -178,7 +178,7 @@ def test_a_notice_goes_to_the_bell_and_to_whatsapp_with_the_tracking_link(client
     order = make_order(db, buyer=buyer)
     r = client.post(f"/api/orders/{order.code}/delay-notice", json={"reason": "power_cut", "message": "Your order is late: a power cut."})
     assert r.status_code == 201 and r.json()["whatsapp_status"] == "sent" and r.json()["whatsapp_detail"] is None
-    assert outbox == [{"to": "+919845012345", "body": f"Your order is late: a power cut.\n\nTrack my order: https://mill.example/portal/orders/{order.code}"}]
+    assert outbox == [{"to": "+919845012345", "message": "Your order is late: a power cut.", "link": f"https://mill.example/portal/orders/{order.code}"}]
     client.cookies.set(COOKIE_NAME, create_token(make_user(db, role="buyer", buyer_id=buyer.id).id))
     assert client.get("/api/portal/notifications").json()["unread"] == 1
 
@@ -232,3 +232,41 @@ def test_the_trial_account_refusal_is_explained_in_steps():
     reply = {"error": True, "http": 400, "code": 63015, "message": "No Twilio trial phone number is assigned for messaging to this destination number. Please add the 'to' number as a verified recipient."}
     r = send_text(READY, "+916283828678", "Hi", post=lambda *a: dict(reply, code=99999))
     assert "send the sandbox join code" in r.detail and "Geo permissions" in r.detail and "(Twilio error 99999)" in r.detail
+
+
+# ---------- sending through a message template ----------
+
+TEMPLATE = WhatsAppConfig("ACtest123", "secret-token-value", "+17372508034", "https://mill.example", True, "HX" + "a" * 32)
+
+
+def test_without_a_template_the_message_is_plain_text_with_the_link_on_its_own_line():
+    form = whatsapp.build_form(READY, "+919845012345", "  Delayed.  ", "https://mill.example/portal/orders/ORD-0001")
+    assert form == {"From": "whatsapp:+14155238886", "To": "whatsapp:+919845012345", "Body": "Delayed.\n\nTrack my order: https://mill.example/portal/orders/ORD-0001"}
+
+
+def test_with_a_template_the_message_and_the_link_fill_its_two_blanks():
+    form = whatsapp.build_form(TEMPLATE, "+919845012345", " Delayed. ", "https://mill.example/portal/orders/ORD-0001")
+    assert form["ContentSid"] == "HX" + "a" * 32 and "Body" not in form
+    assert json.loads(form["ContentVariables"]) == {"1": "Delayed.", "2": "https://mill.example/portal/orders/ORD-0001"}
+    assert json.loads(whatsapp.build_form(TEMPLATE, "+919845012345", "Hi", None)["ContentVariables"])["2"] == "the Everest Mills website"
+
+
+def test_a_template_message_is_what_is_posted_to_twilio():
+    seen = {}
+    send_text(TEMPLATE, "+916282828678", "Delayed.", "https://x/y", post=lambda url, headers, form, timeout: seen.update(form) or {"sid": "SM5"})
+    assert "ContentSid" in seen and "Body" not in seen
+
+
+def test_the_content_sid_required_refusal_says_how_to_make_a_template():
+    r = send_text(READY, "+919845012345", "Hi", post=lambda *a: {"error": True, "http": 400, "code": 21654, "message": "ContentSid Required"})
+    assert "Content Template Builder" in r.detail and "(Twilio error 21654)" in r.detail
+
+
+def test_the_template_id_is_saved_checked_and_can_be_cleared(client, login_as):
+    login_as("owner")
+    ok = client.put("/api/messaging/settings", json={**BODY, "content_sid": " HX" + "b" * 32 + " "})
+    assert ok.status_code == 200 and ok.json()["content_sid"] == "HX" + "b" * 32
+    bad = client.put("/api/messaging/settings", json={**BODY, "content_sid": "not-a-template"})
+    assert bad.status_code == 422 and bad.json()["field"] == "content_sid"
+    cleared = client.put("/api/messaging/settings", json={**BODY, "content_sid": ""})
+    assert cleared.json()["content_sid"] is None
