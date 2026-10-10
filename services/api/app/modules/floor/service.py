@@ -9,7 +9,7 @@ import datetime as dt
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.core.errors import AppError, commit
+from app.core.errors import AppError, commit, flush
 from app.core.events import broadcaster
 from app.core.money import dec, q_kg
 from app.core.validate import invalid, not_found
@@ -131,7 +131,7 @@ def handover(db: Session, run_id: int, body: s.HandoverIn) -> ProductionRun:
     new = ProductionRun(order_id=old.order_id, machine_id=old.machine_id, stage=old.stage,
                         operator_worker_id=operator.id, input_run_id=old.input_run_id, started_at=now)
     db.add(new)
-    db.flush()
+    flush(db)
     # a dyeing run (or a rework run on a machine) carries its rolls over to the next shift's run; the old links stay
     # as history. A weaving run's rolls stay with the run that made them.
     for roll_id, purpose in db.execute(select(RollRun.roll_id, RollRun.purpose).where(

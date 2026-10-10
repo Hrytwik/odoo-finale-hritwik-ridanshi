@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import require_roles
 from app.db.models import User
 from app.db.session import get_db
-from app.modules.floor import examples as floor_ex
+from app.modules.floor import board
 from app.modules.floor.schemas import RunOut
 from app.modules.qc import examples as ex
 from app.modules.qc import schemas as s
@@ -33,9 +33,8 @@ def record_inspection(body: s.InspectionIn, db: Session = Depends(get_db),
 
 
 @router.post("/rework-runs", response_model=RunOut, status_code=201, dependencies=[Depends(rework_starters)])
-def start_rework(body: s.ReworkIn) -> RunOut:
-    return floor_ex.RUN.model_copy(update={"stage": "rework", "machine_code": body.machine_code,
-                                           "roll_codes": [body.roll_code], "input_run_id": None})
+def start_rework(body: s.ReworkIn, db: Session = Depends(get_db)) -> RunOut:
+    return board.run_out(db, service.start_rework(db, body))
 
 
 @router.get("/qc/model-card", response_model=s.ModelCard, dependencies=[Depends(queue_viewers)])
