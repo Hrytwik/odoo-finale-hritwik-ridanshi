@@ -1,7 +1,8 @@
-import { KeyRound, LogOut, Menu, Search } from 'lucide-react'
+import { KeyRound, LogOut, Menu, ScanLine, Search } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { BrandMark } from '@/components/common/BrandMark'
+import { QrScanner } from '@/components/common/QrScanner'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import type { components } from '@/lib/api'
@@ -26,6 +27,8 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const [palette, setPalette] = useState(false)
   const [account, setAccount] = useState(false)
+  const [scanning, setScanning] = useState(false)
+  const navigate = useNavigate()
   const logout = useLogout()
   const items = navFor(me.role)
   useLiveEvents()
@@ -69,6 +72,11 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
           <Button variant="ghost" icon className="header-search-icon header-square" aria-label="Search rolls, lots, orders" onClick={() => setPalette(true)}>
             <Search size={18} aria-hidden />
           </Button>
+          {me.role !== 'buyer' && (
+            <Button variant="ghost" icon className="header-square" aria-label="Scan a roll" title="Scan a roll's QR tag" onClick={() => setScanning(true)}>
+              <ScanLine size={18} aria-hidden />
+            </Button>
+          )}
           <ThemeToggle className="header-square" />
           <div className="shell-user">
             <span className="shell-user-name">
@@ -97,6 +105,14 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
           <NavList items={items} onNavigate={() => setOpen(false)} />
         </Dialog>
       </div>
+      <QrScanner
+        open={scanning}
+        onClose={() => setScanning(false)}
+        onCode={(code) => {
+          setScanning(false)
+          navigate(`/r/${code}`)
+        }}
+      />
       <CommandPalette open={palette} onClose={() => setPalette(false)} role={me.role} />
       <ChangePasswordDialog open={account} onClose={() => setAccount(false)} username={me.username} />
     </div>
