@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
 from app.db.session import get_db
-from app.modules.costing import examples as ex
 from app.modules.costing import service
 from app.modules.costing.schemas import MonthReport, OrderCost, RollCost
 
@@ -25,5 +24,5 @@ def order_cost(order_code: str, db: Session = Depends(get_db)) -> OrderCost:
 
 
 @router.get("/reports/month", response_model=MonthReport, dependencies=[Depends(finance)])
-def month_report(month: Month) -> MonthReport:
-    return ex.MONTH.model_copy(update={"month": month})
+def month_report(month: Month, db: Session = Depends(get_db)) -> MonthReport:
+    return service.month_report(db, month)

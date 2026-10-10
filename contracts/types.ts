@@ -2634,6 +2634,8 @@ export interface components {
             profit: number;
             /** Stock Writeoffs */
             stock_writeoffs: number;
+            /** Support Staff */
+            support_staff: number;
             /** Wages Earned */
             wages_earned: number;
             /** Yarn Issued */

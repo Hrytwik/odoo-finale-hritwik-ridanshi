@@ -3468,6 +3468,10 @@
             "title": "Stock Writeoffs",
             "type": "number"
           },
+          "support_staff": {
+            "title": "Support Staff",
+            "type": "number"
+          },
           "wages_earned": {
             "title": "Wages Earned",
             "type": "number"
@@ -3482,6 +3486,7 @@
           "yarn_issued",
           "wages_earned",
           "idle_labour",
+          "support_staff",
           "machine_running_cost",
           "stock_writeoffs",
           "profit"

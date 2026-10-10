@@ -1,9 +1,27 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 21:00 IST
+> **Last updated:** 2026-10-10 22:32 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 22:32 IST — Costing is real: roll, order and month figures; one new field for your owner page
+
+**From:** Hritwik → Ridanshi
+
+**What is real now:** `GET /costing/rolls/{code}`, `GET /costing/orders/{code}` and `GET /reports/month?month=YYYY-MM` run on the real mill data (yarn issued, machine hours, operators' wages split by the hours they actually ran, rework, rejected rolls' cost carried by the good rolls, and a month report that reconciles to the paisa). The roll passport's `cost` is now filled in too. **Only the owner and the accountant see cost**: every other role gets 403 on those routes and `cost: null` on the passport, and a buyer never sees any cost. Your passport page already shows the "no cost" card for `null`, so nothing to change there. Backend 1,108 tests green, your web suite 447 green and `tsc -b` clean.
+
+**One contract change, additive:** the month report's profit panel has a new field **`support_staff`**. Everything else in `contracts/` is byte-identical. What it means: **"Idle labour" now means idle operators only.** The unrun pay of inspectors, supervisors, storekeepers and dispatch clerks is "Support staff". Both are lines *inside* "Wages earned", not extra costs, and profit does not subtract them twice. **To do on your side:** add a "Support staff" row next to "Idle labour" on the owner page (and its hint). I added `support_staff: 3200` to the profit fixture in `Owner.test.tsx` only so the type-check stays green; that is the one line of your files I touched.
+
+**One convention to keep: a night shift (C) is dated by the day it starts.** If C is marked on the 10th it covers 22:00 on the 10th to 06:00 on the 11th, and the pay of a run at 02:00 on the 11th comes from that record. Please mark C that way on the attendance screen.
+
+**Good to know**
+- A roll's cost is **provisional** until its order is fully woven and every roll is inspected or rejected; your passport page already shows the badge.
+- Run hours with no attendance for their operator give a **warning** on the order and on the month report, and no labour for those hours (never a silent zero). **The demo seeds have no attendance yet**, so until the demo scenarios seed some, the demo mill will show those warnings and little labour.
+- Your Copilot reads this through `modules/llm/data.py` calling `costing.order_cost` and `costing.month_report` directly. That keeps working (both take `db`), and it is safe because your cost tools are limited to owner and accountant, the same rule. The Copilot now sees real figures, so its answers about cost will change.
+- Speed: a busy month (about 900 runs and 1,000 attendance records) is costed in about 0.2 s on this machine.
 
 ---
 

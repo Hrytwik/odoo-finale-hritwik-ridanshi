@@ -5,17 +5,25 @@ import datetime as dt
 from decimal import ROUND_HALF_UP, Decimal
 from fractions import Fraction
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.clock import today_ist
 from app.core.money import q_kg, q_money, to_float
-from app.db.models import Order, Roll
+from app.db.models import (
+    BuyerPayment, Invoice, InvoiceLine, Order, Roll, SupplierBill, SupplierPayment, WagePayment,
+)
 from app.modules.costing import loader
 from app.modules.costing.engine.allocation import PARTS, OrderResult, allocate_order, is_final
-from app.modules.costing.engine.labour import Labour, split_labour
+from app.modules.costing.engine.labour import Labour, run_interval, split_labour
+from app.modules.costing.engine.month import machine_hours, month_costs, month_window
 from app.modules.costing.engine.runs import run_costs
-from app.modules.costing.schemas import CostParts, OrderCost, RollCost
+from app.modules.costing.schemas import (
+    CashPanel, CostParts, MachineMonth, MonthReport, OrderCost, OrderMonth, ProfitPanel, RollCost,
+)
 from app.modules.floor.service import db_now
 from app.modules.orders.service import get_order_or_404
+from app.modules.people.service import month_bounds, wage_rows
 from app.modules.rolls.service import get_roll_or_404
 
 FINANCE = ("owner", "accountant")        # R18: the only roles that see cost
@@ -103,3 +111,69 @@ def roll_cost(db: Session, roll_code: str) -> RollCost:
     return roll_cost_for(db, get_roll_or_404(db, roll_code))
 
 
+def month_report(db: Session, month: str) -> MonthReport:
+    year, mon = (int(p) for p in month.split("-"))
+    first, after, span = month_window(year, mon)
+    last = after - dt.timedelta(days=1)
+    now = db_now(db)
+    b = loader.load_month(db, first, after, span, now)
+    labour = split_labour(b.attendance, b.workers, b.shifts, b.runs, now)
+    costs = month_costs(first, after, span, b.runs, b.machines, b.moves, b.writeoffs, labour, now)
+
+    # --- profit
+    invoiced = db.scalar(select(func.coalesce(func.sum(Invoice.total_amount), 0))
+                         .where(Invoice.issued_at >= span[0], Invoice.issued_at < span[1]))
+    wages = sum((Decimal(str(row.earned)) for row in wage_rows(db, *month_bounds(month))), ZERO)   # = GET /wages total
+    yarn, machine, writeoffs = money(costs.yarn), money(costs.machine), money(costs.writeoffs)
+    profit = ProfitPanel(
+        invoiced=to_float(invoiced), yarn_issued=to_float(yarn), wages_earned=to_float(wages),
+        idle_labour=to_float(money(costs.idle)), support_staff=to_float(money(costs.support)),
+        machine_running_cost=to_float(machine), stock_writeoffs=to_float(writeoffs),
+        profit=to_float(Decimal(invoiced) - yarn - wages - machine - writeoffs),
+    )
+
+    # --- cash (outstanding amounts are as at the end of the month, or today for the current month)
+    asof = min(last, today_ist())
+
+    def total(column, *conditions) -> Decimal:
+        return Decimal(db.scalar(select(func.coalesce(func.sum(column), 0)).where(*conditions)))
+
+    received = total(BuyerPayment.amount, BuyerPayment.received_at.between(first, last))
+    paid_suppliers = total(SupplierPayment.amount, SupplierPayment.paid_at.between(first, last))
+    paid_wages = total(WagePayment.amount, WagePayment.paid_at.between(first, last))
+    receivable = (total(Invoice.total_amount, Invoice.issued_at < span[1])
+                  - total(BuyerPayment.amount, BuyerPayment.received_at <= asof))
+    payable = (total(SupplierBill.amount, SupplierBill.bill_date <= asof)
+               - total(SupplierPayment.amount, SupplierPayment.paid_at <= asof))
+    cash = CashPanel(
+        received_from_buyers=to_float(received), paid_to_suppliers=to_float(paid_suppliers),
+        paid_wages=to_float(paid_wages), net_cash=to_float(received - paid_suppliers - paid_wages),
+        receivables_outstanding=to_float(receivable), payables_outstanding=to_float(payable),
+    )
+
+    # --- machines
+    machines = []
+    for m in sorted(b.machines.values(), key=lambda x: x.code):
+        if m.created_at >= span[1]:
+            continue
+        h = machine_hours(m, b.runs, b.downtimes, b.rolls, b.roll_runs, list(b.shifts.values()), span, now)
+        unit = "kg" if m.stage == "spinning" else "m"
+        machines.append(MachineMonth(
+            code=m.code, name=m.name, stage=m.stage, running_h=two_places(h.running), idle_h=two_places(h.idle),
+            down_h=two_places(h.down), output=two_places(h.output), output_unit=unit,
+            lost_capacity=two_places((h.idle + h.down) * m.rated), lost_capacity_unit=unit,
+        ))
+
+    # --- orders: revenue is the month's invoice lines, cost is what the order incurred in the month
+    revenue = {oid: Decimal(amount) for oid, amount in db.execute(
+        select(InvoiceLine.order_id, func.sum(InvoiceLine.amount)).join(Invoice, Invoice.id == InvoiceLine.invoice_id)
+        .where(Invoice.issued_at >= span[0], Invoice.issued_at < span[1]).group_by(InvoiceLine.order_id))}
+    orders = []
+    for order in db.scalars(select(Order).where(Order.id.in_(set(costs.per_order) | set(revenue) or {0})).order_by(Order.code)):
+        cost = sum((money(v) for v in costs.per_order.get(order.id, {}).values()), ZERO)
+        rev = revenue.get(order.id, ZERO)
+        orders.append(OrderMonth(order_code=order.code, buyer_name=order.buyer.name, revenue=to_float(rev),
+                                 cost=to_float(cost), profit=to_float(rev - cost)))
+    in_month = {r.id for r in b.runs if run_interval(r, now)[0] < span[1] and run_interval(r, now)[1] > span[0]}
+    return MonthReport(month=month, profit=profit, cash=cash, machines=machines, orders=orders,
+                       warnings=_warnings(b, labour, in_month, now))
