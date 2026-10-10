@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Toaster } from 'sonner'
-import { I18nProvider } from '@/i18n/I18nContext'
+import { I18nProvider } from '@/i18n/I18nProvider'
 import { ApiError, setUnauthorizedHandler } from '@/lib/api'
 
 /** Do not retry client mistakes (4xx); retry network and server hiccups twice. */
