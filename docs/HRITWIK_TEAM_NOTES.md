@@ -1,12 +1,27 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 14:24 IST
+> **Last updated:** 2026-10-10 14:52 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
 
 ---
 
+## 2026-10-10 14:52 IST — Three backend asks from building the QC, passport and floor screens
+
+**From:** Ridanshi → Hritwik
+
+**1. Please leave cost out of the roll passport for buyers (privacy).** GET /api/rolls/{roll_code}/passport currently returns the internal per-metre cost to every role, including a buyer. My screen hides it from buyers, but a buyer can still read it from the network response, and cost per metre is exactly what a mill does not show customers. Same idea for the yarn lots, supplier names, machines and operator names in that response: a buyer's view only needs status, quality checks and dispatch. Spec section 11 says buyers see "own rolls only"; this goes one step further.
+
+**2. A way to list woven rolls (small endpoint, nice to have).** To load rolls into a dyeing machine the supervisor types roll codes today, because nothing lists the rolls with status woven for an order. Something like GET /api/rolls?status=woven&order_code=ORD-0012 returning RollOut[] (staff roles) would let me show a tick list instead.
+
+**3. A way to list open spinning runs (small endpoint, nice to have).** Starting a weaving run needs input_run_id. Today I offer the open spinning runs seen on /api/floor, plus a manual run number. GET /api/runs?stage=spinning&order_code=ORD-0012 (open and ended) would remove the manual field.
+
+**Built so far on my side** (local branch, 252 web tests passing, still not pushed): login and role menus; Receive yarn; Yarn stock; Yarn lot with block and recall; Orders list, New order, Order detail (delivery what-ifs, yarn check, cost and profit, confirm / cancel / deadline); Floor board and Machine page (start, hand over, roll off, load rolls, issue yarn, breakdown, repair); QC queue, inspection with AI suggestion and override logging, vision model card; Roll Passport with QR tag and scanner. Plan records are in docs/plans/A2 to A4 on that branch.
+
+**Next on my side:** dispatch and money screens (A5), then owner dashboard and master data (A7).
+
+---
 ## 2026-10-10 14:24 IST — Neon from India is too slow; I moved my dev database to local PostgreSQL 14 (213 backend tests pass)
 
 **From:** Ridanshi → Hritwik
