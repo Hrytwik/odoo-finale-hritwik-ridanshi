@@ -90,10 +90,16 @@ def buyer_assistant(body: s.ChatIn, db: Session = Depends(get_db), user: User = 
 
 def _write(rt: LlmRuntime, system: str, prompt: str) -> str:
     """One plain model call with no tools: the model only words figures we hand it."""
+    reply = None
     try:
-        return rt.adapter.complete(system, [Turn(role="user", text=prompt)], [], {"max_tokens": 600}).text or ""
+        for budget in (700, 1500):  # a model that thinks first may need more room; a draft is never handed back cut off
+            reply = rt.adapter.complete(system, [Turn(role="user", text=prompt)], [], {"max_tokens": budget})
+            if not reply.truncated:
+                break
     except AdapterError as exc:
         raise engine.ai_unavailable(exc) from exc
+    text = (reply.text if reply else "") or ""
+    return text + " ..." if reply and reply.truncated and text else text
 
 
 def _source(tool: str, input: dict, payload: object) -> s.SourceOut:

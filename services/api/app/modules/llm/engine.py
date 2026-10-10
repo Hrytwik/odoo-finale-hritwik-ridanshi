@@ -72,7 +72,10 @@ def run_chat(adapter: LlmAdapter, system: str, history: list[Turn], question: st
     for _ in range(MAX_STEPS):
         completion = _complete(adapter, system, turns, specs, options)
         if not completion.tool_calls:
-            return ChatResult(text=completion.text or "I could not find an answer.", sources=sources)
+            text = completion.text or "I could not find an answer."
+            if completion.truncated:
+                text += " (The answer was cut short. Ask a narrower question to see the rest.)"
+            return ChatResult(text=text, sources=sources)
         turns.append(Turn(role="assistant", text=completion.text, tool_calls=completion.tool_calls))
         results = [_run_tool(call, by_name, ctx, sources) for call in completion.tool_calls]
         turns.append(Turn(role="tool", tool_results=results))

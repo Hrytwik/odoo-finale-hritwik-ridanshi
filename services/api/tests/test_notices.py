@@ -141,3 +141,40 @@ def test_special_hyphens_and_spaces_from_the_model_become_ordinary_ones(client, 
     login_as("owner")
     r = client.post(f"/api/orders/{order.code}/delay-notice/draft", json={"reason": "other"})
     assert r.json()["message"] == "Your order ORD-0001 is late today sorry."
+
+
+def test_a_cut_off_draft_is_retried_with_more_room_and_never_shown_half_written(client, login_as, db, monkeypatch):
+    order = make_order(db)
+
+    class Adapter:
+        calls = []
+
+        def complete(self, system, turns, tools, options=None):
+            self.calls.append(options["max_tokens"])
+            return Completion("Dear customer, we regret to inform you that your", [], truncated=len(self.calls) == 1) if len(self.calls) == 1 \
+                else Completion("Your order is delayed because of a machine repair.", [], truncated=False)
+
+    adapter = Adapter()
+    adapter.calls = []
+    with_model(monkeypatch, adapter)
+    login_as("owner")
+    r = client.post(f"/api/orders/{order.code}/delay-notice/draft", json={"reason": "machine_breakdown"})
+    assert r.json() == {"message": "Your order is delayed because of a machine repair.", "drafted_by_ai": True}
+    assert adapter.calls == [700, 1400]
+
+
+def test_a_draft_that_stays_cut_off_falls_back_to_the_standard_message(client, login_as, db, monkeypatch):
+    order = make_order(db)
+    adapter = FakeAdapter("Dear customer, we regret")
+    original = adapter.complete
+
+    def cut(system, turns, tools, options=None):
+        reply = original(system, turns, tools, options)
+        reply.truncated = True
+        return reply
+
+    adapter.complete = cut
+    with_model(monkeypatch, adapter)
+    login_as("owner")
+    r = client.post(f"/api/orders/{order.code}/delay-notice/draft", json={"reason": "power_cut"})
+    assert r.json()["drafted_by_ai"] is False and "power cut" in r.json()["message"]

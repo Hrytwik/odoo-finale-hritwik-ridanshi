@@ -1,4 +1,4 @@
-﻿import { BellRing } from 'lucide-react'
+import { BellRing } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { ActionDialog } from '@/components/common/ActionDialog'
@@ -97,7 +97,7 @@ function DelayNoticeDialog({ orderCode, buyerName, onClose }: { orderCode: strin
       </Field>
       {drafting && (
         <p className="muted text-sm" role="status">
-          <span className="spinner" aria-hidden /> Writing the messageâ€¦
+          <span className="spinner" aria-hidden /> Writing the message…
         </p>
       )}
       {reason && !drafting && byModel !== null && (

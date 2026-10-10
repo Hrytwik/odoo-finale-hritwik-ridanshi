@@ -537,3 +537,37 @@ def test_a_429_from_the_provider_becomes_a_rate_limit_error(monkeypatch):
     with pytest.raises(AdapterError) as e:
         adapters.post_json("https://api.example.test/v1/chat/completions", {}, {}, 5)
     assert e.value.kind == "rate_limit" and e.value.retry_after == 4.0
+
+
+# ---------- a reply cut off by the token limit ----------
+
+def test_a_reply_cut_off_by_the_limit_is_marked_as_cut_off_in_a_chat_answer():
+    adapter = Script(Completion("The mill has", [], truncated=True))
+    result = engine.run_chat(adapter, "s", [], "q", [], CTX)
+    assert result.text.startswith("The mill has") and "cut short" in result.text
+
+
+def test_the_openai_compatible_adapter_reads_the_length_stop_reason_as_truncated():
+    cut = lambda url, headers, payload, timeout: {"choices": [{"message": {"content": "Dear customer, we regret"}, "finish_reason": "length"}]}
+    whole = lambda url, headers, payload, timeout: {"choices": [{"message": {"content": "All done."}, "finish_reason": "stop"}]}
+    assert OpenAICompatibleAdapter("http://x/v1", "m", post=cut).complete("s", [Turn("user", "q")], []).truncated is True
+    assert OpenAICompatibleAdapter("http://x/v1", "m", post=whole).complete("s", [Turn("user", "q")], []).truncated is False
+
+
+def test_the_anthropic_adapter_reads_max_tokens_as_truncated():
+    cut = lambda url, headers, payload, timeout: {"content": [{"type": "text", "text": "Half"}], "stop_reason": "max_tokens"}
+    assert AnthropicAdapter("k", "m", post=cut).complete("s", [Turn("user", "q")], []).truncated is True
+
+
+def test_a_thinking_model_is_asked_to_think_briefly_so_its_answer_has_room():
+    seen = {}
+
+    def post(url, headers, payload, timeout):
+        seen.update(payload)
+        return {"choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}]}
+
+    OpenAICompatibleAdapter("http://x/v1", "openai/gpt-oss-120b", post=post).complete("s", [Turn("user", "q")], [])
+    assert seen["reasoning_effort"] == "low"
+    seen.clear()
+    OpenAICompatibleAdapter("http://x/v1", "llama3.1", post=post).complete("s", [Turn("user", "q")], [])
+    assert "reasoning_effort" not in seen  # other models are not sent a setting they may refuse

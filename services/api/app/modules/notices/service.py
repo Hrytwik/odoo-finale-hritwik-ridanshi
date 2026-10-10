@@ -53,10 +53,16 @@ def draft(db: Session, order_code: str, reason: str) -> s.DraftOut:
     if config.configured:
         prompt = (f"Order {order.code}, {order.fabric_type.name} in {order.colour}, promised for {order.deadline:%d %B %Y}. "
                   f"Reason for the delay: {REASONS[reason][0]}.")
-        try:
-            text = build_adapter(config).complete(SYSTEM, [Turn(role="user", text=prompt)], [], {"max_tokens": 160}).text.strip()
-        except AdapterError:
-            text = ""
+        adapter = build_adapter(config)
+        text = ""
+        for budget in (700, 1400):  # a model that thinks first may need more room; a cut-off sentence is never shown
+            try:
+                reply = adapter.complete(SYSTEM, [Turn(role="user", text=prompt)], [], {"max_tokens": budget})
+            except AdapterError:
+                break
+            if not reply.truncated:
+                text = reply.text.strip()
+                break
         if text:
             return s.DraftOut(message=plain(text)[:400], drafted_by_ai=True)
     return s.DraftOut(message=_template(order, reason), drafted_by_ai=False)
