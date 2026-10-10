@@ -19,7 +19,8 @@ def post_json(url: str, headers: dict[str, str], payload: dict, timeout: float =
     """POST JSON, return the JSON reply. Failures become AdapterError; the key and the request are never put in a message."""
     request = urllib.request.Request(
         url, data=json.dumps(payload).encode(), method="POST",
-        headers={"Content-Type": "application/json", "Accept": "application/json", **headers})
+        # a plain User-Agent: providers behind Cloudflare (Groq among them) turn away Python's default one with a 403
+        headers={"Content-Type": "application/json", "Accept": "application/json", "User-Agent": "EverestMills/1.0", **headers})
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 (https or the owner's own base URL)
             return json.loads(response.read().decode())

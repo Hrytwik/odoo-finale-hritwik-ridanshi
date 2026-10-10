@@ -258,7 +258,15 @@ def test_a_question_that_needs_no_tool_is_answered_straight_away():
     adapter = Script(say("Hello."))
     result = engine.run_chat(adapter, "sys", [], "Hi", [fake_tool()], CTX)
     assert result.text == "Hello." and result.sources == []
-    assert adapter.calls[0]["system"] == "sys" and adapter.calls[0]["tools"] == ["get_thing"]
+    assert adapter.calls[0]["system"].startswith("sys ") and adapter.calls[0]["tools"] == ["get_thing"]
+
+
+def test_the_model_is_told_todays_date_in_india_so_this_month_means_something():
+    import datetime as dt
+    assert engine.with_today("Be brief.", dt.date(2026, 10, 10)) == "Be brief. Today is 2026-10-10 (India time), so this month is 2026-10."
+    adapter = Script(say("ok"))
+    engine.run_chat(adapter, "sys", [], "q", [], CTX)
+    assert "Today is " in adapter.calls[0]["system"] and "this month is " in adapter.calls[0]["system"]
 
 
 def test_the_model_asks_for_a_tool_gets_the_result_and_answers_from_it():
@@ -333,12 +341,39 @@ def test_the_loop_stops_after_six_steps():
     assert "could not finish" in result.text and len(result.sources) == 6
 
 
-@pytest.mark.parametrize("kind", ["unreachable", "auth", "server", "bad_request"])
+@pytest.mark.parametrize("kind", ["unreachable", "auth", "server"])
 def test_a_provider_failure_becomes_ai_unavailable(kind):
     adapter = Script(AdapterError(kind, "boom"))
     with pytest.raises(AppError) as e:
         engine.run_chat(adapter, "s", [], "q", [], CTX)
     assert e.value.code == "AI_UNAVAILABLE" and e.value.status == 503 and "Check Settings" in e.value.message
+    assert len(adapter.calls) == 1  # these are not retried
+
+
+def test_a_refused_request_is_tried_once_more_then_reported():
+    adapter = Script(AdapterError("bad_request", "bad tool call"), AdapterError("bad_request", "bad tool call"))
+    with pytest.raises(AppError) as e:
+        engine.run_chat(adapter, "s", [], "q", [], CTX)
+    assert e.value.code == "AI_UNAVAILABLE" and "bad tool call" in e.value.message and len(adapter.calls) == 2
+
+
+def test_a_refused_request_that_works_the_second_time_is_answered():
+    adapter = Script(AdapterError("bad_request", "bad tool call"), say("Fine."))
+    assert engine.run_chat(adapter, "s", [], "q", [], CTX).text == "Fine."
+
+
+def test_requests_carry_a_plain_user_agent(monkeypatch):
+    import io
+    seen = {}
+
+    def fake_urlopen(request, timeout=None):
+        seen["ua"] = request.get_header("User-agent")
+        return io.BytesIO(b'{"ok": true}')
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    from app.modules.llm.adapters import post_json
+    assert post_json("https://example.test/v1", {}, {}, 5) == {"ok": True}
+    assert seen["ua"] == "EverestMills/1.0"
 
 
 def test_an_empty_answer_gets_a_plain_fallback():

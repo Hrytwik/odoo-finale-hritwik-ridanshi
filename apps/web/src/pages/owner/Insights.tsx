@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import { ExplainDelay } from '@/components/ai/Drafts'
 import { EmptyState } from '@/components/common/EmptyState'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
@@ -107,6 +108,7 @@ function LateOrder({ order: o }: { order: Eta }) {
             </ul>
           </div>
         )}
+        {o.days_late > 0 && <ExplainDelay orderCode={o.order_code} />}
       </div>
     </article>
   )

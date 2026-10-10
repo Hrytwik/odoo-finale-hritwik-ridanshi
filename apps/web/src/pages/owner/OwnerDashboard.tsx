@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { MonthSummary } from '@/components/ai/Drafts'
 import { Alert } from '@/components/common/Alert'
 import { EmptyState } from '@/components/common/EmptyState'
 import { KpiCard } from '@/components/common/KpiCard'
@@ -37,12 +38,12 @@ export default function OwnerDashboard() {
           </label>
         }
       />
-      <QueryBoundary query={report}>{(r) => <Report report={r} />}</QueryBoundary>
+      <QueryBoundary query={report}>{(r) => <Report report={r} month={month} />}</QueryBoundary>
     </>
   )
 }
 
-function Report({ report: r }: { report: Report }) {
+function Report({ report: r, month }: { report: Report; month: string }) {
   const use = machineUse(r.machines)
   const p = r.profit
   const c = r.cash
@@ -65,6 +66,14 @@ function Report({ report: r }: { report: Report }) {
         <KpiCard label="Machine use" value={use * 100} format={(n) => `${Math.round(n)}%`} hint="Share of machine time spent running" />
         <KpiCard label="Idle labour" value={p.idle_labour} format={formatMoney} hint="Wages paid while machines stood idle" />
       </AnimatedGroup>
+
+      <Reveal>
+        <section className="card" aria-label="Summary for the owner">
+          <div className="card-body">
+            <MonthSummary key={month} month={month} />
+          </div>
+        </section>
+      </Reveal>
 
       <Reveal>
         <section className="card" aria-label="Revenue, cost and profit by order">

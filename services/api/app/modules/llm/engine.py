@@ -3,11 +3,13 @@
 Identical for every provider. The model only chooses and words; every number it may use comes back from a tool, and
 each tool call is kept as a source so the screen can show where an answer came from.
 """
+import datetime as dt
 import json
 from dataclasses import dataclass, field
 
 from pydantic import ValidationError
 
+from app.core.clock import today_ist
 from app.core.errors import AppError
 from app.modules.llm.data import ToolContext
 from app.modules.llm.tools import Tool
@@ -49,9 +51,16 @@ def _summary(content: str) -> str:
     return content if len(content) <= SUMMARY_LIMIT else content[: SUMMARY_LIMIT - 1] + "…"
 
 
+def with_today(system: str, today: dt.date | None = None) -> str:
+    """Tells the model the date in India, so "this month" and "last week" mean something."""
+    day = today or today_ist()
+    return f"{system} Today is {day.isoformat()} (India time), so this month is {day:%Y-%m}."
+
+
 def run_chat(adapter: LlmAdapter, system: str, history: list[Turn], question: str, tools: list[Tool], ctx: ToolContext,
              options: dict | None = None) -> ChatResult:
     """Answers one question. Raises AppError AI_UNAVAILABLE when the provider cannot be used."""
+    system = with_today(system)
     by_name = {t.name: t for t in tools}
     specs = [t.spec() for t in tools]
     turns = [*history, Turn(role="user", text=question)]
@@ -68,7 +77,13 @@ def run_chat(adapter: LlmAdapter, system: str, history: list[Turn], question: st
 
 def _complete(adapter: LlmAdapter, system: str, turns: list[Turn], specs, options) -> Completion:
     try:
-        return adapter.complete(system, turns, specs, options)
+        try:
+            return adapter.complete(system, turns, specs, options)
+        except AdapterError as exc:
+            if exc.kind != "bad_request":
+                raise
+            # some models now and then write a tool call the provider rejects; the same request usually works again
+            return adapter.complete(system, turns, specs, options)
     except AdapterError as exc:
         raise ai_unavailable(exc) from exc
 

@@ -17,10 +17,13 @@ type Settings = components['schemas']['SettingsOut']
 
 /** Starting points for the address of an OpenAI-compatible provider. */
 const PRESETS = [
-  { label: 'Groq', url: 'https://api.groq.com/openai/v1' },
-  { label: 'OpenAI', url: 'https://api.openai.com/v1' },
-  { label: 'Ollama on this computer', url: 'http://localhost:11434/v1' },
+  { label: 'Groq', url: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
+  { label: 'OpenAI', url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+  { label: 'Ollama on this computer', url: 'http://localhost:11434/v1', model: 'llama3.1' },
 ]
+
+/** True while the model box still holds a name that belongs to a different provider than the chosen preset. */
+const isStarterModel = (model: string) => !model.trim() || model.startsWith('claude-') || PRESETS.some((p) => p.model === model)
 
 export default function AiSettings() {
   const settings = useQuery({ queryKey: ['ai', 'settings'], queryFn: () => call(api.GET('/api/ai/settings')) })
@@ -126,7 +129,16 @@ function SettingsForm({ current }: { current: Settings }) {
                   <Input {...c} autoComplete="off" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
                   <span className="row">
                     {PRESETS.map((p) => (
-                      <button key={p.label} type="button" className="chat-chip" onClick={() => setBaseUrl(p.url)}>
+                      <button
+                        key={p.label}
+                        type="button"
+                        className="chat-chip"
+                        onClick={() => {
+                          setBaseUrl(p.url)
+                          // fill in a matching model name, but never overwrite one the user typed
+                          if (isStarterModel(model)) setModel(p.model)
+                        }}
+                      >
                         {p.label}
                       </button>
                     ))}

@@ -3,6 +3,7 @@ import { Ban, Radar } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { RecallDrafts } from '@/components/ai/Drafts'
 import { Alert } from '@/components/common/Alert'
 import { EmptyState } from '@/components/common/EmptyState'
 import { KpiCard } from '@/components/common/KpiCard'
@@ -80,6 +81,17 @@ export default function LotDetail() {
             {exposureWanted && (
               <Reveal>
                 <QueryBoundary query={recall}>{(r) => <Exposure recall={r} />}</QueryBoundary>
+              </Reveal>
+            )}
+            {l.is_blocked && canBlock && (
+              <Reveal>
+                <section className="card" aria-label="Messages to buyers">
+                  <div className="card-body stack-sm">
+                    <h2 className="card-title">Tell the buyers</h2>
+                    <p className="muted text-sm">One message for each buyer who received rolls made from this lot.</p>
+                    <RecallDrafts lotCode={l.lot_code} />
+                  </div>
+                </section>
               </Reveal>
             )}
           </div>
