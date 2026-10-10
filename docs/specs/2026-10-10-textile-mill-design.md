@@ -1,7 +1,7 @@
 # Everest Textile Mills — System Design
 
 > **Summary:** Full design for the textile mill platform: architecture (React + Vite + FastAPI + Postgres), 29-table data model, business rules, per-roll costing, delay/shortage/root-cause engines, vision QC, provider-agnostic LLM layer, screens, API surface, two-track split, testing and demo.
-> **Last updated:** 2026-10-10 21:20 IST (§7 costing revised after the B6 design review; new rule R18)
+> **Last updated:** 2026-10-10 21:27 IST (§7 costing revised after the B6 design review; new rule R18; engine arithmetic is exact fractions)
 > **Status:** Draft for team review
 
 ---
@@ -226,7 +226,7 @@ Hand-worked: rolls R1 1,000 m, R2 600 m, R3 400 m (rejected); order pool 20,000;
 
 ### 7.4 Rounding
 
-Everything is exact (`Decimal`) inside the engine. Figures shown are rounded half up to the paisa; a total is the sum of its rounded parts (the invoice rule). The reconciliation invariant is tested on the exact values.
+Everything is exact (`fractions.Fraction`, so a third of 800 stays a third) inside the engine. Figures shown are rounded half up to the paisa; a total is the sum of its rounded parts (the invoice rule). The reconciliation invariant is tested on the exact values.
 
 ### 7.5 The month report
 
@@ -243,7 +243,7 @@ Hand-worked month: one order; a lot at 250/kg, 120 kg issued 3 Oct and 20 kg ret
 ### 7.6 Implementation
 
 Computed on request, no stored totals, no migration, read-only (no locks, no events).
-- `modules/costing/engine.py`: the pure core (no database, no clock; "now" is an input).
+- `modules/costing/engine/`: the pure core (no database, no clock; "now" is an input), as small modules: `records`, `intervals`, `labour`, `runs`, `allocation`, `month`.
 - `modules/costing/loader.py`: reads rows into plain records. For one order it must also load the other runs of the same operators in the same windows (labour is split across all of a worker's runs, whatever the order).
 - `modules/costing/service.py`: rounding and the response shapes; `router.py`: the three real handlers.
 - Contract: one additive field, `ProfitPanel.support_staff`; everything else byte-identical. Track A's `Owner.test.tsx` fixture needs the field and the owner page a row.
