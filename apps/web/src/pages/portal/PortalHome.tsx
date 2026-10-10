@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
 import { StageBar, StageLegend } from '@/components/common/StageBar'
 import { Reveal } from '@/components/motion/Reveal'
+import { useI18n } from '@/i18n/I18nContext'
 import { api, call, type components } from '@/lib/api'
 import { formatDate, formatMetres } from '@/lib/format'
 import { useStageToasts } from '@/lib/useStageToasts'
@@ -16,17 +17,18 @@ type Order = components['schemas']['PortalOrder']
 
 /** The buyer's own orders: where each one stands, and a place to ask in plain words. */
 export default function PortalHome() {
+  const { t } = useI18n()
   const orders = useQuery({ queryKey: ['portal', 'orders'], queryFn: () => call(api.GET('/api/portal/orders')) })
   useStageToasts(orders.data)
   return (
     <>
-      <PageHeader eyebrow="Your orders" title="My orders" description="Where each of your orders stands, and when it should reach you. Updates as the mill works." />
+      <PageHeader eyebrow={t('portal.eyebrow')} title={t('nav.myOrders')} description={t('portal.description')} />
       <div className="stack">
         <LiveBadge updatedAt={orders.dataUpdatedAt} />
         <QueryBoundary query={orders}>
           {(list) =>
             list.length === 0 ? (
-              <EmptyState title="No orders yet" description="Orders the mill has confirmed for you appear here." />
+              <EmptyState title={t('portal.emptyTitle')} description={t('portal.emptyDescription')} />
             ) : (
               <>
                 <StageLegend />
@@ -48,23 +50,25 @@ export default function PortalHome() {
 }
 
 export function DeliveryLine({ order }: { order: Pick<Order, 'delivery_date' | 'deadline' | 'stage'> }) {
-  if (order.stage === 'dispatched') return <span className="muted">All of it has been sent</span>
-  if (order.stage === 'cancelled') return <span className="muted">This order was cancelled</span>
+  const { t } = useI18n()
+  if (order.stage === 'dispatched') return <span className="muted">{t('portal.allSent')}</span>
+  if (order.stage === 'cancelled') return <span className="muted">{t('portal.cancelled')}</span>
   return (
     <span className="portal-date">
       <CalendarClock size={15} aria-hidden />
       {order.delivery_date ? (
-        <>Expected <strong>{formatDate(order.delivery_date)}</strong> · promised {formatDate(order.deadline)}</>
+        <>{t('portal.expected')} <strong>{formatDate(order.delivery_date)}</strong> · {t('portal.promisedShort')} {formatDate(order.deadline)}</>
       ) : (
-        <>Promised for <strong>{formatDate(order.deadline)}</strong></>
+        <>{t('portal.promisedFor')} <strong>{formatDate(order.deadline)}</strong></>
       )}
     </span>
   )
 }
 
 function OrderCard({ order: o }: { order: Order }) {
+  const { t } = useI18n()
   return (
-    <Link to={`/portal/orders/${o.code}`} className="card portal-card" aria-label={`Order ${o.code}`}>
+    <Link to={`/portal/orders/${o.code}`} className="card portal-card" aria-label={t('portal.orderAria', { code: o.code })}>
       <div className="card-body stack-sm">
         <div className="row">
           <span className="code-text">{o.code}</span>
@@ -73,7 +77,7 @@ function OrderCard({ order: o }: { order: Order }) {
           </span>
         </div>
         <StageBar stage={o.stage} />
-        <div className="portal-meter" role="img" aria-label={`About ${Math.round(o.progress_pct)} percent of the work is done`}>
+        <div className="portal-meter" role="img" aria-label={t('portal.progressAria', { pct: Math.round(o.progress_pct) })}>
           <i style={{ width: `${Math.min(100, Math.max(0, o.progress_pct))}%` }} />
         </div>
         <DeliveryLine order={o} />

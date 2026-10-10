@@ -12,6 +12,7 @@ import { AnimatedGroup } from '@/components/motion/AnimatedGroup'
 import { Reveal } from '@/components/motion/Reveal'
 import { Button } from '@/components/ui/Button'
 import { Table } from '@/components/ui/Table'
+import { useI18n } from '@/i18n/I18nContext'
 import { ApiError, api, call } from '@/lib/api'
 import { formatDate, formatDateTime, formatMetres } from '@/lib/format'
 import { useStageToasts } from '@/lib/useStageToasts'
@@ -19,6 +20,7 @@ import { DeliveryLine } from './PortalHome'
 
 /** One order: its stage, the dates, everything that happened to it so far, and each truck that carried part of it. */
 export default function PortalOrder() {
+  const { t } = useI18n()
   const { code = '' } = useParams()
   const order = useQuery({
     queryKey: ['portal', 'orders', code],
@@ -32,11 +34,11 @@ export default function PortalOrder() {
   if (missing) {
     return (
       <EmptyState
-        title="We could not find that order"
-        description="Check the order number, or go back to your list."
+        title={t('portal.notFound')}
+        description={t('portal.notFoundHint')}
         action={
           <Link to="/portal">
-            <Button variant="secondary">My orders</Button>
+            <Button variant="secondary">{t('nav.myOrders')}</Button>
           </Link>
         }
       />
@@ -50,11 +52,11 @@ export default function PortalOrder() {
             <PageHeader
               eyebrow={`${o.fabric} · ${o.colour}`}
               title={o.code}
-              description={`${formatMetres(o.qty_metres)} ordered`}
+              description={t('portal.orderedQty', { metres: formatMetres(o.qty_metres) })}
               actions={
                 <Link to="/portal">
                   <Button variant="secondary">
-                    <ArrowLeft size={16} aria-hidden /> My orders
+                    <ArrowLeft size={16} aria-hidden /> {t('nav.myOrders')}
                   </Button>
                 </Link>
               }
@@ -63,20 +65,20 @@ export default function PortalOrder() {
               <LiveBadge updatedAt={order.dataUpdatedAt} />
               <StageBar stage={o.stage} />
               <AnimatedGroup className="grid-cards">
-                <KpiCard label="Work done" value={o.progress_pct} format={(n) => `${Math.round(n)}%`} hint="A rough share of the work finished" />
-                <KpiCard label="Promised for" value={0} format={() => formatDate(o.deadline)} hint={o.delivery_date ? `Expected ${formatDate(o.delivery_date)}` : 'We will confirm a date as work moves on'} />
-                <KpiCard label="Sent so far" value={o.dispatches.reduce((n, d) => n + d.metres, 0)} format={formatMetres} hint={`${o.dispatches.length} truck${o.dispatches.length === 1 ? '' : 's'}`} />
+                <KpiCard label={t('portal.workDone')} value={o.progress_pct} format={(n) => `${Math.round(n)}%`} hint={t('portal.workDoneHint')} />
+                <KpiCard label={t('portal.promisedFor')} value={0} format={() => formatDate(o.deadline)} hint={o.delivery_date ? t('portal.expectedOn', { date: formatDate(o.delivery_date) }) : t('portal.willConfirm')} />
+                <KpiCard label={t('portal.sentSoFar')} value={o.dispatches.reduce((n, d) => n + d.metres, 0)} format={formatMetres} hint={t(o.dispatches.length === 1 ? 'portal.trucks.one' : 'portal.trucks.many', { count: o.dispatches.length })} />
               </AnimatedGroup>
               <DeliveryLine order={o} />
 
               <Reveal>
-                <section className="card" aria-label="What has happened">
+                <section className="card" aria-label={t('portal.happened')}>
                   <div className="card-header">
-                    <h2 className="card-title">What has happened</h2>
+                    <h2 className="card-title">{t('portal.happened')}</h2>
                   </div>
                   <div className="card-body">
                     {o.timeline.length === 0 ? (
-                      <p className="muted">Nothing yet. Work starts after the order is confirmed.</p>
+                      <p className="muted">{t('portal.nothingYet')}</p>
                     ) : (
                       <ol className="portal-timeline">
                         {o.timeline.map((e, i) => (
@@ -92,18 +94,18 @@ export default function PortalOrder() {
               </Reveal>
 
               <Reveal>
-                <section className="stack-sm" aria-label="Dispatches">
-                  <h2>Sent to you</h2>
+                <section className="stack-sm" aria-label={t('portal.dispatches')}>
+                  <h2>{t('portal.sentToYou')}</h2>
                   {o.dispatches.length === 0 ? (
-                    <p className="muted">Nothing has been sent yet.</p>
+                    <p className="muted">{t('portal.nothingSent')}</p>
                   ) : (
                     <Table>
                       <thead>
                         <tr>
-                          <th>Truck</th>
-                          <th>Sent</th>
-                          <th className="num">Length</th>
-                          <th>Invoice</th>
+                          <th>{t('portal.col.truck')}</th>
+                          <th>{t('portal.col.sent')}</th>
+                          <th className="num">{t('portal.col.length')}</th>
+                          <th>{t('dispatch.col.invoice')}</th>
                         </tr>
                       </thead>
                       <tbody>
