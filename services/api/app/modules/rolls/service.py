@@ -3,6 +3,7 @@ from sqlalchemy import column, select, table
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.money import to_float
+from app.core.validate import not_found
 from app.db.models import Order, Roll
 from app.modules.rolls.schemas import RollOut
 
@@ -37,3 +38,13 @@ def list_rolls(db: Session, status: str | None = None, order_code: str | None = 
 def roll_status(db: Session, roll_id: int) -> str:
     """The roll's status from v_roll_status (read it AFTER taking the roll's row lock when a rule depends on it)."""
     return db.scalar(select(v_roll_status.c.status).where(v_roll_status.c.roll_id == roll_id))
+
+
+def get_roll_or_404(db: Session, roll_code: str, for_update: bool = False) -> Roll:
+    query = select(Roll).where(Roll.code == roll_code)
+    if for_update:  # take the row lock and re-read the row, so the status we check is what is committed now
+        query = query.with_for_update().execution_options(populate_existing=True)
+    roll = db.scalar(query)
+    if roll is None:
+        raise not_found("Roll", "roll_code")
+    return roll
