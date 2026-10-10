@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useI18n } from '@/i18n/I18nContext'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Alert } from './Alert'
@@ -10,7 +11,7 @@ export function ActionDialog({
   onClose,
   title,
   confirmLabel,
-  cancelLabel = 'Cancel',
+  cancelLabel,
   onConfirm,
   pending,
   error,
@@ -28,6 +29,7 @@ export function ActionDialog({
   danger?: boolean
   children?: ReactNode
 }) {
+  const { t } = useI18n()
   return (
     <Dialog open={open} onClose={onClose} title={title}>
       <form
@@ -45,7 +47,7 @@ export function ActionDialog({
             {confirmLabel}
           </SubmitButton>
           <Button variant="secondary" onClick={onClose}>
-            {cancelLabel}
+            {cancelLabel ?? t('dispatch.cancel')}
           </Button>
         </div>
       </form>

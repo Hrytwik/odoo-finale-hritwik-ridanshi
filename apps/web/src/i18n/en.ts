@@ -5,6 +5,7 @@
 import { englishOf } from './area'
 import { dispatch } from './areas/dispatch'
 import { inspect } from './areas/inspect'
+import { machine } from './areas/machine'
 import { store } from './areas/store'
 
 const core = {
@@ -198,6 +199,6 @@ const core = {
 } as const
 
 /** The core sentences plus each screen's own file under `areas/`. Add a screen's area here. */
-export const en = { ...core, ...englishOf(store), ...englishOf(dispatch), ...englishOf(inspect) }
+export const en = { ...core, ...englishOf(store), ...englishOf(dispatch), ...englishOf(inspect), ...englishOf(machine) }
 
 export type Key = keyof typeof en
