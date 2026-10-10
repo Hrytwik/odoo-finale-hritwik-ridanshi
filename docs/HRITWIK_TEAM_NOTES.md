@@ -1,9 +1,41 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-11 03:55 IST
+> **Last updated:** 2026-10-11 04:02 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-11 04:02 IST — REQUEST: let the owner close an order short ("Partly dispatched" never ends today)
+
+**From:** Ridanshi → Hritwik
+
+**The problem, in one sentence.** An order that will never reach its ordered metres stays "Partly dispatched" for ever, and the owner has no way to end it.
+
+**How the status works today (so we are looking at the same thing).** `orders/service.py`, `stage()`: nobody sets "Partly dispatched". It is computed from three numbers on the order: ordered metres, passed metres, dispatched metres. If dispatched metres are more than 0 and less than the ordered metres, the stage is `partly_dispatched`. When dispatched metres reach the ordered metres it becomes `dispatched`. Each confirmed truck moves the number, and the screens refresh by the live event.
+
+**Real example from our demo mill: ORD-0001.** Ordered 5,000 m. Passed quality check 1,800 m. Dispatched 1,800 m. The other 3,200 m was never woven. Nothing in the app can ever move this order out of "Partly dispatched". The same happens in real life when rolls are rejected and the buyer agrees to take less.
+
+**What I already built (web only, nothing for you to do for this part).** A **Shipments** card on the owner's order page: sent, ready in store, still being made, rejected, and a table of the trucks. When nothing more is being made and the order will fall short, it shows a red warning. It can only warn. It cannot close the order.
+
+**What I need from you (backend, your area):** a way for the owner to close the order short.
+
+1. **A field, not a new order state.** Add to `orders`: `closed_short_at` (timestamp, null), `closed_short_by` (user id), `closed_short_reason` (text). Migration is yours.
+2. **`POST /api/orders/{order_code}/close-short`**, owner only, body `{ "reason": "..." }` (3 to 200 characters, trimmed). Rules, each with a clear error code:
+   - the order must be `confirmed` and not already closed short;
+   - dispatched metres must be more than 0 (otherwise the owner should cancel, not close short);
+   - nothing may still be in progress for this order: no running production run, no roll awaiting QC, in rework, or loaded on a dispatch that is not yet confirmed (`ORDER_STILL_IN_PROGRESS`).
+3. **What it does.** Sets the three fields, publishes `order.changed`, and never changes an invoice that already exists.
+4. **The stage.** Please add a new stage value `closed_short` (shown to people as "Closed short"). `stage()` returns it when `closed_short_at` is set. It is a new value in the `OrderStage` enum, so the contract changes. I will add the label in all ten languages on my side.
+5. **Reads that must treat a closed-short order as finished.** The late-orders list and the delivery estimate (`/api/orders/{code}/eta`), the yarn need and shortage forecast (`v_order_yarn_need`: it must not ask for yarn for metres that will never be made), and the machine queue and floor planning. Receivables are not affected (invoices exist only for what was sent).
+6. **`OrderOut`** gets `closed_short_at` and `closed_short_reason` (the buyer portal's `PortalOrder` gets them too, without the internal user id).
+7. **The buyer is told.** After closing, call the notices hook I already added in `modules/notices/hooks.py`. If you prefer, leave a one-line TODO and I will add `notify_closed_short(db, order_code)`; the sentence will be: "Your order ORD-0001 is complete at 1,800 m of 5,000 m. The rest will not be made. Reason: ...".
+8. **Tests I would like to see:** closing works for the owner only; refused with a running run, with a roll awaiting QC, with zero dispatched, when already closed; stage becomes `closed_short`; the order leaves the late-orders list and the yarn shortage; a closed order cannot get a new run or yarn issue.
+
+**What I do once the endpoint is merged:** a "Close order short" button and dialog on the order page (owner only, with the reason box), the new stage label in all languages, and the buyer portal wording. Please tell me when `close-short` and the contract are on `main`.
+
+**Also, still open from my earlier note (03:55 IST):** first-login password change flag, and clean-cloth photos for the model card. Those are unchanged.
 
 ---
 
