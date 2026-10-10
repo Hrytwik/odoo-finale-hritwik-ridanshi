@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { BuyerAssistant } from '@/components/ai/BuyerAssistant'
 import { EmptyState } from '@/components/common/EmptyState'
 import { KpiCard } from '@/components/common/KpiCard'
+import { LiveBadge } from '@/components/common/LiveBadge'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
 import { StageBar } from '@/components/common/StageBar'
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/Button'
 import { Table } from '@/components/ui/Table'
 import { ApiError, api, call } from '@/lib/api'
 import { formatDate, formatDateTime, formatMetres } from '@/lib/format'
+import { useStageToasts } from '@/lib/useStageToasts'
 import { DeliveryLine } from './PortalHome'
 
 /** One order: its stage, the dates, everything that happened to it so far, and each truck that carried part of it. */
@@ -24,6 +26,7 @@ export default function PortalOrder() {
     enabled: !!code,
     retry: false,
   })
+  useStageToasts(order.data ? [order.data] : undefined)
   const missing = order.error instanceof ApiError && order.error.status === 404
 
   if (missing) {
@@ -57,6 +60,7 @@ export default function PortalOrder() {
               }
             />
             <div className="stack">
+              <LiveBadge updatedAt={order.dataUpdatedAt} />
               <StageBar stage={o.stage} />
               <AnimatedGroup className="grid-cards">
                 <KpiCard label="Work done" value={o.progress_pct} format={(n) => `${Math.round(n)}%`} hint="A rough share of the work finished" />

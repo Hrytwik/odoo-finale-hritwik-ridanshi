@@ -3,22 +3,26 @@ import { CalendarClock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { BuyerAssistant } from '@/components/ai/BuyerAssistant'
 import { EmptyState } from '@/components/common/EmptyState'
+import { LiveBadge } from '@/components/common/LiveBadge'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
 import { StageBar, StageLegend } from '@/components/common/StageBar'
 import { Reveal } from '@/components/motion/Reveal'
 import { api, call, type components } from '@/lib/api'
 import { formatDate, formatMetres } from '@/lib/format'
+import { useStageToasts } from '@/lib/useStageToasts'
 
 type Order = components['schemas']['PortalOrder']
 
 /** The buyer's own orders: where each one stands, and a place to ask in plain words. */
 export default function PortalHome() {
   const orders = useQuery({ queryKey: ['portal', 'orders'], queryFn: () => call(api.GET('/api/portal/orders')) })
+  useStageToasts(orders.data)
   return (
     <>
       <PageHeader eyebrow="Your orders" title="My orders" description="Where each of your orders stands, and when it should reach you. Updates as the mill works." />
       <div className="stack">
+        <LiveBadge updatedAt={orders.dataUpdatedAt} />
         <QueryBoundary query={orders}>
           {(list) =>
             list.length === 0 ? (
