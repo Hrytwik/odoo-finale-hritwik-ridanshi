@@ -27,9 +27,9 @@ class World:
         return self.db.execute(text("SELECT status FROM v_roll_status WHERE roll_id = :i"),
                                {"i": self.roll.id}).scalar_one()
 
-    def dye_run(self, ended: bool):
-        run = make_run(self.db, self.order, make_machine(self.db, stage="dyeing"), started_at=at(0),
-                       ended_at=at(0) + dt.timedelta(hours=2) if ended else None)
+    def dye_run(self, ended: bool, started_days: int = 0):
+        run = make_run(self.db, self.order, make_machine(self.db, stage="dyeing"), started_at=at(started_days),
+                       ended_at=at(started_days) + dt.timedelta(hours=2) if ended else None)
         dye(self.db, self.roll, run)
         return run
 
@@ -63,10 +63,30 @@ def test_an_ended_dye_run_means_awaiting_qc(w):
     assert w.status() == "awaiting_qc"
 
 
-def test_two_dye_links_one_ended_counts_as_awaiting_qc(w):
-    w.dye_run(ended=False)
-    w.dye_run(ended=True)
+def test_the_latest_dye_run_decides_an_open_run_after_an_ended_one_is_dyeing(w):
+    w.dye_run(ended=True, started_days=0)
+    w.dye_run(ended=False, started_days=1)
+    assert w.status() == "dyeing"
+
+
+def test_the_latest_dye_run_decides_an_ended_run_after_an_open_one_is_awaiting_qc(w):
+    w.dye_run(ended=False, started_days=0)
+    w.dye_run(ended=True, started_days=1)
     assert w.status() == "awaiting_qc"
+
+
+def test_two_ended_dye_runs_are_awaiting_qc(w):
+    w.dye_run(ended=True, started_days=0)
+    w.dye_run(ended=True, started_days=1)
+    assert w.status() == "awaiting_qc"
+
+
+def test_the_latest_rework_run_decides_an_open_run_after_an_ended_one_is_in_rework(w):
+    w.dye_run(ended=True)
+    w.inspect("rework", 1)
+    w.rework_run(started_days=2, ended=True)
+    w.rework_run(started_days=3, ended=False)
+    assert w.status() == "in_rework"
 
 
 def test_latest_pass_is_in_store(w):

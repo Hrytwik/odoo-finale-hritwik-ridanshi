@@ -110,10 +110,8 @@ SELECT
   (SELECT COALESCE(SUM(output_kg), 0) FROM production_runs
      WHERE order_id = :oid AND stage = 'spinning' AND ended_at IS NOT NULL) AS spun_kg,
   (SELECT COALESCE(SUM(metres), 0) FROM rolls WHERE order_id = :oid) AS woven_m,
-  (SELECT COALESCE(SUM(r.metres), 0) FROM rolls r
-     WHERE r.order_id = :oid AND EXISTS (
-       SELECT 1 FROM roll_runs rr JOIN production_runs pr ON pr.id = rr.run_id
-       WHERE rr.roll_id = r.id AND rr.purpose = 'dye' AND pr.ended_at IS NOT NULL)) AS dyed_m,
+  (SELECT COALESCE(SUM(r.metres), 0) FROM rolls r JOIN v_roll_latest_dye d ON d.roll_id = r.id
+     WHERE r.order_id = :oid AND d.ended_at IS NOT NULL) AS dyed_m,
   (SELECT COALESCE(SUM(r.metres), 0) FROM rolls r JOIN latest l ON l.roll_id = r.id WHERE l.verdict = 'pass') AS passed_m,
   (SELECT COALESCE(SUM(r.metres), 0) FROM rolls r JOIN latest l ON l.roll_id = r.id WHERE l.verdict = 'reject') AS rejected_m,
   (SELECT COALESCE(SUM(r.metres), 0) FROM rolls r
@@ -132,8 +130,7 @@ SELECT
       AND NOT EXISTS (SELECT 1 FROM dispatch_items di JOIN dispatches d ON d.id = di.dispatch_id
                       WHERE di.roll_id = r.id AND d.state = 'dispatched')
       AND (
-        (EXISTS (SELECT 1 FROM roll_runs rr JOIN production_runs pr ON pr.id = rr.run_id
-                 WHERE rr.roll_id = r.id AND rr.purpose = 'dye' AND pr.ended_at IS NOT NULL)
+        (EXISTS (SELECT 1 FROM v_roll_latest_dye d WHERE d.roll_id = r.id AND d.ended_at IS NOT NULL)
          AND NOT EXISTS (SELECT 1 FROM qc_inspections q WHERE q.roll_id = r.id))
         OR (SELECT q.verdict FROM qc_inspections q WHERE q.roll_id = r.id
             ORDER BY q.inspected_at DESC, q.id DESC LIMIT 1) = 'rework'

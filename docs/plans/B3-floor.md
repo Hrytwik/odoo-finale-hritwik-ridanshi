@@ -1,7 +1,7 @@
 # B3 — Floor (real logic) Implementation Plan
 
 > **Summary:** Replaces the example-data stubs for the shop floor with real, tested logic: start/end/hand-over of production runs, breakdown and repair, roll off and loading rolls into dyeing, the roll-status view (spec §5, all five rules), machine status and "output today", the floor board, machine page, `GET /runs` and `GET /rolls`. Every write locks the machine row (start also locks the order row). API shapes do not change.
-> **Last updated:** 2026-10-10 17:30 IST (complete)
+> **Last updated:** 2026-10-10 18:52 IST (complete; correction from B4 Task 1 noted)
 
 **Goal:** every endpoint under `/api/floor`, `/api/machines/{code}` (read, breakdown, repair), `/api/runs` (list, start, end, hand-over, roll off, load rolls) and `/api/rolls` (list) runs on real data with the rules R4–R8 from spec §6, and the generated `contracts/openapi.json` stays **byte-identical**.
 
@@ -20,6 +20,10 @@ Task 6 done and verified (2026-10-10 17:28 IST): `floor/rolls.py` (`roll_off`, `
 Task 7 done and verified (2026-10-10 17:30 IST): `tests/test_floor_chain.py` (one real chain through the API: receive 800 kg at 250, confirm a 5,000 m order, spin with 587.5 kg issued and 590 kg out, weave 3 rolls = 2,310 m across a hand-over, dye and end; after each step the order's progress and stage, stock (on hand 212.5, outstanding 42.5) and the board agree); old example-data tests replaced or removed; contract byte-identical (and guarded by `test_committed_contract_matches_the_code`); **live check** on a real server with a throwaway database and the dev users reproduced every number of the chain, then breakdown on a running loom (`down`), second breakdown (`MACHINE_ALREADY_DOWN`), start on the down machine (`MACHINE_DOWN`), repair, repair when not down (`MACHINE_NOT_DOWN`), the board counts (running 0, idle 2, down 1), end twice (`RUN_NOT_OPEN`), weaving with output (`OUTPUT_NOT_ALLOWED`), loading the same rolls twice (`ROLL_WRONG_STATUS`), and the 403s for qc, buyer and store. Spec §4.5 and R6 updated, note to Track A written, `docs/plans/README.md` marks B3 done. All B3 commits are on the local `main` (work was done directly on `main`, so there is no separate merge); not pushed. **B3 is complete.**
 
 **Amendment found while building Task 2:** `machine_card` (and the board) cover **active** machines only, because `v_machine_status` lists active machines only. So Task 5's `breakdown` and `repair` refuse an inactive machine with `MACHINE_INACTIVE` (409, field `machine_code`), the same code start-run uses; an inactive machine must be reactivated first (master data) before a downtime can be opened or closed on it.
+
+## Correction found while designing B4 (fixed in B4 Task 1)
+
+B3's hand-over of a **dyeing** run (and of a rework run on a machine) ended the old run and started a new one with no rolls, so the roll-status view marked the loaded rolls `awaiting_qc` while dyeing carried on in the new run; the order's `dyed_m`, its quality-check stage and a dyeing machine's output today had the same flaw (they counted "any ended dye run", which also double-counts once links are carried over). The B3 tests only handed over weaving runs, where rolls rightly stay with the run that made them. **Fix (B4 Task 1):** a roll's dyeing is finished when its **latest** dye run has ended (`v_roll_latest_dye`; `v_roll_status`, order progress and stage and the dyeing output today all use it), and hand-over copies the `dye` and `rework` links to the new run. Decisions 7 and 11 below describe the original B3 behaviour; the spec §5 wording is updated.
 
 ## Global Constraints
 

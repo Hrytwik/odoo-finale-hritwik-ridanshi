@@ -28,10 +28,9 @@ _OUTPUT_SQL = {
           JOIN production_runs pr ON pr.id = rr.run_id
          WHERE (r.created_at AT TIME ZONE 'Asia/Kolkata')::date = :today GROUP BY pr.machine_id"""),
     "dyeing": text("""
-        SELECT pr.machine_id, SUM(r.metres) AS qty FROM roll_runs rr
-          JOIN rolls r ON r.id = rr.roll_id JOIN production_runs pr ON pr.id = rr.run_id
-         WHERE rr.purpose = 'dye' AND pr.ended_at IS NOT NULL
-           AND (pr.ended_at AT TIME ZONE 'Asia/Kolkata')::date = :today GROUP BY pr.machine_id"""),
+        SELECT d.machine_id, SUM(r.metres) AS qty FROM v_roll_latest_dye d JOIN rolls r ON r.id = d.roll_id
+         WHERE d.ended_at IS NOT NULL
+           AND (d.ended_at AT TIME ZONE 'Asia/Kolkata')::date = :today GROUP BY d.machine_id"""),
 }
 
 

@@ -1,13 +1,17 @@
 # B4 — QC and rolls (real logic) Implementation Plan
 
 > **Summary:** Replaces the example-data stubs for quality control with real, tested logic: recording an inspection (R9), starting a rework run (R10), the QC queue and the Roll Passport (run history, yarn lots, quality checks, a buyer sees only their own rolls). It also fixes a gap found in B3: handing over a dyeing run made its loaded rolls look finished, so a roll's dyeing now counts as finished only when its **latest** dye run has ended. API shapes do not change.
-> **Last updated:** 2026-10-10 18:47 IST (written, not started)
+> **Last updated:** 2026-10-10 18:52 IST (Task 1 done)
 
 **Goal:** every endpoint under `/api/qc/queue`, `/api/qc/inspections`, `/api/rework-runs` and `/api/rolls/{code}/passport` runs on real data with the rules R9, R10 and R15 from spec §6, and `contracts/openapi.json` stays **byte-identical**. `POST /qc/analyze` and `GET /qc/model-card` stay example data until B8.
 
 **Spec:** `docs/specs/2026-10-10-textile-mill-design.md` §4.2, §5, §6 (R9, R10, R15), §9, §11. **Depends on:** B1 to B3 (tables, auth, error format, locks, `db_now`, `v_roll_status`, runs and rolls). Unlocks B5 (a roll must be `in_store` to be loaded) and B6 (rework and rejects are costed).
 
 **How this plan is executed:** inline, one task at a time (atomic-workflow), test first, the full suite twice at each boundary, the important tests mutation-checked, race tests proven by removing the lock. The final code is copied into this plan after each task is verified. Design approved section by section on 2026-10-10 (scope, inspection rules, rework runs and the hand-over gap, queue and passport, task order).
+
+## Status
+
+Task 1 done and verified (2026-10-10 18:52 IST): migration `43caade7e8a6` (`v_roll_latest_dye`, replaced `v_roll_status`, downgrade restores the B3 view; round trip checked), orders `dyed_m` and the quality-check stage and the dyeing output today use the latest dye run, hand-over copies the `dye` and `rework` links (a weaving run's rolls stay put); 11 tests added or changed (`tests/test_roll_latest_run.py`, `tests/test_roll_status.py`: the hand-over gap numbers, two hand-overs, breakdown after hand-over, rework hand-over stays `in_rework`, weaving hand-over unchanged, the latest run decides in both directions). Mutation-proven: no link copy, the earliest run as "latest", `dyed_m` and the stage back to "any ended run", output counting every ended run (double count), copying `produce` links. The B3 test `test_two_dye_links_one_ended_counts_as_awaiting_qc` was replaced by the precise cases. Stale wording fixed in spec §5 and the output-today line, the B2 plan's progress bullet and a correction note in the B3 plan. Full suite 839 passed, twice; contract unchanged. Next: Task 2.
 
 ## Global Constraints
 

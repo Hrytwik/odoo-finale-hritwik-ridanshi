@@ -13,7 +13,7 @@ from app.core.errors import AppError, commit
 from app.core.events import broadcaster
 from app.core.money import dec, q_kg
 from app.core.validate import invalid, not_found
-from app.db.models import Machine, MachineDowntime, ProductionRun, Worker
+from app.db.models import Machine, MachineDowntime, ProductionRun, RollRun, Worker
 from app.modules.floor import schemas as s
 from app.modules.orders.service import get_order_or_404
 
@@ -131,6 +131,12 @@ def handover(db: Session, run_id: int, body: s.HandoverIn) -> ProductionRun:
     new = ProductionRun(order_id=old.order_id, machine_id=old.machine_id, stage=old.stage,
                         operator_worker_id=operator.id, input_run_id=old.input_run_id, started_at=now)
     db.add(new)
+    db.flush()
+    # a dyeing run (or a rework run on a machine) carries its rolls over to the next shift's run; the old links stay
+    # as history. A weaving run's rolls stay with the run that made them.
+    for roll_id, purpose in db.execute(select(RollRun.roll_id, RollRun.purpose).where(
+            RollRun.run_id == old.id, RollRun.purpose.in_(("dye", "rework")))).all():
+        db.add(RollRun(roll_id=roll_id, run_id=new.id, purpose=purpose))
     commit(db)
     db.refresh(new)
     broadcaster.publish("run.changed", old.id)

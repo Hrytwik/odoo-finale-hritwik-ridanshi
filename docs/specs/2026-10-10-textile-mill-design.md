@@ -143,12 +143,12 @@ Total: 29 tables.
 1. On a dispatch that is `dispatched` → **dispatched**; on a dispatch still `loading` → **loading**.
 2. Latest inspection verdict = reject → **rejected**.
 3. Latest inspection verdict = pass → **in_store**.
-4. Latest inspection verdict = rework → if a rework run linked after that inspection has ended → **awaiting_qc**; if one is open → **in_rework**; else → **awaiting_rework**.
-5. No inspection yet → if a dye run has ended → **awaiting_qc**; if a dye run is open → **dyeing**; else → **woven**.
+4. Latest inspection verdict = rework → look at the **latest** rework run linked after that inspection: if it has ended → **awaiting_qc**; if it is open → **in_rework**; if there is none → **awaiting_rework**.
+5. No inspection yet → look at the roll's **latest** dye run: if it has ended → **awaiting_qc**; if it is open → **dyeing**; if there is none → **woven**. (A hand-over of a dyeing run, or of a rework run on a machine, copies the loaded rolls to the new run, so a roll is not finished until its latest run is.)
 
 **Order buyer-facing stage** (furthest reached): cancelled → draft → *Waiting to start* (confirmed, no runs) → *Spinning* → *Weaving* → *Dyeing* → *Quality check* (any roll awaiting_qc / in rework) → *Ready to ship* (passed metres ≥ ordered) → *Partly dispatched* → *Dispatched* (dispatched metres ≥ ordered).
 
-**Machine "output today"**: spinning = sum of `output_kg` of runs ended today; weaving = metres of rolls produced today; dyeing = metres of rolls in dye runs ended today.
+**Machine "output today"**: spinning = sum of `output_kg` of runs ended today; weaving = metres of rolls produced today; dyeing = metres of rolls whose latest dye run ended today.
 
 ---
 
