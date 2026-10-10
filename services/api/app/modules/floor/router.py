@@ -58,10 +58,10 @@ def load_rolls(run_id: int, body: s.LoadRollsIn) -> s.RunOut:
 
 
 @router.post("/machines/{machine_code}/breakdown", response_model=s.MachineCard, dependencies=[Depends(operators)])
-def breakdown(machine_code: str, body: s.BreakdownIn) -> s.MachineCard:
-    return ex.CARDS[2]
+def breakdown(machine_code: str, body: s.BreakdownIn, db: Session = Depends(get_db)) -> s.MachineCard:
+    return board.machine_card(db, service.breakdown(db, machine_code, body))
 
 
 @router.post("/machines/{machine_code}/repair", response_model=s.MachineCard, dependencies=[Depends(operators)])
-def repair(machine_code: str) -> s.MachineCard:
-    return ex.CARDS[2].model_copy(update={"status": "idle", "downtime": None})
+def repair(machine_code: str, db: Session = Depends(get_db)) -> s.MachineCard:
+    return board.machine_card(db, service.repair(db, machine_code))

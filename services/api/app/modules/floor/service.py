@@ -137,3 +137,41 @@ def handover(db: Session, run_id: int, body: s.HandoverIn) -> ProductionRun:
     broadcaster.publish("run.changed", new.id)
     broadcaster.publish("machine.changed", new.machine_id)
     return new
+
+
+def _active_locked_machine(db: Session, machine_code: str) -> Machine:
+    machine = lock_machine(db, get_machine_or_404(db, machine_code).id)
+    if not machine.active:
+        raise AppError("MACHINE_INACTIVE", "This machine is not active", field="machine_code")
+    return machine
+
+
+def breakdown(db: Session, machine_code: str, body: s.BreakdownIn) -> Machine:
+    """Open a downtime and end any open run on the machine at the same instant (a spinning run keeps a blank output)."""
+    machine = _active_locked_machine(db, machine_code)
+    now = db_now(db)
+    ended = list(db.scalars(select(ProductionRun).where(
+        ProductionRun.machine_id == machine.id, ProductionRun.ended_at.is_(None))
+        .with_for_update().execution_options(populate_existing=True)))
+    for run in ended:
+        run.ended_at = now
+    db.add(MachineDowntime(machine_id=machine.id, reason=body.reason, started_at=now))
+    commit(db)   # a second open downtime fails here as MACHINE_ALREADY_DOWN (unique index) and rolls everything back
+    broadcaster.publish("machine.changed", machine.id)
+    for run in ended:
+        broadcaster.publish("run.changed", run.id)
+    return machine
+
+
+def repair(db: Session, machine_code: str) -> Machine:
+    """Close the open downtime. The run the breakdown ended is not reopened; someone starts a new run."""
+    machine = _active_locked_machine(db, machine_code)
+    downtime = db.scalar(select(MachineDowntime).where(
+        MachineDowntime.machine_id == machine.id, MachineDowntime.ended_at.is_(None))
+        .with_for_update().execution_options(populate_existing=True))
+    if downtime is None:
+        raise AppError("MACHINE_NOT_DOWN", "This machine is not down", field="machine_code")
+    downtime.ended_at = db_now(db)
+    commit(db)
+    broadcaster.publish("machine.changed", machine.id)
+    return machine
