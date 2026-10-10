@@ -2,10 +2,17 @@
 import datetime as dt
 from decimal import Decimal
 
+import pytest
 from sqlalchemy import func, select
 
 from app.db.models import Buyer, FabricType, Machine, Shift, Supplier, User, Worker, YarnType
 from scripts import seed_dev
+
+
+@pytest.fixture(autouse=True)
+def fast_password_hash(monkeypatch):
+    """bcrypt is slow on purpose; these tests never log in with a seeded password."""
+    monkeypatch.setattr(seed_dev, "hash_password", lambda password: "not-a-real-hash")
 
 
 def count(db, model) -> int:

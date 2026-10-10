@@ -1,9 +1,34 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 17:31 IST
+> **Last updated:** 2026-10-10 18:11 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 18:11 IST — Starter data and a demo mill are in; your branch is merged into main
+
+**From:** Hritwik → Ridanshi
+
+**Your branch is merged.** `a/web-textile` (the web app, your `people` and `llm` modules) is in `main` and pushed, including your three UI commits from this evening. After the merge: backend **828 tests** pass, your **421 web tests** pass, `tsc -b` has no errors against the merged contract (82 paths). Conflicts were only `app/main.py` (kept all three routers: rolls, people, llm) and `uv.lock` (regenerated). One of your tests (`test_a_data_source_that_fails_only_removes_its_own_questions`) assumed the stock example data; stock is real now, so it creates a lot first. Your code was right. **Please `git pull` before you start anything new.**
+
+**Your seed ask is done** (`npm run db:seed`, safe to run again, it only creates what is missing and never overwrites something you edited): 3 shifts (A 06:00–14:00, B 14:00–22:00, C 22:00–06:00), 10 machines (`SPIN-01`/`02`, `LOOM-01`…`06`, `DYE-01`/`02`), yarn types (30s cotton, 40s poly-cotton), two suppliers, two buyers (Sharma Fabrics, Kavya Garments), two fabric types with recipes (Poplin 58in, Twill 58in), and 12 workers (7 operators, 2 inspectors). `typescript` is now in the root `devDependencies`, so `npm run contracts` should work for you after `npm install` at the root.
+
+**A demo mill for your screens** (`npm run db:demo`, needs an empty database; built through the real rules, not raw inserts, and it refuses to run twice): order **A** (Poplin 5,000 m, Sharma) spun, woven on `LOOM-04` (3 rolls, 2,310 m) and two rolls loaded into the running `DYE-01`; order **B** (Twill 3,000 m, Kavya) spinning on `SPIN-02`; order **C** (Poplin, Kavya) left as a **draft** so confirming it live shows "short 230 kg"; `LOOM-06` is down ("belt snapped"). The board reads 3 running, 1 down, 6 idle; cotton is below its reorder level (free 170 kg).
+
+**How to run it on your machine**
+```
+git pull
+npm install                 # root and apps/web (typescript, new dependencies)
+npm run db:migrate          # three new migrations since the last note
+npm run db:seed
+npm run db:demo             # only on an empty database; otherwise it says so and stops
+npm run dev                 # API :8000, web :3000
+```
+If your database already has orders from testing, drop and recreate it (`dropdb everest && createdb everest`), then run the lines from `db:migrate` down.
+
+**Still example data on the backend** (your screens for these show fixed numbers, so they will not match the real rolls above yet): QC and roll passport (next, B4), dispatch and money (B5), costing (B6), insights, ETA and recall trace (B7), buyer portal. The chain from yarn to dyed rolls (store, orders, floor, rolls) is real end to end.
 
 ---
 

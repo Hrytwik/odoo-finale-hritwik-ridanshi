@@ -19,7 +19,8 @@ cp .env.example .env        # then edit DATABASE_URL / TEST_DATABASE_URL for you
                             #   uv run --directory services/api python -c "import secrets; print(secrets.token_urlsafe(48))"
 npm install
 npm run db:migrate
-npm run db:seed
+npm run db:seed             # logins, workers, 3 shifts, 10 machines, yarn types, suppliers, buyers, fabrics (safe to run again)
+npm run db:demo             # optional: a mill in the middle of a working day (needs an empty database)
 npm run dev                 # API on :8000, web on :3000
 ```
 

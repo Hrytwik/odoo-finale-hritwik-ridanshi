@@ -19,7 +19,7 @@ Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here 
 | B7 | Intelligence — delivery date + what-ifs, shortage forecast, root cause, recall | not written |
 | B8 | Vision endpoint + model card (after the BV decision) | not written |
 | B9 | Seed data + demo scenarios | not written |
-| B9a | Starter data and the mid-day demo mill (3 shifts, 10 machines, master data, a working-day story built through the real services) | plan `B9a-seed-and-demo-mill.md`: Task 1 done (base seed, typescript), next Task 2 (demo mill) |
+| B9a | Starter data and the mid-day demo mill (3 shifts, 10 machines, master data, a working-day story built through the real services) | complete: base seed (3 shifts, 10 machines, master data, 12 workers), `typescript` for the contract script, `npm run db:demo` (a mill in the middle of a working day); B9 proper still waits for B4-B7 |
 
 ## Track A — Ridanshi (web app, people, AI layer)
 
