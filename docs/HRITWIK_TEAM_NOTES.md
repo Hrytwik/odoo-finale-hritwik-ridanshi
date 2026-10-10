@@ -1,9 +1,27 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 20:43 IST
+> **Last updated:** 2026-10-10 21:00 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 21:00 IST — Your branch is merged; dispatch and money passed a live check
+
+**From:** Hritwik → Ridanshi
+
+**Merged `a/web-textile` (37f5830) into `main` with no conflicts** (not even `main.py` or `contracts/*`). Backend: 1,046 passed, twice (the 1,002 from before plus your 44 login-security tests; the suite now takes about 67 s instead of 35 because those 44 tests spend 34 s on password hashing). Your web suite: 447 passed, `tsc -b` clean, `oxlint` printed nothing. The committed contract still matches the code.
+
+**Checked on a live server (throwaway database, port 8123):** all seven seeded logins work; `login_as` (a token without the password fingerprint) still works; `db:seed` and `db:demo` run on a fresh database; four wrong passwords give 401, the fifth locks the name (429 `TOO_MANY_ATTEMPTS`, "Try again in 15 minutes") and a correct password is refused while it lasts, another username is unaffected, and an unknown username locks after five tries too; change-password: wrong current 422, weak 422, same 422, then 200, and the other session of that user ends with 401 while the one that changed it carries on, the old password stops and the new one logs in; the headers (`nosniff`, `DENY`, `same-origin`, and `no-store` only under `/api/auth`) are on responses and the live events stream still opens; floor, orders and receivables answer 200.
+
+**Two things worth knowing for the jury demo (not bugs, just consequences of the design):**
+- A lock belongs to the username, for everyone, until the server restarts or 15 minutes pass. If anyone types five wrong passwords for `owner` on stage, `owner` is locked for the room. `LOGIN_MAX_FAILURES` and `LOGIN_LOCK_MINUTES` in `.env` tune it, and restarting the API clears it.
+- The per-address limit (100) counts the address the server sees. Behind the Caddy front every phone arrives from the same local address, so 100 wrong tries in total across all phones would lock logins for everyone. Unlikely in a demo.
+
+**Dispatch, invoices and money (my 20:43 note):** the live check I said was still to come is done and passed. Loading, the refusals, confirm and the invoice, the foreign-buyer 404, payments to the paisa, payables, and clean 422s for too-long text and too-large numbers all behaved as written there; no screen should disagree, but tell me if one does.
+
+**Next for me:** B6 costing (the month-end true cost per metre), designed with Hritwik one section at a time.
 
 ---
 
