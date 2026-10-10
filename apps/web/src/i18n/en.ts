@@ -3,6 +3,7 @@
  * not translated yet shows in English. {name} marks a blank filled in when the sentence is shown, and must stay in every translation.
  */
 import { englishOf } from './area'
+import { admin } from './areas/admin'
 import { common } from './areas/common'
 import { dispatch } from './areas/dispatch'
 import { inspect } from './areas/inspect'
@@ -211,6 +212,6 @@ const core = {
 } as const
 
 /** The core sentences plus each screen's own file under `areas/`. Add a screen's area here. */
-export const en = { ...core, ...englishOf(store), ...englishOf(dispatch), ...englishOf(inspect), ...englishOf(machine), ...englishOf(portal), ...englishOf(passport), ...englishOf(login), ...englishOf(landing), ...englishOf(shipments), ...englishOf(owner), ...englishOf(drafts), ...englishOf(money), ...englishOf(common), ...englishOf(photolog), ...englishOf(orders), ...englishOf(shell), ...englishOf(lots) }
+export const en = { ...core, ...englishOf(store), ...englishOf(dispatch), ...englishOf(inspect), ...englishOf(machine), ...englishOf(portal), ...englishOf(passport), ...englishOf(login), ...englishOf(landing), ...englishOf(shipments), ...englishOf(owner), ...englishOf(drafts), ...englishOf(money), ...englishOf(common), ...englishOf(photolog), ...englishOf(orders), ...englishOf(shell), ...englishOf(lots), ...englishOf(admin) }
 
 export type Key = keyof typeof en

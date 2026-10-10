@@ -50,12 +50,16 @@ function secureInt(max: number): number {
 
 const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string)
 
+/** The words on the slip, in the language the owner is using (English when not given). */
+export type SlipWords = { brand: string; loginFor: (name: string) => string; address: string; username: string; password: string; changeAfter: string }
+const ENGLISH_SLIP: SlipWords = { brand: 'Everest Mills', loginFor: (name) => `Login for ${name}`, address: 'Address', username: 'Username', password: 'Temporary password', changeAfter: 'Please change this password after you log in (the key icon at the top).' }
+
 /** The text of a small slip to hand over: name, username and the temporary password. */
-export function slipHtml(name: string, username: string, password: string, address: string): string {
-  return `<!doctype html><meta charset="utf-8"><title>Login for ${escapeHtml(name)}</title>
+export function slipHtml(name: string, username: string, password: string, address: string, words: SlipWords = ENGLISH_SLIP): string {
+  return `<!doctype html><meta charset="utf-8"><title>${escapeHtml(words.loginFor(name))}</title>
 <style>body{font:16px/1.5 system-ui,sans-serif;padding:32px;max-width:420px}h1{font-size:20px;margin:0 0 4px}p{margin:4px 0 16px;color:#444}
 dl{border:2px solid #222;border-radius:8px;padding:16px;margin:0}dt{font-size:12px;text-transform:uppercase;color:#666}dd{margin:0 0 12px;font:600 20px ui-monospace,monospace}</style>
-<h1>Everest Mills</h1><p>Login for ${escapeHtml(name)}</p>
-<dl><dt>Address</dt><dd>${escapeHtml(address)}</dd><dt>Username</dt><dd>${escapeHtml(username)}</dd><dt>Temporary password</dt><dd>${escapeHtml(password)}</dd></dl>
-<p>Please change this password after you log in (the key icon at the top).</p>`
+<h1>${escapeHtml(words.brand)}</h1><p>${escapeHtml(words.loginFor(name))}</p>
+<dl><dt>${escapeHtml(words.address)}</dt><dd>${escapeHtml(address)}</dd><dt>${escapeHtml(words.username)}</dt><dd>${escapeHtml(username)}</dd><dt>${escapeHtml(words.password)}</dt><dd>${escapeHtml(password)}</dd></dl>
+<p>${escapeHtml(words.changeAfter)}</p>`
 }

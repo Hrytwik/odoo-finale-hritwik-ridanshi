@@ -1,4 +1,5 @@
 import { languageOf } from '../area'
+import { admin } from '../areas/admin'
 import { common } from '../areas/common'
 import { dispatch } from '../areas/dispatch'
 import { inspect } from '../areas/inspect'
@@ -30,7 +31,7 @@ import { te } from './te'
 
 /** Every language except English, which lives in `en.ts` and is the fallback for anything missing here. */
 type Words = Partial<Record<Key, string>>
-const areas = (code: Exclude<LangCode, 'en'>) => languageOf(code, store, dispatch, inspect, machine, portal, passport, login, landing, shipments, owner, drafts, money, common, photolog, orders, shell, lots) as Words
+const areas = (code: Exclude<LangCode, 'en'>) => languageOf(code, store, dispatch, inspect, machine, portal, passport, login, landing, shipments, owner, drafts, money, common, photolog, orders, shell, lots, admin) as Words
 
 export const locales: Partial<Record<LangCode, Words>> = {
   hi: { ...hi, ...areas('hi') },

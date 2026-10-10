@@ -11,7 +11,8 @@ import { LanguageSwitcher } from '@/i18n/LanguageSwitcher'
 import type { components } from '@/lib/api'
 import { useLogout } from '@/lib/auth'
 import { useLiveEvents } from '@/lib/live'
-import { ROLE_LABEL, homeFor, navFor } from '@/lib/nav'
+import type { Key } from '@/i18n/en'
+import { homeFor, navFor } from '@/lib/nav'
 import { ChangePasswordDialog } from './ChangePasswordDialog'
 import { CommandPalette } from './CommandPalette'
 import { DemoBadge } from './DemoBadge'
@@ -88,7 +89,7 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
           <div className="shell-user">
             <span className="shell-user-name">
               <strong>{me.display_name}</strong>
-              <span>{ROLE_LABEL[me.role]}</span>
+              <span>{t(`role.${me.role}` as Key)}</span>
             </span>
             <Button variant="ghost" icon className="header-square" aria-label={t('header.password')} title={t('header.password')} onClick={() => setAccount(true)}>
               <KeyRound size={18} aria-hidden />
