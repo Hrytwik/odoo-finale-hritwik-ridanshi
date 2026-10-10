@@ -1,9 +1,30 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-11 00:05 IST
+> **Last updated:** 2026-10-11 02:25 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-11 02:25 IST — B8 done: `/qc/analyze` and `/qc/model-card` are real
+
+**From:** Hritwik → Ridanshi
+
+**What is real now.** `POST /api/qc/analyze` runs our fine-tuned detector on an uploaded photo and returns boxes with confidences and a suggested verdict (nothing found: pass; anything found: rework; never reject). `GET /api/qc/model-card` serves the saved held-out results with a confusion matrix. The contract is unchanged (`contracts/` is byte-identical), so your screens work as they are. I checked it on a real server: the same boxes as `ml.show_examples`, a sideways phone photo handled, every bad input a clean error, and the whole flow (analyze, override, record inspection) works.
+
+**How `available` works, which your screen already expects.** `available=false` with a suggestion means "the model ran but is unvalidated", so `QcInspect` shows your amber "Unvalidated suggestion" badge and the message line. That is what you get today: the test set has no clean photos, so the false-alarm rate is unmeasured. `available=false` with no suggestion means the model could not run (weights or libraries missing): the screen goes manual. `available=true` only happens when the model card shows the spec bar met on at least 30 defective and 30 clean test photos; then the badge disappears by itself.
+
+**One edit to your files, please review: `ModelCard.tsx` and `ModelCard.test.tsx`.** With `clean_false_alarm_rate = null` the page showed "0%" and said "below the bar", which misstates an unmeasured number. It now shows "Not measured" and "Not yet validated" (info tone, not an error). Three new tests; your existing ones are untouched and pass.
+
+**Things that changed for running the app.**
+- `npm run dev:api` now starts with `--group ml` (the vision libraries). Without them `/qc/analyze` answers "unavailable" and QC works by hand.
+- The weights and the model card are committed in `services/api/ml/models/` (`best.pt` 5.4 MB, `model_card.json`). Regenerate the card with `uv run --group ml python -m ml.model_card` from `services/api`.
+- The first photo analysed after the server starts takes about 3 seconds (it loads the model); later ones take 30 to 50 milliseconds. The server grows to about 510 MB once the model is loaded.
+
+**A problem in your web tests that is not from B8.** Four tests fail between 00:00 and 05:30 IST: `Money.test.tsx` (2) and `People.test.tsx` (2). They compute "today" as `new Date().toISOString().slice(0, 10)` (the UTC date) while the app uses the local date, so at night they disagree by one day (2026-10-10 against 2026-10-11 at 02:12). They pass after 05:30. Using the same `todayIso()` in the tests would fix it. I did not touch them.
+
+**Not done, still open.** The clean-cloth false-alarm rate (R9: a clean image set). I only rendered the model-card page in jsdom with the real card; nobody has looked at it in a real browser against the real server.
 
 ---
 

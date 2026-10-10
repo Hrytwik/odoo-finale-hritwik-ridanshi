@@ -1,8 +1,8 @@
 # B8 — Vision Endpoint and Model Card: Design
 
 > **Summary:** Makes `POST /qc/analyze` run our fine-tuned YOLO detector on an uploaded cloth photo and `GET /qc/model-card` serve the measured held-out results (with a confusion matrix), both labelled as an unvalidated first version; covers the box conversion, the verdict rule, the unavailable path, the model-card file, tests and the live check.
-> **Last updated:** 2026-10-11 01:50 IST (corrected while writing the plan: matrix label, no verdict field, the one screen edit)
-> **Status:** Draft for Hritwik's review (design approved in chat section by section on 2026-10-11)
+> **Last updated:** 2026-10-11 02:24 IST (built and live-checked; amended: `available` rule, Ultralytics image-opening trap)
+> **Status:** Built and live-checked 2026-10-11 02:24 IST (plan `docs/plans/B8-vision-endpoint.md`, all 7 tasks)
 
 Parent spec: `2026-10-10-textile-mill-design.md` §9 (Vision QC). Background and numbers: `docs/plans/BV-vision-spike.md`.
 
@@ -32,7 +32,7 @@ Roles: unchanged (`inspectors`). Steps, in order:
 3. Run the detector at image size 640 and confidence **0.25** — the same settings the evaluation used, so the model card describes exactly what the endpoint does. One lock serializes calls; whether YOLO is safe under concurrent threads is **unverified**, so it is not assumed.
 4. Convert boxes (section 2), sort by confidence, cut to the contract's maximum of 100.
 5. **Verdict:** no boxes → `pass`; one or more → `rework`; **never `reject`** (scrapping a roll stays a human decision). The inspector confirms or overrides; the server records `overrode_ai` when the final verdict differs.
-6. **Always label it.** The response message is a fixed string: unvalidated first version, trained on public photos only, nothing found does not mean clean, thread faults are often missed (real recall 0.25, stains 0.62, holes 0.92 on the public test split).
+6. **Label it until the model is validated** (see "What building it changed", item 1). The response message is a fixed string: unvalidated first version, trained on public photos only, nothing found does not mean clean, thread faults are often missed (real recall 0.25, stains 0.62, holes 0.92 on the public test split).
 
 **Model unavailable** (weights missing, Ultralytics not installed, load failure): HTTP 200 with `available=false`, `suggestion=null` and a plain reason. **Corrupt image** that passed the upload check's header test: 422 "Could not read this photo" (the user's problem, not the model's).
 
@@ -73,3 +73,15 @@ Without the weights (a fake detector stands in), following the existing `test_ml
 5. `/qc/model-card` route.
 6. Live check.
 7. Close-out sync: plan file `B8-vision-endpoint.md`, the plan table in `docs/plans/README.md`, the BV notes, memory, commit. Authorship scan before the commit. No push.
+
+## 8. What building it changed
+
+Things the build and the live check showed that the design above did not say. They supersede the earlier text where they differ.
+
+1. **`available` has three states, matching the screens (`QcInspect.tsx`, plan A4).** `available=true`: a suggestion from a model whose card clears the bar. `available=false` **with** a suggestion: the model ran but is unvalidated, so the screen shows the amber "Unvalidated suggestion" badge. `available=false` with `suggestion=null`: the model could not run (weights missing, libraries missing, load failure, the model failing on a photo), the inspector goes by eye. The design had `true` for any answer, which would have given our unvalidated model no badge. `available` is now computed from the card by `_validated`, the same bar `ml.metrics.decide` applies (at least 30 defective and 30 clean test photos, at least 80% of holes found, at most 20% false alarms on clean cloth). Today the card has 0 clean photos, so every suggestion is flagged unvalidated; a future card that clears the bar flips it to `true` and drops the label with no code change. Proved live with a temporary passing card and a 45%-false-alarm card.
+2. **Ultralytics replaces `PIL.Image.open` with a wrapper that runs `pip install pi-heif` on any failure, then raises `ModuleNotFoundError`.** A corrupt or oversized photo read after the model loaded would have stalled on a network call (the demo may be offline) and come back as "model failed" instead of a 422. Photos are therefore opened through PIL's own original (`_pil_open`). Found because a test passed or failed depending on test order; pinned by a regression test that forbids the install attempt.
+3. **Phone rotation is verified, not assumed.** The reader applies the EXIF rotation tag before the model sees the photo. Live: a sideways copy with tag 6 gives the same boxes as the upright photo; the same pixels without the tag give different boxes (so the check can tell the difference); the overlay was looked at.
+4. **Thread safety of the detector is still unverified.** Calls are serialised by one lock; four simultaneous requests all returned 200 with identical boxes.
+5. **The matrix label is `clean`**, and a real defect boxed with the wrong name counts as a miss plus a false alarm (as in the per-class scores).
+6. **No verdict field exists in the contract**, so "inconclusive" is carried by `clean_false_alarm_rate = null` and `test_clean = 0`, which `ModelCard.tsx` now shows as "Not measured" / "Not yet validated" (it showed 0% and "below the bar").
+7. **Measured on this Mac (8 GB):** the first photo takes about 3 s (it loads the model) and later ones 30 to 50 ms; the server grows from about 50 MB to about 510 MB once the model is loaded.
