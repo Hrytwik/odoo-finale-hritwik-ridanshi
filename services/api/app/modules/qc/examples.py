@@ -3,13 +3,12 @@ import datetime as dt
 from app.core.schemas import Ref
 from app.modules.floor.examples import NOW, ROLL
 from app.modules.qc.schemas import (
-    AiSuggestion, AnalyzeOut, Box, DefectOut, InspectionOut, ModelCard, QcCounts, QcQueue,
+    AiSuggestion, Box, DefectOut, InspectionOut, ModelCard, QcCounts, QcQueue,
 )
 
 SUGGESTION = AiSuggestion(model_version="example", verdict="rework", boxes=[
     Box(x=0.42, y=0.31, w=0.08, h=0.07, defect_type="hole", confidence=0.91),
 ])
-ANALYZE = AnalyzeOut(available=False, message="Vision model not loaded yet (example data)", suggestion=SUGGESTION)
 INSPECTION = InspectionOut(
     id=301, roll_code="R-0142", inspector=Ref(id=2, name="Meena Devi"), inspected_at=NOW, verdict="rework",
     overrode_ai=False, defects=[DefectOut(defect_type="hole", count=1, ai_detected=True)], photo_url=None,

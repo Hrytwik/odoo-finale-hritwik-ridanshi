@@ -1,7 +1,7 @@
 # B8 — Vision Endpoint and Model Card Implementation Plan
 
 > **Summary:** Makes `POST /qc/analyze` run the fine-tuned YOLO detector on an uploaded photo (boxes with confidence, a suggested verdict, always labelled unvalidated) and `GET /qc/model-card` serve the measured held-out results with a confusion matrix; adds the committed weights and card file, makes the model-card screen show an unmeasured false-alarm rate honestly, and ends with a live check on a real server.
-> **Last updated:** 2026-10-11 01:55 IST (Task 1 done)
+> **Last updated:** 2026-10-11 02:02 IST (Tasks 1-2 done)
 
 > **How this plan is executed:** inline, one task at a time (atomic-workflow): test first, the full suite twice at each boundary, the important behaviours mutation-checked. Steps use checkbox (`- [ ]`) syntax.
 
@@ -16,6 +16,8 @@
 ## Status
 
 Task 1 done and verified (2026-10-11 01:55 IST): `qc/vision.py` (box conversion, verdict rule) and 16 tests; all six planned mutations (swap x/y, width from the right edge, area check `<`, no corner sort, `reject`, no cap) make a test fail; full backend suite 1,368 passed (1,352 before), twice.
+
+Task 2 done and verified (2026-10-11 02:02 IST): `qc/vision.py` (photo reading, lazy loader with lock, `analyze_photo`), the real `/qc/analyze` route, the example `ANALYZE` removed, 37 tests (`test_qc_photo_reading.py`, `test_qc_analyze.py`); full backend suite 1,405 passed (1,368 before), twice; contract byte-identical. **A real bug found by the tests' ordering and fixed:** once Ultralytics is loaded it replaces `PIL.Image.open` with a wrapper that, on ANY failure, runs `pip install pi-heif` (a network call mid-request, retried) and then raises `ModuleNotFoundError`; a corrupt photo would have stalled and come back as "model failed" instead of a 422. The reader now calls PIL's own original (`_pil_open`); the new regression test `test_a_bad_photo_never_makes_ultralytics_try_to_install_a_package` failed against the old code first (and the photo tests now import Ultralytics up front, so they run in production's state in any order). One planned mutation (cache a failed load) first survived because the test only checked `available`; the test now checks the fixed detector's box comes back, and the mutation dies. No server was listening on :8000, so nothing to re-check.
 
 ## Global Constraints
 
@@ -229,7 +231,7 @@ git commit -m "Add the vision box conversion and the suggested-verdict rule"
 - Consumes (Task 1): `to_boxes`, `suggest_verdict`, `Detection`, `MAX_BOXES`.
 - Produces: `CONFIDENCE = 0.25`, `WEIGHTS_PATH`, `CARD_PATH` (module constants tests monkeypatch), `ModelUnavailable(reason)`, `PhotoUnreadable`, `_read_upright(path)`, `_check_class_names(names)`, `_load_detector() -> Callable[[Path], list[Detection]]`, module global `_detector`, `analyze_photo(photo_path: str) -> schemas.AnalyzeOut`.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 `services/api/tests/test_qc_photo_reading.py` (needs only Pillow, no model):
 
@@ -465,9 +467,9 @@ def test_two_photos_at_once_never_run_the_model_at_the_same_time(monkeypatch):
     assert peak[0] == 1
 ```
 
-- [ ] **Step 2: Run to verify they fail.** `uv run python -m pytest -p no:warnings -o addopts= tests/test_qc_photo_reading.py tests/test_qc_analyze.py` — Expected: import errors (`PhotoUnreadable`, `_read_upright`, … not defined).
+- [x] **Step 2: Run to verify they fail.** `uv run python -m pytest -p no:warnings -o addopts= tests/test_qc_photo_reading.py tests/test_qc_analyze.py` — Expected: import errors (`PhotoUnreadable`, `_read_upright`, … not defined).
 
-- [ ] **Step 3: Replace `services/api/app/modules/qc/vision.py`** with the full file (it contains Task 1's code unchanged):
+- [x] **Step 3: Replace `services/api/app/modules/qc/vision.py`** with the full file (it contains Task 1's code unchanged):
 
 ```python
 """Vision QC (B8): run the fine-tuned defect detector on one uploaded photo, and serve the saved model card.
@@ -478,6 +480,7 @@ does not need the model (box conversion, the verdict rule, photo reading) is pla
 """
 import json
 import logging
+import sys
 import threading
 from collections.abc import Callable
 from pathlib import Path
@@ -541,12 +544,22 @@ def suggest_verdict(boxes: list[s.Box]) -> Verdict:
     return "rework" if boxes else "pass"
 
 
+def _pil_open():
+    """PIL's own Image.open. Once Ultralytics is loaded it replaces `Image.open` with a wrapper that, on ANY failure (a
+    corrupt file, an oversized one), runs `pip install pi-heif` and then raises ModuleNotFoundError: a network call in the
+    middle of a request (the demo may be offline) and the wrong error. We bypass the wrapper and use the original it saved."""
+    from PIL import Image
+    if Image.open.__module__ == "PIL.Image":
+        return Image.open
+    return sys.modules["ultralytics.utils.patches"]._image_open
+
+
 def _read_upright(path: Path):
     """Open a photo the way a browser shows it: the phone's rotation tag applied, three colour channels. The boxes are
     worked out on this upright picture, so they land where the inspector sees the defect."""
     from PIL import Image, ImageOps
     try:
-        with Image.open(path) as raw:
+        with _pil_open()(path) as raw:
             return ImageOps.exif_transpose(raw).convert("RGB")
     except (OSError, ValueError, SyntaxError, Image.DecompressionBombError) as exc:
         raise PhotoUnreadable() from exc
@@ -622,7 +635,7 @@ def analyze_photo(photo_path: str) -> s.AnalyzeOut:
         model_version=_model_version(), verdict=suggest_verdict(boxes), boxes=boxes))
 ```
 
-- [ ] **Step 4: Wire the route.** In `services/api/app/modules/qc/router.py` add `from app.modules.qc import vision` (next to the other `app.modules.qc` imports) and change the route body:
+- [x] **Step 4: Wire the route.** In `services/api/app/modules/qc/router.py` add `from app.modules.qc import vision` (next to the other `app.modules.qc` imports) and change the route body:
 
 ```python
 @router.post("/qc/analyze", response_model=s.AnalyzeOut, dependencies=[Depends(inspectors)])
@@ -632,11 +645,11 @@ def analyze(body: s.AnalyzeIn) -> s.AnalyzeOut:
 
 In `examples.py` delete the `ANALYZE = ...` line and `AnalyzeOut` from the import (it is used nowhere else; checked with `grep -rn "ANALYZE" app tests scripts ml`).
 
-- [ ] **Step 5: Run the new tests.** Expected: all pass (the `ultralytics`-dependent test runs here because Ultralytics 8.4.175 is installed; elsewhere it is skipped).
-- [ ] **Step 6: Mutation checks:** remove `ImageOps.exif_transpose` (the rotation test must fail); change `>= CONFIDENCE` to `> CONFIDENCE` (the exactly-0.25 test fails); remove the `with _lock:` (the concurrency test fails); cache the failed load by setting `_detector` before loading (the not-remembered test fails); remove the `except Exception` branch (the failing-model test fails).
-- [ ] **Step 7: Full suite twice;** both green; `test_committed_contract_matches_the_code` still passes (the contract is untouched).
-- [ ] **Step 8: Hritwik's server.** If `lsof -nP -iTCP:8000 -sTCP:LISTEN` shows it, `curl -s localhost:8000/api/health` still answers after the reload.
-- [ ] **Step 9: Commit.**
+- [x] **Step 5: Run the new tests.** Expected: all pass (the `ultralytics`-dependent test runs here because Ultralytics 8.4.175 is installed; elsewhere it is skipped).
+- [x] **Step 6: Mutation checks:** remove `ImageOps.exif_transpose` (the rotation test must fail); change `>= CONFIDENCE` to `> CONFIDENCE` (the exactly-0.25 test fails); remove the `with _lock:` (the concurrency test fails); cache the failed load by setting `_detector` before loading (the not-remembered test fails); remove the `except Exception` branch (the failing-model test fails).
+- [x] **Step 7: Full suite twice;** both green; `test_committed_contract_matches_the_code` still passes (the contract is untouched).
+- [x] **Step 8: Hritwik's server.** If `lsof -nP -iTCP:8000 -sTCP:LISTEN` shows it, `curl -s localhost:8000/api/health` still answers after the reload.
+- [x] **Step 9: Commit.**
 
 ```bash
 git add services/api/app/modules/qc services/api/tests/test_qc_photo_reading.py services/api/tests/test_qc_analyze.py
