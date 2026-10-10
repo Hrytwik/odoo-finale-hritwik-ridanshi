@@ -117,9 +117,9 @@ h1 {
 .shell-user-name {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start; /* name and role start at the same left edge, one under the other */
   line-height: 1.2;
-  text-align: right;
+  text-align: left;
 }
 .shell-user-name strong {
   font-size: var(--text-sm);
@@ -1137,3 +1137,15 @@ h1 {
 .password-toggle:hover {
   color: var(--color-primary);
 }
+
+/* KPI cards in one row are the same height: the animation wrapper fills its grid cell and the card fills the wrapper */
+.grid-cards > * {
+  display: flex;
+  flex-direction: column;
+}
+.grid-cards > * > .kpi {
+  flex: 1;
+}
+.chat-text p { margin: 0 0 var(--space-2); }
+.chat-text p:last-child { margin-bottom: 0; }
+.chat-list { margin: 0 0 var(--space-2); padding-left: 1.2rem; }

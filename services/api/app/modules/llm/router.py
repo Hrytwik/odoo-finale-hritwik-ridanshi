@@ -52,6 +52,15 @@ def put_settings(body: s.SettingsIn, db: Session = Depends(get_db), user: User =
     return _out(load_config(db))
 
 
+@router.get("/models", response_model=s.ModelsOut, dependencies=[Depends(owner_only)])
+def list_models(rt: LlmRuntime = Depends(get_runtime)) -> s.ModelsOut:
+    """Asks the saved provider which models this key may use, so the owner picks a name that exists."""
+    try:
+        return s.ModelsOut(models=rt.adapter.models())
+    except AdapterError as exc:
+        raise engine.ai_unavailable(exc) from exc
+
+
 def _sources(result: engine.ChatResult) -> list[s.SourceOut]:
     return [s.SourceOut(tool=x.tool, input=x.input, summary=x.summary) for x in result.sources]
 

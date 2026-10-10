@@ -21,6 +21,11 @@ class SettingsOut(Out):
     configured: bool
 
 
+class ModelsOut(BaseModel):
+    """The model names the saved provider says this key can use."""
+    models: list[str]
+
+
 class SettingsIn(BaseModel):
     provider: Provider
     model: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]

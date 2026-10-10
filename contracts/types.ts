@@ -58,6 +58,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Models
+         * @description Asks the saved provider which models this key may use, so the owner picks a name that exists.
+         */
+        get: operations["list_models_api_ai_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/month-summary": {
         parameters: {
             query?: never;
@@ -2292,6 +2312,14 @@ export interface components {
             /** Trained At */
             trained_at: string | null;
         };
+        /**
+         * ModelsOut
+         * @description The model names the saved provider says this key can use.
+         */
+        ModelsOut: {
+            /** Models */
+            models: string[];
+        };
         /** MonthIn */
         MonthIn: {
             /** Month */
@@ -3508,6 +3536,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_models_api_ai_models_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelsOut"];
                 };
             };
         };

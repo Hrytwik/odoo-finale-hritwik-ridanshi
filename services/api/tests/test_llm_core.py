@@ -440,3 +440,46 @@ def test_a_data_source_that_fails_only_removes_its_own_questions(client, login_a
     monkeypatch.setattr("app.modules.llm.data.stock", lambda ctx: (_ for _ in ()).throw(RuntimeError("down")))
     fewer = reportcard.build_questions(ToolContext(db, user))
     assert 0 < len(fewer) < full
+
+
+# ---------- listing models ----------
+
+def test_the_openai_compatible_adapter_lists_model_names_with_the_key_as_a_bearer_token():
+    seen = {}
+
+    def get(url, headers, timeout):
+        seen.update(url=url, headers=headers)
+        return {"data": [{"id": "zeta"}, {"id": "alpha"}, {"id": "alpha"}, {"nope": 1}]}
+
+    adapter = OpenAICompatibleAdapter("https://api.groq.com/openai/v1/", "m", "gsk-x", get=get)
+    assert adapter.models() == ["alpha", "zeta"]
+    assert seen["url"] == "https://api.groq.com/openai/v1/models" and seen["headers"] == {"Authorization": "Bearer gsk-x"}
+
+
+def test_the_anthropic_adapter_lists_model_names_with_its_headers():
+    seen = {}
+
+    def get(url, headers, timeout):
+        seen.update(url=url, headers=headers)
+        return {"data": [{"id": "claude-b"}, {"id": "claude-a"}]}
+
+    adapter = AnthropicAdapter("sk-1", "m", get=get)
+    assert adapter.models() == ["claude-a", "claude-b"]
+    assert seen["url"].startswith("https://api.anthropic.com/v1/models") and seen["headers"]["x-api-key"] == "sk-1"
+
+
+def test_a_model_list_in_an_unexpected_shape_is_empty_not_a_crash():
+    assert OpenAICompatibleAdapter("http://x/v1", "m", get=lambda *a: {"oops": True}).models() == []
+
+
+def test_a_missing_model_is_reported_with_what_the_provider_said(monkeypatch):
+    import io
+    import urllib.error
+
+    def refuse(request, timeout=None):
+        raise urllib.error.HTTPError(request.full_url, 404, "Not Found", {}, io.BytesIO(b'{"error": {"message": "The model `x` does not exist"}}'))
+
+    monkeypatch.setattr("urllib.request.urlopen", refuse)
+    with pytest.raises(AdapterError) as e:
+        adapters.post_json("https://api.example.test/v1/chat/completions", {}, {}, 5)
+    assert e.value.kind == "bad_request" and "The model `x` does not exist" in e.value.message and "/v1" in e.value.message

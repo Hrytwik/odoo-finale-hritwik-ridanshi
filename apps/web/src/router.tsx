@@ -73,8 +73,9 @@ export const routeObjects: RouteObject[] = [
           ),
         }
       }),
-      { path: 'dev/camera', element: <CameraCheck /> },
-      { path: 'dev/components', element: <ComponentsPreview /> },
+      // developer pages: owner only, so no other login can wander in by typing the address
+      { path: 'dev/camera', element: <RequireRole roles={['owner']}><CameraCheck /></RequireRole> },
+      { path: 'dev/components', element: <RequireRole roles={['owner']}><ComponentsPreview /></RequireRole> },
       { path: '*', element: <NotFound /> },
     ],
   },

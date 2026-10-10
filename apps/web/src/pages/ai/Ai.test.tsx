@@ -280,3 +280,55 @@ describe('Drafts', () => {
   })
 })
 
+
+describe('settings: address check and model list', () => {
+  it('refuses a website page where the API address belongs, and says what to do', async () => {
+    mockWithPut({ GET: { '/api/ai/settings': { ...SETTINGS, provider: 'openai_compatible', model: 'm', base_url: 'https://console.groq.com/keys' } } }, SETTINGS)
+    renderPage(<AiSettings />)
+    await screen.findByText('Not set up')
+    await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+    expect(await screen.findByText(/website page, not the API address/)).toBeInTheDocument()
+    expect(put).not.toHaveBeenCalled()
+  })
+
+  it('lists the models the key can use and puts the chosen one in the model box', async () => {
+    mockApi({ GET: { '/api/ai/settings': { ...SETTINGS, configured: true, api_key_set: true }, '/api/ai/models': { models: ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b'] } } })
+    renderPage(<AiSettings />)
+    await screen.findByText('Ready')
+    await userEvent.click(screen.getByRole('button', { name: /show the models my key can use/i }))
+    await userEvent.click(await screen.findByRole('button', { name: 'openai/gpt-oss-120b' }))
+    expect(screen.getByLabelText('Model')).toHaveValue('openai/gpt-oss-120b')
+  })
+
+  it('asks for a key before it can list models', async () => {
+    mockApi({ GET: { '/api/ai/settings': SETTINGS } })
+    renderPage(<AiSettings />)
+    await screen.findByText('Not set up')
+    expect(screen.getByRole('button', { name: /show the models my key can use/i })).toBeDisabled()
+  })
+
+  it('shows why the list could not be fetched', async () => {
+    mockApi({
+      GET: {
+        '/api/ai/settings': { ...SETTINGS, configured: true, api_key_set: true },
+        '/api/ai/models': { status: 503, error: { code: 'AI_UNAVAILABLE', message: 'The provider refused the API key', field: null, fields: null } },
+      },
+    })
+    renderPage(<AiSettings />)
+    await screen.findByText('Ready')
+    await userEvent.click(screen.getByRole('button', { name: /show the models my key can use/i }))
+    expect(await screen.findByText(/refused the API key/)).toBeInTheDocument()
+  })
+})
+
+describe('chat text', () => {
+  it('shows bold words and bullet lines instead of the raw marks', async () => {
+    mockApi({ POST: { '/api/ai/copilot': { ...CHAT, answer: 'Stock:' + String.fromCharCode(10) + '- **30s cotton**: 170 kg' + String.fromCharCode(10) + '- 40s: 950 kg' } } })
+    renderPage(<Copilot />)
+    await userEvent.click(screen.getByRole('button', { name: 'How much yarn is free right now?' }))
+    const strong = await screen.findByText('30s cotton')
+    expect(strong.tagName).toBe('STRONG')
+    expect(document.querySelectorAll('.chat-list li')).toHaveLength(2)
+    expect(screen.queryByText(/[*][*]/)).not.toBeInTheDocument()
+  })
+})

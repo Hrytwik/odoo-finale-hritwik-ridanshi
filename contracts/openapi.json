@@ -2498,6 +2498,23 @@
         "title": "ModelCard",
         "type": "object"
       },
+      "ModelsOut": {
+        "description": "The model names the saved provider says this key can use.",
+        "properties": {
+          "models": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Models",
+            "type": "array"
+          }
+        },
+        "required": [
+          "models"
+        ],
+        "title": "ModelsOut",
+        "type": "object"
+      },
       "MonthIn": {
         "properties": {
           "month": {
@@ -5774,6 +5791,28 @@
           }
         },
         "summary": "Explain Delay",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/ai/models": {
+      "get": {
+        "description": "Asks the saved provider which models this key may use, so the owner picks a name that exists.",
+        "operationId": "list_models_api_ai_models_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Models",
         "tags": [
           "ai"
         ]

@@ -15,12 +15,27 @@ ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
 
 
+GetJson = Callable[[str, dict[str, str], float], dict]
+
+
 def post_json(url: str, headers: dict[str, str], payload: dict, timeout: float = 60) -> dict:
     """POST JSON, return the JSON reply. Failures become AdapterError; the key and the request are never put in a message."""
-    request = urllib.request.Request(
-        url, data=json.dumps(payload).encode(), method="POST",
-        # a plain User-Agent: providers behind Cloudflare (Groq among them) turn away Python's default one with a 403
+    return _send(_request(url, headers, "POST", json.dumps(payload).encode()), timeout)
+
+
+def get_json(url: str, headers: dict[str, str], timeout: float = 30) -> dict:
+    """GET, return the JSON reply, with the same error rules as post_json."""
+    return _send(_request(url, headers, "GET", None), timeout)
+
+
+def _request(url: str, headers: dict[str, str], method: str, data: bytes | None) -> urllib.request.Request:
+    # a plain User-Agent: providers behind Cloudflare (Groq among them) turn away Python's default one with a 403
+    return urllib.request.Request(
+        url, data=data, method=method,
         headers={"Content-Type": "application/json", "Accept": "application/json", "User-Agent": "EverestMills/1.0", **headers})
+
+
+def _send(request: urllib.request.Request, timeout: float) -> dict:
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 (https or the owner's own base URL)
             return json.loads(response.read().decode())
@@ -28,6 +43,9 @@ def post_json(url: str, headers: dict[str, str], payload: dict, timeout: float =
         detail = _error_detail(exc)
         if exc.code in (401, 403):
             raise AdapterError("auth", "The provider refused the API key") from exc
+        if exc.code == 404:
+            said = f" The provider said: {detail}" if detail else ""
+            raise AdapterError("bad_request", "The provider found nothing there. Check the model name, and that the address is the API address ending in /v1 (Groq: https://api.groq.com/openai/v1), not a web page." + said) from exc
         if exc.code >= 500:
             raise AdapterError("server", f"The provider had a problem ({exc.code})") from exc
         raise AdapterError("bad_request", detail or f"The provider refused the request ({exc.code})") from exc
@@ -47,13 +65,25 @@ def _error_detail(exc: urllib.error.HTTPError) -> str:
         return ""
 
 
+def _model_ids(data: dict) -> list[str]:
+    """The model names in a provider's /models reply: {"data": [{"id": ...}]}."""
+    rows = data.get("data") if isinstance(data, dict) else None
+    return sorted({str(r["id"]) for r in rows or [] if isinstance(r, dict) and r.get("id")})
+
+
 class LlmAdapter(Protocol):
     def complete(self, system: str, turns: list[Turn], tools: list[ToolSpec], options: dict | None = None) -> Completion: ...
 
+    def models(self) -> list[str]: ...
+
 
 class AnthropicAdapter:
-    def __init__(self, api_key: str, model: str, post: PostJson = post_json, url: str = ANTHROPIC_URL):
-        self.api_key, self.model, self.post, self.url = api_key, model, post, url
+    def __init__(self, api_key: str, model: str, post: PostJson = post_json, url: str = ANTHROPIC_URL, get: GetJson = get_json):
+        self.api_key, self.model, self.post, self.url, self.get = api_key, model, post, url, get
+
+    def models(self) -> list[str]:
+        headers = {"x-api-key": self.api_key, "anthropic-version": ANTHROPIC_VERSION}
+        return _model_ids(self.get(self.url.rsplit("/", 1)[0] + "/models?limit=100", headers, 30))
 
     @staticmethod
     def _messages(turns: list[Turn]) -> list[dict]:
@@ -92,8 +122,12 @@ class AnthropicAdapter:
 class OpenAICompatibleAdapter:
     """OpenAI, Groq, OpenRouter, or a local model through Ollama or LM Studio: anything that serves /chat/completions."""
 
-    def __init__(self, base_url: str, model: str, api_key: str | None = None, post: PostJson = post_json):
-        self.base_url, self.model, self.api_key, self.post = base_url.rstrip("/"), model, api_key, post
+    def __init__(self, base_url: str, model: str, api_key: str | None = None, post: PostJson = post_json, get: GetJson = get_json):
+        self.base_url, self.model, self.api_key, self.post, self.get = base_url.rstrip("/"), model, api_key, post, get
+
+    def models(self) -> list[str]:
+        headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
+        return _model_ids(self.get(f"{self.base_url}/models", headers, 30))
 
     @staticmethod
     def _messages(system: str, turns: list[Turn]) -> list[dict]:

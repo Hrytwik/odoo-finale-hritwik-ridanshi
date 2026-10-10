@@ -20,6 +20,13 @@ class Fake:
     def __init__(self, *replies, reply=None):
         self.replies, self.reply, self.calls = list(replies), reply, []
 
+    def models(self):
+        if isinstance(self.model_names, Exception):
+            raise self.model_names
+        return self.model_names
+
+    model_names = ["model-a", "model-b"]
+
     def complete(self, system, turns, tools, options=None):
         self.calls.append({"system": system, "turns": list(turns), "tools": [t.name for t in tools]})
         if self.reply:
@@ -381,3 +388,28 @@ def test_only_the_owner_runs_or_reads_the_report_card(client, login_as):
         login_as(role)
         assert client.post("/api/ai/report-card/run").status_code == 403, role
         assert client.get("/api/ai/report-card").status_code == 403, role
+
+
+# ---------- which models can this key use ----------
+
+def test_the_owner_can_list_the_models_the_saved_key_may_use(client, login_as):
+    login_as("owner")
+    use(Fake())
+    r = client.get("/api/ai/models")
+    assert r.status_code == 200 and r.json() == {"models": ["model-a", "model-b"]}
+
+
+def test_only_the_owner_may_list_models(client, login_as):
+    use(Fake())
+    for role in ("accountant", "supervisor", "store", "buyer"):
+        login_as(role)
+        assert client.get("/api/ai/models").status_code == 403, role
+
+
+def test_a_failing_provider_is_reported_when_listing_models(client, login_as):
+    login_as("owner")
+    adapter = Fake()
+    adapter.model_names = AdapterError("auth", "The provider refused the API key")
+    use(adapter)
+    r = client.get("/api/ai/models")
+    assert r.status_code == 503 and r.json()["code"] == "AI_UNAVAILABLE" and "refused the API key" in r.json()["message"]

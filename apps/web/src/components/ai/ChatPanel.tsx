@@ -90,7 +90,7 @@ export function ChatPanel({
               {m.role === 'user' ? <User size={16} /> : <Bot size={16} />}
             </span>
             <div className="chat-body">
-              <p className="chat-text">{m.text}</p>
+              <RichText text={m.text} />
               {m.sources && m.sources.length > 0 && <Sources sources={m.sources} />}
             </div>
           </article>
@@ -116,6 +116,36 @@ export function ChatPanel({
         </Button>
       </form>
     </section>
+  )
+}
+
+/** Bold (**like this**) and "- " bullet lines, which models write whatever they are asked; nothing else is interpreted. */
+export function RichText({ text }: { text: string }) {
+  const inline = (line: string) =>
+    line.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith('**') && part.endsWith('**') && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : part))
+  const blocks: { bullets: boolean; lines: string[] }[] = []
+  for (const raw of text.split(String.fromCharCode(10))) {
+    const line = raw.trim()
+    if (!line) continue
+    const bullet = /^[-*•]\s+/.test(line)
+    const last = blocks[blocks.length - 1]
+    if (last && last.bullets === bullet) last.lines.push(bullet ? line.replace(/^[-*•]\s+/, '') : line)
+    else blocks.push({ bullets: bullet, lines: [bullet ? line.replace(/^[-*•]\s+/, '') : line] })
+  }
+  return (
+    <div className="chat-text">
+      {blocks.map((b, i) =>
+        b.bullets ? (
+          <ul key={i} className="chat-list">
+            {b.lines.map((l, j) => (
+              <li key={j}>{inline(l)}</li>
+            ))}
+          </ul>
+        ) : (
+          b.lines.map((l, j) => <p key={`${i}-${j}`}>{inline(l)}</p>)
+        ),
+      )}
+    </div>
   )
 }
 

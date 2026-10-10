@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ROUTES } from '@/routes'
 
 vi.mock('@/lib/api/client', () => ({ api: { GET: vi.fn(), POST: vi.fn() } }))
 vi.mock('@/lib/live', () => ({ useLiveEvents: vi.fn() }))
@@ -66,6 +67,23 @@ describe('session gate and home redirect', () => {
   })
 })
 
+describe('typing an address without being logged in', () => {
+  // every address behind the login: the real pages, the passport, an unknown one and the developer pages
+  const ADDRESSES = [...ROUTES.map((r) => '/' + r.path.replace(/:\w+/g, 'X-1')), '/nothing/here', '/dev/camera', '/dev/components']
+
+  it.each(ADDRESSES)('shows nothing of %s, only the loading state, when the server says 401', async (path) => {
+    setup('owner', path, { meStatus: 401 })
+    await waitFor(() => expect(api.GET).toHaveBeenCalled())
+    await new Promise((r) => setTimeout(r, 30))
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument()
+    // and no page asked for any data
+    const asked = vi.mocked(api.GET).mock.calls.map((c) => c[0]).filter((u) => u !== '/api/auth/me' && u !== '/api/health')
+    expect(asked).toEqual([])
+  })
+})
+
 describe('app shell', () => {
   it("opens the menu from a button on small screens and lists the role's pages", async () => {
     setup('supervisor', '/floor')
@@ -107,6 +125,12 @@ describe('role guard', () => {
   it('lets everyone open a roll passport', async () => {
     setup('buyer', '/r/R-0142')
     expect(await screen.findByRole('heading', { level: 1, name: 'R-0142' })).toBeInTheDocument()
+  })
+
+  it('keeps the developer pages for the owner', async () => {
+    setup('buyer', '/dev/components')
+    expect(await screen.findByText(/not available for your role/i)).toBeInTheDocument()
+    expect(screen.queryByText(/components preview/i)).not.toBeInTheDocument()
   })
 
   it('shows Page not found for an unknown address', async () => {
