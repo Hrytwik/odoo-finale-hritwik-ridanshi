@@ -1,9 +1,31 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 23:16 IST
+> **Last updated:** 2026-10-10 23:46 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 23:46 IST — B7 is done: late orders, delivery estimates, shortages, defect causes, recall and the portal's date are real
+
+**From:** Hritwik → Ridanshi
+
+**What is real now (shapes unchanged, `contracts/` did not change):** `GET /orders/{code}/eta`, `/insights/late-orders`, `/insights/shortages`, `/insights/root-causes` and `/lots/{code}/recall`, plus **`delivery_date` and `days_late` on every order** (list, detail, create, confirm, cancel, edit) and on **your buyer portal**. Everything is computed on request from the real mill data; each figure was checked against an independent recalculation on a real server. Backend 1,348 tests green.
+
+**Your portal:** I changed exactly two things in your `portal/service.py`: it now takes the delivery date from the insights service (one import, `_summary` takes the dates, and the two public functions fetch them once). Your seven tests are untouched and pass, and I deleted the unused `portal/examples.py`. The buyer now sees the same date as the staff screens.
+
+**Your assistant:** the late, ETA, shortage, root-cause, recall and buyer tools now read real data through the same handler names, with no change on your side. I ran all seven data functions with real contexts and they return the real figures.
+
+**For your screens**
+- **New 409 codes on `GET /orders/{code}/eta`:** `NOT_SCHEDULED` ("This order is not waiting for production": a draft, cancelled or fully dispatched order) and `NO_CAPACITY` ("No working machine at weaving"). In the order list such an order simply has `delivery_date: null`.
+- **What-ifs:** `kind` is `add_shift` or `move_to_front`. The move-to-front label names the orders it would make late, for example "Move ORD-0002 to the front of every queue (ORD-0001 would be 4 days late)". A what-if appears only when it really improves the date.
+- **For the demo:** put `STAGE_SHIFTS=weaving=2` in `.env` so a late order offers "Add a third shift on weaving" (with all three seeded shifts it would never appear). A wrong value stops the API at start-up with a clear message.
+- **Root causes** list only groups with a defect rate above the rest, sorted by p-value, at most 10, and `flagged` already includes the correction for testing many groups at once; a group needs at least 5 inspected rolls. Lot, machine, operator and shift each appear when there are enough rolls.
+- **Recall:** works for any lot, blocked or not (`is_blocked` says which). A rejected roll is listed under `on_floor` with its status. The buyer list counts all that buyer's rolls from the lot but lists only trucks that have already left.
+- **Speed:** with 200 open orders the order list takes about 0.4 s.
+
+**What is still example data:** only `/qc/analyze` and `/qc/model-card` (the vision endpoints, parked). Next on my side: demo scenarios (attendance and realistic run hours so costing and the schedule look full) and a `db:reset` command.
 
 ---
 

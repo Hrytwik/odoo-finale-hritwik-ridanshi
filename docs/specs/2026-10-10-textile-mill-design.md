@@ -1,7 +1,7 @@
 # Everest Textile Mills — System Design
 
 > **Summary:** Full design for the textile mill platform: architecture (React + Vite + FastAPI + Postgres), 29-table data model, business rules, per-roll costing, delay/shortage/root-cause engines, vision QC, provider-agnostic LLM layer, screens, API surface, two-track split, testing and demo.
-> **Last updated:** 2026-10-10 23:16 IST (§7 costing built and live-checked; §8 intelligence revised after the B7 design review and Track A's portal)
+> **Last updated:** 2026-10-10 23:46 IST (§7 costing and §8 intelligence built and live-checked)
 > **Status:** Draft for team review
 
 ---
@@ -308,9 +308,9 @@ Hand-worked: lot L-0017, 120 kg issued to spinning run S1, 50 kg issued to S2 an
 
 ### 8.6 Implementation
 
-Computed on request, no stored values, no migration, read-only (no locks, no events); all response shapes already exist, so `contracts/` is byte-identical. `modules/insights/engine/` (pure: `fisher`, `schedule`, `shortage`, `rootcause`; exact fractions; "today" is an input), `insights/loader.py` (rows → plain records), `insights/service.py` (rounding, shapes, order dates), `insights/recall.py` (the recall joins; the route stays under `store`). The portal service is Track A's; B7 changes only where it gets the delivery date. Settings in `app/config.py` (defaults from the spec): `QC_DAYS`, `DISPATCH_DAYS`, `DEFAULT_EFFICIENCY` 0.8, `EFFICIENCY_WINDOW_DAYS` 7, `EFFICIENCY_MIN_HOURS` 1, `STAGE_SHIFTS`, `ROOT_CAUSE_MIN_GROUP` 5, `ROOT_CAUSE_ALPHA` 0.05, `REORDER_ROUND_KG` 50. The handlers keep the names the assistant calls (`late_orders`, `order_eta`, `shortages`, `root_causes`, `lot_recall`, `my_orders`, `my_order`) and take `db` (and `user` for the portal). Accepted: the loader's queries are not one snapshot. Speed to be measured on a synthetic busy mill and recorded in the plan.
+Computed on request, no stored values, no migration, read-only (no locks, no events); all response shapes already exist, so `contracts/` is byte-identical. `modules/insights/engine/` (pure: `fisher`, `schedule`, `shortage`, `rootcause`; exact fractions; "today" is an input), `insights/loader.py` (rows → plain records), `insights/service.py` (rounding, shapes, order dates), `insights/recall.py` (the recall joins; the route stays under `store`). The portal service is Track A's; B7 changes only where it gets the delivery date. Settings in `app/config.py` (defaults from the spec): `QC_DAYS`, `DISPATCH_DAYS`, `DEFAULT_EFFICIENCY` 0.8, `EFFICIENCY_WINDOW_DAYS` 7, `EFFICIENCY_MIN_HOURS` 1, `STAGE_SHIFTS`, `ROOT_CAUSE_MIN_GROUP` 5, `ROOT_CAUSE_ALPHA` 0.05, `REORDER_ROUND_KG` 50. The handlers keep the names the assistant calls (`late_orders`, `order_eta`, `shortages`, `root_causes`, `lot_recall`, `my_orders`, `my_order`) and take `db` (and `user` for the portal). Accepted: the loader's queries are not one snapshot. Speed was measured on a synthetic busy mill of 200 open orders: the order list (which builds the whole-mill schedule once) 0.43 s, late orders 0.46 s, shortages 0.37 s, root causes 0.05 s (`tests/test_insights_speed.py` guards a 20 s budget).
 
-### 8.7 Build order (B7; also in `docs/plans/B7-intelligence.md` once written)
+### 8.7 Build order (B7, done; see `docs/plans/B7-intelligence.md`)
 
 1. The exact test and the root-cause engine. 2. The schedule engine. 3. The shortage engine. 4. Loader and service, the four insight routes, the settings, real dates on orders. 5. The recall chain and its route. 6. The buyer portal's real delivery date (the portal itself is Track A's). 7. Live check, docs, memory. (1, 2, 3 independent; 4 needs 1-3; 5 independent; 6 needs 4; 7 last.)
 
