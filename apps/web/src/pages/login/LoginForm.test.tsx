@@ -66,4 +66,27 @@ describe('LoginForm', () => {
     await userEvent.click(screen.getByRole('button', { name: /log in/i }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/reach the server/i)
   })
+
+  it('tells the person when they are locked out, and how long to wait', async () => {
+    vi.mocked(api.POST).mockReturnValue(
+      Promise.resolve({
+        error: { code: 'TOO_MANY_ATTEMPTS', message: 'Too many wrong attempts. Try again in 15 minutes.', field: null, fields: null },
+        response: new Response(null, { status: 429 }),
+      }) as never,
+    )
+    render(<LoginForm onSuccess={vi.fn()} />)
+    await fill()
+    await userEvent.click(screen.getByRole('button', { name: /log in/i }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Try again in 15 minutes')
+  })
+
+  it('can show what was typed in the password box, and hide it again', async () => {
+    render(<LoginForm onSuccess={vi.fn()} />)
+    const box = screen.getByLabelText('Password')
+    expect(box).toHaveAttribute('type', 'password')
+    await userEvent.click(screen.getByRole('button', { name: 'Show characters' }))
+    expect(box).toHaveAttribute('type', 'text')
+    await userEvent.click(screen.getByRole('button', { name: 'Hide characters' }))
+    expect(box).toHaveAttribute('type', 'password')
+  })
 })

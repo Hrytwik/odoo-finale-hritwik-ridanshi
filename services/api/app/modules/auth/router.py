@@ -1,24 +1,33 @@
+import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, StringConstraints
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.core.auth import COOKIE_NAME, create_token, current_user, verify_password
+from app.core.auth import COOKIE_NAME, create_token, current_user, hash_password, verify_password
 from app.core.enums import Role
-from app.core.errors import AppError
+from app.core.errors import AppError, commit
+from app.core.login_guard import client_ip, guard
+from app.core.passwords import DUMMY_HASH, check_new_password, needs_rehash
 from app.core.schemas import BcryptSafe
 from app.db.models import User
 from app.db.session import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+log = logging.getLogger("everest.auth")
 
 
 class LoginIn(BaseModel):
     username: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
     password: Annotated[str, StringConstraints(min_length=1, max_length=72), BcryptSafe]
+
+
+class ChangePasswordIn(BaseModel):
+    current_password: Annotated[str, StringConstraints(min_length=1, max_length=72), BcryptSafe]
+    new_password: Annotated[str, StringConstraints(min_length=1, max_length=72), BcryptSafe]
 
 
 class Me(BaseModel):
@@ -36,15 +45,53 @@ def to_me(user: User) -> Me:
               worker_id=user.worker_id, buyer_id=user.buyer_id)
 
 
-@router.post("/login", response_model=Me)
-def login(body: LoginIn, response: Response, db: Session = Depends(get_db)) -> Me:
-    user = db.scalar(select(User).where(User.username == body.username))
-    if user is None or not verify_password(body.password, user.password_hash):
-        raise AppError("BAD_CREDENTIALS", "Wrong username or password", status=401)
+def _start_session(response: Response, user: User) -> None:
     response.set_cookie(
-        COOKIE_NAME, create_token(user.id), httponly=True, samesite="lax",
+        COOKIE_NAME, create_token(user.id, user.password_hash), httponly=True, samesite="lax",
         secure=settings.cookie_secure, max_age=settings.jwt_ttl_hours * 3600, path="/",
     )
+
+
+@router.post("/login", response_model=Me)
+def login(body: LoginIn, request: Request, response: Response, db: Session = Depends(get_db)) -> Me:
+    ip = client_ip(request)
+    guard.check(body.username, ip)  # a locked username or address is refused before any password is looked at
+    user = db.scalar(select(User).where(User.username == body.username))
+    # always do one bcrypt check, even for a username that does not exist, so the time taken gives nothing away
+    ok = verify_password(body.password, user.password_hash if user else DUMMY_HASH)
+    if user is None or not ok:
+        guard.failure(body.username, ip)
+        log.warning("failed login for %r from %s", body.username, ip)
+        raise AppError("BAD_CREDENTIALS", "Wrong username or password", status=401)
+    guard.success(body.username)
+    if needs_rehash(user.password_hash):
+        # the password is right, so this is the moment to store it with today's work factor
+        user.password_hash = hash_password(body.password)
+        commit(db)
+    _start_session(response, user)
+    return to_me(user)
+
+
+@router.post("/change-password", response_model=Me)
+def change_password(body: ChangePasswordIn, request: Request, response: Response, db: Session = Depends(get_db),
+                    user: User = Depends(current_user)) -> Me:
+    """Changes the logged-in user's own password. Every other session of theirs stops working; this one carries on."""
+    ip = client_ip(request)
+    guard.check(user.username, ip)  # someone on a stolen session cannot guess the old password freely either
+    if not verify_password(body.current_password, user.password_hash):
+        guard.failure(user.username, ip)
+        log.warning("wrong current password while changing password for %r from %s", user.username, ip)
+        # 422, not 401: a 401 would be read by the web app as "your session ended"
+        raise AppError("WRONG_PASSWORD", "The current password is not right", field="current_password", status=422)
+    problem = check_new_password(body.new_password, user.username)
+    if problem:
+        raise AppError("WEAK_PASSWORD", problem, field="new_password", status=422)
+    if verify_password(body.new_password, user.password_hash):
+        raise AppError("SAME_PASSWORD", "Choose a password different from the current one", field="new_password", status=422)
+    user.password_hash = hash_password(body.new_password)
+    commit(db)
+    guard.success(user.username)
+    _start_session(response, user)
     return to_me(user)
 
 

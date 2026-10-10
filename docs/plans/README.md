@@ -34,3 +34,4 @@ Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here 
 | A7 | Owner dashboard, insights, master-data screens | **done**: `A7-owner-insights-master-data.md` |
 | A8 | Language-model module (adapters, tools, report card) + AI screens | **in progress**: backend and screens built, wiring and screen tests left: `A8-language-model.md` |
 | A9 | Buyer portal + end-to-end demo script | not written |
+| A10 | Login security (guess limiting, password rules, change password, session binding, headers) | **done**: `A10-login-security.md` |
