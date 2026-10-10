@@ -115,7 +115,7 @@ function DelayNoticeDialog({ orderCode, buyerName, onClose }: { orderCode: strin
       {reason && !drafting && channel && message !== '' && (
         <div className="stack-sm">
           <p className="eyebrow">Also on WhatsApp</p>
-          <WhatsAppPreview message={message} withTracking={!!channel.tracking_url} />
+          <WhatsAppPreview message={message} trackingUrl={channel.tracking_url} />
           <p className={channel.whatsapp_ready ? 'muted text-sm' : 'text-sm text-danger'}>{channel.whatsapp_ready ? `It will also be sent to ${channel.to}.` : channel.problem}</p>
           {channel.phone && (
             <p className="row">

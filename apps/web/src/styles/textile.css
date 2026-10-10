@@ -1450,3 +1450,11 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   font-size: var(--text-sm);
   white-space: pre-wrap;
 }
+
+.wa-link {
+  color: #53bdeb;
+  word-break: break-all;
+}
+.wa-bubble p + p {
+  margin-top: -8px;
+}
