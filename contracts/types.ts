@@ -930,6 +930,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{order_code}/delay-notice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Notice */
+        post: operations["send_notice_api_orders__order_code__delay_notice_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{order_code}/delay-notice/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Notice
+         * @description A sentence for the buyer, for the owner to read and edit before sending.
+         */
+        post: operations["draft_notice_api_orders__order_code__delay_notice_draft_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{order_code}/eta": {
         parameters: {
             query?: never;
@@ -1012,6 +1049,40 @@ export interface paths {
          * @description Records a wage payment. It cannot be more than the worker is owed for the period (earned minus paid inside it).
          */
         post: operations["pay_wages_api_payments_wages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Notifications */
+        get: operations["my_notifications_api_portal_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/notifications/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read Notifications */
+        post: operations["read_notifications_api_portal_notifications_read_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1876,17 +1947,6 @@ export interface components {
              */
             started_at: string;
         };
-        /** DraftOut */
-        DraftOut: {
-            /** Model */
-            model: string;
-            /** Provider */
-            provider: string;
-            /** Sources */
-            sources: components["schemas"]["SourceOut"][];
-            /** Text */
-            text: string;
-        };
         /** EtaOut */
         EtaOut: {
             /** Bottleneck Stage */
@@ -2420,6 +2480,46 @@ export interface components {
             /** Run Id */
             run_id: number | null;
         };
+        /** NoticeIn */
+        NoticeIn: {
+            /** Message */
+            message: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "yarn_shortage" | "machine_breakdown" | "power_cut" | "staff_shortage" | "quality_rework" | "dye_delay" | "transport" | "buyer_change" | "other";
+        };
+        /** NoticeOut */
+        NoticeOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /** Message */
+            message: string;
+            /** Order Code */
+            order_code: string;
+            /** Read */
+            read: boolean;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "yarn_shortage" | "machine_breakdown" | "power_cut" | "staff_shortage" | "quality_rework" | "dye_delay" | "transport" | "buyer_change" | "other";
+            /** Reason Label */
+            reason_label: string;
+        };
+        /** NotificationsOut */
+        NotificationsOut: {
+            /** Items */
+            items: components["schemas"]["NoticeOut"][];
+            /** Unread */
+            unread: number;
+        };
         /** OrderCost */
         OrderCost: {
             /** Cost Per Good Metre */
@@ -2755,6 +2855,14 @@ export interface components {
             counts: components["schemas"]["QcCounts"];
             /** Rolls */
             rolls: components["schemas"]["RollOut"][];
+        };
+        /** ReasonIn */
+        ReasonIn: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "yarn_shortage" | "machine_breakdown" | "power_cut" | "staff_shortage" | "quality_rework" | "dye_delay" | "transport" | "buyer_change" | "other";
         };
         /** RecallBuyer */
         RecallBuyer: {
@@ -3496,6 +3604,24 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** DraftOut */
+        app__modules__llm__schemas__DraftOut: {
+            /** Model */
+            model: string;
+            /** Provider */
+            provider: string;
+            /** Sources */
+            sources: components["schemas"]["SourceOut"][];
+            /** Text */
+            text: string;
+        };
+        /** DraftOut */
+        app__modules__notices__schemas__DraftOut: {
+            /** Drafted By Ai */
+            drafted_by_ai: boolean;
+            /** Message */
+            message: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -3588,7 +3714,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DraftOut"];
+                    "application/json": components["schemas"]["app__modules__llm__schemas__DraftOut"];
                 };
             };
             /** @description Validation Error */
@@ -3641,7 +3767,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DraftOut"];
+                    "application/json": components["schemas"]["app__modules__llm__schemas__DraftOut"];
                 };
             };
             /** @description Validation Error */
@@ -5260,6 +5386,76 @@ export interface operations {
             };
         };
     };
+    send_notice_api_orders__order_code__delay_notice_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoticeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoticeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    draft_notice_api_orders__order_code__delay_notice_draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__modules__notices__schemas__DraftOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     order_eta_api_orders__order_code__eta_get: {
         parameters: {
             query?: never;
@@ -5417,6 +5613,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_notifications_api_portal_notifications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationsOut"];
+                };
+            };
+        };
+    };
+    read_notifications_api_portal_notifications_read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationsOut"];
                 };
             };
         };

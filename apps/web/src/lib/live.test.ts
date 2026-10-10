@@ -15,10 +15,11 @@ describe('live events', () => {
       'dispatch.changed',
       'payment.changed',
       'attendance.changed',
+      'notice.changed',
     ]) {
       expect(keysFor(type).length).toBeGreaterThan(0)
     }
-    expect(Object.keys(EVENT_KEYS)).toHaveLength(10)
+    expect(Object.keys(EVENT_KEYS)).toHaveLength(11)
   })
 
   it('a machine change refreshes the floor board', () => {

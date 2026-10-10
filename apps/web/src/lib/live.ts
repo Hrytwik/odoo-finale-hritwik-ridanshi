@@ -13,6 +13,7 @@ export const EVENT_KEYS: Record<string, string[][]> = {
   'dispatch.changed': [['dispatches'], ['orders'], ['portal'], ['money']],
   'payment.changed': [['money'], ['owner']],
   'attendance.changed': [['people'], ['owner']],
+  'notice.changed': [['notices']],
 }
 
 export const keysFor = (eventType: string) => EVENT_KEYS[eventType] ?? []

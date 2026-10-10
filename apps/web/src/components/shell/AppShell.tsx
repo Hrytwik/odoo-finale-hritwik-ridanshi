@@ -14,6 +14,7 @@ import { ChangePasswordDialog } from './ChangePasswordDialog'
 import { CommandPalette } from './CommandPalette'
 import { DemoBadge } from './DemoBadge'
 import { NavList } from './NavList'
+import { NotificationBell } from './NotificationBell'
 import { ThemeToggle } from './ThemeToggle'
 
 type Me = components['schemas']['Me']
@@ -73,6 +74,7 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
           <Button variant="ghost" icon className="header-search-icon header-square" aria-label="Search rolls, lots, orders" onClick={() => setPalette(true)}>
             <Search size={18} aria-hidden />
           </Button>
+          {me.role === 'buyer' && <NotificationBell />}
           {me.role !== 'buyer' && (
             <Button variant="ghost" icon className="header-square" aria-label="Scan a roll" title="Scan a roll's QR tag" onClick={() => setScanning(true)}>
               <ScanLine size={18} aria-hidden />

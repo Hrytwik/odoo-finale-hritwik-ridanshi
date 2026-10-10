@@ -23,6 +23,7 @@ import { useMe } from '@/lib/auth'
 import { todayIso } from '@/lib/dates'
 import { useSubmitLock } from '@/lib/forms'
 import { formatDate, formatKg, formatMetres, formatMoney } from '@/lib/format'
+import { DelayNoticeButton } from './DelayNotice'
 
 type Order = components['schemas']['OrderOut']
 
@@ -271,6 +272,7 @@ function Actions({ order, canWrite }: { order: Order; canWrite: boolean }) {
           Change deadline
         </Button>
       )}
+      {order.state === 'confirmed' && <DelayNoticeButton orderCode={order.code} buyerName={order.buyer.name} />}
       <Button variant="secondary" onClick={() => setOpen('cancel')}>
         <XCircle size={16} aria-hidden /> Cancel order
       </Button>

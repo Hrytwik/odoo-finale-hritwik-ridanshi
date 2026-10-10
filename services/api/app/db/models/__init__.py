@@ -8,6 +8,7 @@ from app.db.models.trade import (
     BuyerPayment, Dispatch, DispatchItem, Invoice, InvoiceLine, SupplierBill, SupplierPayment,
 )
 from app.db.models.ai import LlmEvalRun, LlmSettings
+from app.db.models.notices import BuyerNotice
 
 __all__ = [
     "Attendance", "Buyer", "FabricRecipeLine", "FabricType", "Machine", "MachineDowntime", "Order",
@@ -15,6 +16,6 @@ __all__ = [
     "WagePayment", "Worker", "YarnType",
 ]
 __all__ += [
-    "BuyerPayment", "Dispatch", "DispatchItem", "Invoice", "InvoiceLine", "LlmEvalRun", "LlmSettings",
+    "BuyerNotice", "BuyerPayment", "Dispatch", "DispatchItem", "Invoice", "InvoiceLine", "LlmEvalRun", "LlmSettings",
     "SupplierBill", "SupplierPayment", "YarnLot", "YarnMovement",
 ]

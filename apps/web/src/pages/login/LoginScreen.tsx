@@ -6,8 +6,8 @@ import { Typewriter } from '@/components/motion/Typewriter'
 import { homeFor, safeNext } from '@/lib/nav'
 import { LoginForm } from './LoginForm'
 
-/** The second line of the headline; each is typed, held, deleted, then the next. The first is what screen readers get. */
-const PHRASES = ['from yarn to invoice.', 'from loom to buyer.', 'from scan to payment.']
+/** The login page has its own sentence (the first page says "Every roll, from yarn to invoice"). The same words twice: the effect types them, holds, deletes and types them again. */
+const PHRASES = ['one login away.', 'one login away.']
 
 export function LoginScreen() {
   const navigate = useNavigate()
@@ -26,7 +26,7 @@ export function LoginScreen() {
             Everest Mills
           </span>
           <div className="stack-sm">
-            <Typewriter before="Every roll," phrases={PHRASES} />
+            <Typewriter before="Your whole mill," phrases={PHRASES} />
             <p style={{ maxWidth: '40ch' }}>
               Store, floor, quality, dispatch and the books in one place. Scan a roll and see its whole life.
             </p>

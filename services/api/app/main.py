@@ -13,6 +13,7 @@ from app.modules.insights.router import router as insights_router
 from app.modules.llm.router import router as llm_router
 from app.modules.master.router import router as master_router
 from app.modules.money.router import router as money_router
+from app.modules.notices.router import router as notices_router
 from app.modules.orders.router import router as orders_router
 from app.modules.passport.router import router as passport_router
 from app.modules.people.router import router as people_router
@@ -52,6 +53,7 @@ def create_app() -> FastAPI:
     api.include_router(costing_router)
     api.include_router(insights_router)
     api.include_router(portal_router)
+    api.include_router(notices_router)
     api.include_router(rolls_router)
     api.include_router(people_router)
     api.include_router(llm_router)
