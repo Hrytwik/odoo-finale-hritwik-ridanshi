@@ -270,3 +270,8 @@ def test_the_template_id_is_saved_checked_and_can_be_cleared(client, login_as):
     assert bad.status_code == 422 and bad.json()["field"] == "content_sid"
     cleared = client.put("/api/messaging/settings", json={**BODY, "content_sid": ""})
     assert cleared.json()["content_sid"] is None
+
+
+def test_an_unknown_template_id_says_where_to_find_the_right_one():
+    r = send_text(TEMPLATE, "+916282828678", "Hi", post=lambda *a: {"error": True, "http": 400, "code": 21655, "message": "The ContentSid is Invalid"})
+    assert "copy the ContentSid" in r.detail and "Try it out" in r.detail and r.detail.endswith("(Twilio error 21655)")

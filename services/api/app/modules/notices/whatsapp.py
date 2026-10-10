@@ -108,6 +108,7 @@ _HINTS = {
     63015: "This phone has not joined the sandbox yet. On that phone, send the join code to the sandbox number first.",
     21211: "That does not look like a valid phone number.",
     21608: "This phone has not joined the sandbox yet. On that phone, send the join code to the sandbox number first.",
+    21655: "Twilio does not know that template ID on your account. In Twilio open Try it out, Send a WhatsApp message, and copy the ContentSid (starts with HX) from its sample code.",
     21654: "Twilio needs this message sent as a template. In Twilio's Content Template Builder make a text template and paste its ID (starts with HX) into 'Message template ID' on this page.",
 }
 
