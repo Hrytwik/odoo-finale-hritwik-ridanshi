@@ -4,10 +4,10 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 
 from app.core.enums import DefectType, Verdict
-from app.core.schemas import NonBlank, OptText, Out, Ref
+from app.core.schemas import NonBlank, NoBool, OptText, Out, Ref
 from app.modules.rolls.schemas import RollOut
 
-Fraction = Annotated[float, Field(ge=0, le=1)]
+Fraction = Annotated[float, Field(ge=0, le=1), NoBool]
 
 
 class Box(BaseModel):

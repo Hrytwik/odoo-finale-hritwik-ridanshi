@@ -2,24 +2,13 @@ import pytest
 
 
 @pytest.mark.parametrize("path", [
-    "/api/lots", "/api/lots/L-0017", "/api/lots/L-0017/recall", "/api/stock",
+    "/api/lots/L-0017/recall", "/api/stock",
     "/api/orders", "/api/orders/ORD-0012", "/api/orders/ORD-0012/yarn-check",
 ])
 def test_owner_gets_example_data(client, login_as, path):
     login_as("owner")
     r = client.get(path)
     assert r.status_code == 200, r.text
-
-
-def test_receive_lot_validates_input(client, login_as):
-    login_as("store")
-    bad = client.post("/api/lots", json={"yarn_type_id": 1, "supplier_id": 1, "qty_kg": 0,
-                                         "cost_per_kg": 250, "challan_no": "  "})
-    assert bad.status_code == 422
-    assert set(bad.json()["fields"]) == {"qty_kg", "challan_no"}
-    ok = client.post("/api/lots", json={"yarn_type_id": 1, "supplier_id": 1, "qty_kg": 800,
-                                        "cost_per_kg": 250, "challan_no": "CH-5521"})
-    assert ok.status_code == 201 and ok.json()["lot_code"]
 
 
 def test_adjustment_of_zero_rejected(client, login_as):

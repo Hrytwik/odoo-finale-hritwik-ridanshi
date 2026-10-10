@@ -1,11 +1,23 @@
 from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, Field, StringConstraints
 
 NonBlank = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 OptText = Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)] | None
-PositiveQty = Annotated[float, Field(gt=0, le=1_000_000)]
-Money = Annotated[float, Field(gt=0, le=100_000_000)]
+
+
+def _not_a_boolean(value):
+    # pydantic reads JSON true/false as 1.0/0.0 for a float; a quantity or price must never come from that
+    if isinstance(value, bool):
+        raise ValueError("Enter a number")
+    return value
+
+
+# Put NoBool in every numeric request field, AFTER Field(...): Annotated[float, Field(gt=0), NoBool]. In the other order
+# pydantic writes "gt"/"le" into the OpenAPI schema instead of exclusiveMinimum/maximum, silently changing the contract.
+NoBool = BeforeValidator(_not_a_boolean)
+PositiveQty = Annotated[float, Field(gt=0, le=1_000_000), NoBool]
+Money = Annotated[float, Field(gt=0, le=100_000_000), NoBool]
 
 
 def _fits_bcrypt(value: str) -> str:

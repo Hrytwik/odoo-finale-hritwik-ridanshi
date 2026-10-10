@@ -24,3 +24,13 @@ def test_every_track_b_endpoint_in_spec_is_in_the_contract():
     paths = app.openapi()["paths"]
     missing = [p for p in EXPECTED if p not in paths]
     assert missing == []
+
+
+def test_committed_contract_matches_the_code():
+    """The shapes Track A builds against must not drift silently: after an intended API change run `npm run contracts`."""
+    import json
+
+    from scripts.export_openapi import ROOT
+
+    committed = (ROOT / "contracts" / "openapi.json").read_text(encoding="utf-8")
+    assert committed == json.dumps(app.openapi(), indent=2, sort_keys=True) + "\n"

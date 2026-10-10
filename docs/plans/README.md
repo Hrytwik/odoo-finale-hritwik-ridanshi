@@ -11,7 +11,7 @@ Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here 
 |---|---|---|
 | B1 | Foundation — API skeleton, all 29 tables, login, uploads, live events, master data, full API contract with example data | done: all 13 tasks, plus the test-database guard (branch `b/foundation`) |
 | BV | Vision spike — public-data-only pivot (no own photos exist) | PARKED: trained (validation mAP50 0.70) and scored on the public test split (holes 24/26 found, stains 18/29, thread faults 8/32); verdict inconclusive because no matching clean images exist for the false-alarm rate; resume notes and photo checklist in `BV-vision-spike.md` |
-| B2 | Store & orders — receiving, ledger, stock and yarn-need views, yarn check, order lifecycle | plan written and Tasks 1–2 done (money helpers, code sequences, stock views); lives on branch `b/store-orders`, not yet merged to `main`; next Task 3 |
+| B2 | Store & orders — receiving, ledger, stock and yarn-need views, yarn check, order lifecycle | plan written and Tasks 1–3 done (money helpers, code sequences, stock views, receive lot and lot reads); lives on branch `b/store-orders`, not yet merged to `main`; next Task 4 |
 | B3 | Floor — runs (`GET /runs` becomes real), hand-over, roll off, dyeing loads, breakdowns, machine status view, live events | not written |
 | B4 | QC & rolls — inspections, rework, roll status view, passport data (the passport must use `buyer_view` and refuse rolls that are not the buyer's own; `GET /rolls` becomes real) | not written |
 | B5 | Dispatch & money — scan-to-load rules, invoices, receivables, payables, payment limits | not written |

@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 from app.core.enums import MachineStatus, RunStage, Stage
-from app.core.schemas import NonBlank, Out, PositiveQty, Ref
+from app.core.schemas import NonBlank, NoBool, Out, PositiveQty, Ref
 
 
 class RunBrief(Out):
@@ -66,7 +66,7 @@ class RunStartIn(BaseModel):
 
 
 class RunEndIn(BaseModel):
-    output_kg: Annotated[float, Field(ge=0, le=1_000_000)] | None = None
+    output_kg: Annotated[float, Field(ge=0, le=1_000_000), NoBool] | None = None
 
 
 class HandoverIn(BaseModel):

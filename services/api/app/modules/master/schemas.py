@@ -4,12 +4,12 @@ from typing import Annotated, Self
 from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 from app.core.enums import Role, Stage, WorkerRole
-from app.core.schemas import BcryptSafe, Money, NonBlank, Out
+from app.core.schemas import BcryptSafe, Money, NonBlank, NoBool, Out
 
 Code = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=40)]
 Phone = Annotated[str, StringConstraints(strip_whitespace=True, max_length=30)] | None
-Rate = Annotated[float, Field(gt=0, le=100_000)]
-NonNegMoney = Annotated[float, Field(ge=0, le=1_000_000)]
+Rate = Annotated[float, Field(gt=0, le=100_000), NoBool]
+NonNegMoney = Annotated[float, Field(ge=0, le=1_000_000), NoBool]
 
 
 class SupplierIn(BaseModel):
@@ -54,14 +54,14 @@ class YarnTypeIn(BaseModel):
     code: Code
     name: NonBlank
     colour: NonBlank
-    reorder_level_kg: Annotated[float, Field(ge=0, le=1_000_000)] = 0
+    reorder_level_kg: Annotated[float, Field(ge=0, le=1_000_000), NoBool] = 0
 
 
 class YarnTypePatch(BaseModel):
     code: Code | None = None
     name: NonBlank | None = None
     colour: NonBlank | None = None
-    reorder_level_kg: Annotated[float, Field(ge=0, le=1_000_000)] | None = None
+    reorder_level_kg: Annotated[float, Field(ge=0, le=1_000_000), NoBool] | None = None
 
 
 class YarnTypeOut(Out):
@@ -74,7 +74,7 @@ class YarnTypeOut(Out):
 
 class RecipeLineIn(BaseModel):
     yarn_type_id: int
-    kg_per_metre: Annotated[float, Field(gt=0, le=10)]
+    kg_per_metre: Annotated[float, Field(gt=0, le=10), NoBool]
 
 
 class RecipeLineOut(Out):
@@ -93,8 +93,8 @@ def _check_recipe(recipe: list[RecipeLineIn] | None) -> None:
 
 class FabricTypeIn(BaseModel):
     name: NonBlank
-    width_in: Annotated[float, Field(gt=0, le=200)]
-    wastage_pct: Annotated[float, Field(ge=0, le=50)] = 5
+    width_in: Annotated[float, Field(gt=0, le=200), NoBool]
+    wastage_pct: Annotated[float, Field(ge=0, le=50), NoBool] = 5
     recipe: Annotated[list[RecipeLineIn], Field(min_length=1, max_length=10)]
 
     @model_validator(mode="after")
@@ -105,8 +105,8 @@ class FabricTypeIn(BaseModel):
 
 class FabricTypePatch(BaseModel):
     name: NonBlank | None = None
-    width_in: Annotated[float, Field(gt=0, le=200)] | None = None
-    wastage_pct: Annotated[float, Field(ge=0, le=50)] | None = None
+    width_in: Annotated[float, Field(gt=0, le=200), NoBool] | None = None
+    wastage_pct: Annotated[float, Field(ge=0, le=50), NoBool] | None = None
     recipe: Annotated[list[RecipeLineIn], Field(min_length=1, max_length=10)] | None = None
 
     @model_validator(mode="after")
