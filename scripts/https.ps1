@@ -15,7 +15,9 @@ Write-Host ''
 Write-Host "On the phone (same Wi-Fi), open:  https://${ip}:8443"
 Write-Host 'The first time, the phone warns about the certificate: choose Advanced / Proceed (it is the laptop''s own local certificate).'
 Write-Host "Camera check page (owner login):  https://${ip}:8443/dev/camera"
-Write-Host 'If the phone cannot connect, allow port 8443 in Windows Firewall (run once, as administrator):'
-Write-Host '  New-NetFirewallRule -DisplayName "Everest HTTPS 8443" -Direction Inbound -Protocol TCP -LocalPort 8443 -Action Allow -Profile Private'
+Write-Host 'If the phone cannot connect, Windows Firewall is blocking port 8443 (a Wi-Fi marked "Public" blocks incoming connections).'
+Write-Host 'Run this once in PowerShell as administrator, and remove it after testing:'
+Write-Host '  New-NetFirewallRule -DisplayName "Everest HTTPS 8443" -Direction Inbound -Protocol TCP -LocalPort 8443 -Action Allow -Profile Any'
+Write-Host '  Remove-NetFirewallRule -DisplayName "Everest HTTPS 8443"    # when you are done'
 Write-Host ''
 & $caddy run --config (Join-Path $PSScriptRoot '..\Caddyfile')
