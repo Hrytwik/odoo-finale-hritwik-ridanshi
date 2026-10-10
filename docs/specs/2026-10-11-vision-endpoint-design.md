@@ -1,7 +1,7 @@
 # B8 — Vision Endpoint and Model Card: Design
 
 > **Summary:** Makes `POST /qc/analyze` run our fine-tuned YOLO detector on an uploaded cloth photo and `GET /qc/model-card` serve the measured held-out results (with a confusion matrix), both labelled as an unvalidated first version; covers the box conversion, the verdict rule, the unavailable path, the model-card file, tests and the live check.
-> **Last updated:** 2026-10-11 01:43 IST
+> **Last updated:** 2026-10-11 01:50 IST (corrected while writing the plan: matrix label, no verdict field, the one screen edit)
 > **Status:** Draft for Hritwik's review (design approved in chat section by section on 2026-10-11)
 
 Parent spec: `2026-10-10-textile-mill-design.md` §9 (Vision QC). Background and numbers: `docs/plans/BV-vision-spike.md`.
@@ -10,7 +10,7 @@ Parent spec: `2026-10-10-textile-mill-design.md` §9 (Vision QC). Background and
 
 Make the two QC vision endpoints real and honest. `/qc/analyze` runs the local fine-tuned detector (`yolo26n.pt` fine-tuned on the 416 public Roboflow training photos; weights `best.pt`, 5.4 MB; no internet needed) and returns boxes the inspector can confirm or override. `/qc/model-card` shows only measured numbers, and says plainly that the false-alarm rate on clean cloth is **not measured**.
 
-The contract types (`AnalyzeOut`, `AiSuggestion`, `Box`, `ModelCard`) do not change, so Ridanshi's screens need no edits. QC works fully without the model (parent spec §9).
+The contract types (`AnalyzeOut`, `AiSuggestion`, `Box`, `ModelCard`) do not change. One screen edit is still needed (found while planning, section 4): `ModelCard.tsx` shows `clean_false_alarm_rate = null` as "0%" and, with it, "below the bar", which would misstate an unmeasured rate; it must show "Not measured" and "Not yet validated". QC works fully without the model (parent spec §9).
 
 Out of scope: measuring the clean-cloth false-alarm rate (parked, BV / R9), training anything new, the vision-capable language-model fallback, colour-mismatch detection.
 
@@ -42,9 +42,9 @@ Roles: unchanged (`inspectors`). Steps, in order:
 
 Roles: unchanged. Reads `ml/models/model_card.json`; missing file → `available=false`.
 
-The script (run in the `ml` group, built on the existing `ml.evaluate` scoring) scores `best.pt` on the held-out public test split and writes the card. It adds the missing **confusion matrix**: rows are what was really on the photo, columns what the model said, over the 3 classes plus a "nothing" row and column. The "nothing" column of a row counts missed defects; the "nothing" row of a column counts false alarms; the diagonal counts found-and-correctly-named. A guess matches a real defect when overlap is at least 0.3 (`IOU_THRESHOLD` in `ml/show_examples.py`, the same rule `ml.evaluate` uses), so the matrix agrees with the per-class numbers.
+The script (run in the `ml` group, built on the existing `ml.evaluate` scoring) scores `best.pt` on the held-out public test split and writes the card. It adds the missing **confusion matrix**: rows are what was really on the photo, columns what the model said, over the 3 classes plus a "clean" (no defect) row and column; the label is `clean` because the screen and its tests already use that word. The `clean` column of a row counts missed defects; the `clean` row of a column counts false alarms; the diagonal counts found-and-correctly-named; the clean-clean cell counts clean test photos on which the model said nothing (0 today, there are no clean photos). A real defect boxed with the wrong name is counted as a miss plus a false alarm, exactly as the per-class scores count it. A guess matches a real defect when overlap is at least 0.3 (`IOU_THRESHOLD` in `ml/show_examples.py`, the same rule `ml.evaluate` uses), so the matrix agrees with the per-class numbers.
 
-The card states: test set 59 defective photos, 0 clean; `clean_false_alarm_rate = null` (shown as "not measured"); model `yolo26n` fine-tuned on 416 public photos; dataset name, URL and licence; verdict **inconclusive**. Real numbers only.
+The card states: test set 59 defective photos, 0 clean; `clean_false_alarm_rate = null` (shown as "not measured"); model `yolo26n` fine-tuned on 416 public photos; dataset name, URL and licence. The contract has no verdict field, so "inconclusive" is carried by `clean_false_alarm_rate = null` and `test_clean = 0`, which the screen turns into "Not measured" / "Not yet validated" (small edit to `ModelCard.tsx` and its test, to be reviewed by Ridanshi). Real numbers only.
 
 ## 5. Tests
 
@@ -62,6 +62,7 @@ Without the weights (a fake detector stands in), following the existing `test_ml
 - A corrupt file with a valid image header gives 422, not a crash.
 - First and second request time, and memory with the dev server running (8 GB Mac).
 - Open the QC screen and the model-card page in Ridanshi's app. No new migrations, so no dev-database step.
+- `package.json` `dev:api` starts with `--group ml` so a fresh clone has the vision libraries; without them `/qc/analyze` answers `available=false`.
 
 ## 7. Build order
 

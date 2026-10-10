@@ -1,7 +1,7 @@
 # Implementation Plans
 
 > **Summary:** Ordered list of every implementation plan for both tracks, with status. Plans are written one at a time when a track reaches them; this index is the full backlog.
-> **Last updated:** 2026-10-10
+> **Last updated:** 2026-10-11 01:50 IST (B8 plan written)
 
 Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here (never delete rows) when its "Done when" list is met.
 
@@ -17,7 +17,7 @@ Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here 
 | B5 | Dispatch & money — scan-to-load rules, invoices, receivables, payables, payment limits, plus the safety net for too-long text and too-large numbers | plan `B5-dispatch-money.md` (5 tasks): **DONE** (Tasks 1-5: error safety net, code sequences, load a dispatch, confirm and the invoice, payments and the real lists, whole-chain test; live check passed 2026-10-10 20:55 IST) |
 | B6 | Costing engine — shift-wage split, per-roll and per-order cost, month report | **DONE** (`B6-costing.md`, 6 tasks: engine labour, rolls and orders, month and machines, roll and order API + passport, month API + `support_staff` contract field, live check; independent SQL check on a real server matched to the paisa; two input-boundary bugs found and fixed) |
 | B7 | Intelligence — delivery date + what-ifs, shortage forecast, root cause, recall, real order dates (the portal's delivery date included) | **DONE** (`B7-intelligence.md`, 7 tasks: exact test + root cause, delivery-date engine, shortage engine, routes + settings + order dates, recall, the portal's delivery date, live check; every figure matched an independent recalculation on a real server; the order list with 200 open orders takes 0.43 s) |
-| B8 | Vision endpoint + model card (after the BV decision) | not written |
+| B8 | Vision endpoint + model card | plan `B8-vision-endpoint.md` (7 tasks: box conversion and verdict rule, photo reading + loader + `/qc/analyze`, confusion matrix, model-card file + weights, `/qc/model-card` + the screen's unmeasured-rate fix, live check, close-out); spec `docs/specs/2026-10-11-vision-endpoint-design.md`; **written 2026-10-11 01:50 IST, not started** |
 | B9 | Seed data + demo scenarios | not written |
 | B9a | Starter data and the mid-day demo mill (3 shifts, 10 machines, master data, a working-day story built through the real services) | complete: base seed (3 shifts, 10 machines, master data, 12 workers), `typescript` for the contract script, `npm run db:demo` (a mill in the middle of a working day); B9 proper still waits for B4-B7 |
 
