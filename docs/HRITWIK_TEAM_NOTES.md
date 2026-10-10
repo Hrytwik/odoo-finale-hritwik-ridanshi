@@ -1,9 +1,41 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-11 02:25 IST
+> **Last updated:** 2026-10-11 03:55 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-11 03:55 IST — Track A status: what I added that touches you, what I need from you
+
+**From:** Ridanshi → Hritwik
+
+**Where things are.** Everything of mine is on `a/web-textile` (pushed to GitHub; the newest commit on that branch is the one to review). It contains your B8 merge. Web tests 605 pass; the backend suites I touched pass. Nothing of mine is on `main` yet; please review and merge when you are ready.
+
+**1. Your B8 vision work is wired in and running here.** I installed the `ml` group on my machine and the detector answers on `/api/qc/analyze`. The Vision model page (`/qc/model`) is now two tabs: **Photo log** (new) and **Model accuracy** (your model card, in `ModelCard.tsx`, still exported as `ModelAccuracy`).
+
+**2. One decision of mine inside your file, please do not revert it.** I removed the "Where the training photos came from" card from `ModelCard.tsx` (and its test), because the product screen should not list dataset credits. The credits are still in `model_card.json` and in the docs. The Roboflow set is CC BY 4.0, which asks for attribution, so please keep the credit in the README or the docs where it belongs.
+
+**3. New backend module, read only, no migration: `app/modules/qclog/`** (`router.py`, `service.py`, `schemas.py`, plus `tests/test_qclog.py`, 22 tests). One line added to `app/main.py` to register it. It reads your `qc_inspections` table.
+- `GET /api/qc/log` filters by order (code, buyer or fabric), yarn lot (the batch), result, date range, "inspector overrode the model", free text; sorts by newest, oldest, order or batch; pages with `limit` and `offset`; returns the photo URL, the model's guess, the verdict, the defects and the inspector's note (shown as "remark").
+- `GET /api/qc/log/filters` lists the orders and lots that have a checked roll.
+- Roles: qc, owner, supervisor. Contracts regenerated.
+- "Batch" is the yarn lot, found the same way the roll passport finds it (net-issued lots of the spinning run that fed the weaving run).
+
+**4. Earlier additions you have not seen yet (all on my branch).**
+- Migrations I wrote, in order: `a7c3d9e1b204` (buyer notices), `b8d4e0f2c315` (WhatsApp settings and delivery status), `c9e5f1a3d426` (message template id), `d0f6a2b4e537` (allow dispatch notices). The head on my branch is `d0f6a2b4e537`. Please check that it does not clash with any migration you have on `main` and tell me if it does.
+- `modules/notices/` (delay and dispatch notices, the buyer's bell), `modules/auth/signup.py` (buyer sign-up with invite codes: `POST /api/auth/signup`, `GET /api/auth/buyer-invites`), and a two-line hook in `modules/dispatch/router.py` that calls `notices.hooks.after_dispatch_confirmed` after a dispatch is confirmed. The hook never blocks the dispatch if it fails.
+- The Twilio settings screen is now removed from the web app (a free Twilio account cannot send to buyers on its own). The backend code behind it stays, switched off, in case a paid account comes later. The buyer still gets the in-app bell, and the owner has a "Send from my WhatsApp" button.
+- `modules/llm`: the Copilot and the month summary take a `language` field (a fixed list of ten languages) and answer in it. 26 read-only tools, Groq working.
+- The web app now shows English plus Hindi, Kannada, Tamil, Telugu, Marathi, Bengali, Gujarati, Malayalam and Punjabi, with voice input and read-aloud. Nothing for you to do; mentioned so the contract change (`language` on `ChatIn` and `MonthIn`) is not a surprise.
+
+**5. Please, from you (small, in your area).**
+- **First-login password change.** The owner can generate a login and a temporary password for a worker. A `must_change_password` flag on users, set when the owner creates or resets a login and cleared by `POST /api/auth/change-password`, would let me force the change on first login. Mine would be the screen; the column and the check are yours (migration).
+- **Close an order short.** After rejects, some orders can never reach their ordered metres and stay "partly dispatched" for ever. The owner now sees this in a new Shipments card on the order page, but there is no way to close it. A `POST /api/orders/{code}/close-short` (owner only, only when the order is confirmed and nothing more is being made, recording who closed it and why) would finish the story, including what the invoice and the buyer notice say.
+- **Clean-cloth photos** for the model card (your R9 item), so the false-alarm rate can be measured. Until then the page says "Not measured", which is honest.
+
+**6. Not done on my side.** Waste and yield tracking (spun kg against woven metres against rejects, per order and machine) is a read-only report I can build on the data you already have; I have not started it. Some owner screens (orders, wages, master data, AI settings) are still English only.
 
 ---
 
