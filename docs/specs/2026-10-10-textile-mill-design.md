@@ -1,7 +1,7 @@
 # Everest Textile Mills — System Design
 
 > **Summary:** Full design for the textile mill platform: architecture (React + Vite + FastAPI + Postgres), 29-table data model, business rules, per-roll costing, delay/shortage/root-cause engines, vision QC, provider-agnostic LLM layer, screens, API surface, two-track split, testing and demo.
-> **Last updated:** 2026-10-10
+> **Last updated:** 2026-10-10 21:20 IST (§7 costing revised after the B6 design review; new rule R18)
 > **Status:** Draft for team review
 
 ---
@@ -175,50 +175,83 @@ Every rule is enforced in the API inside one database transaction; the ones mark
 | R15 | **Buyer scoping:** every buyer-facing query filters by the buyer in the token; another buyer's order returns 404, not 403. |
 | R16 | **Attendance:** unique per worker/date/shift **DB**; no future dates [`FUTURE_DATE`]. |
 | R17 | **General validation:** required text trimmed and non-empty; numbers within the ranges in §4; dates sane. Validation is in Pydantic (API), mirrored in Zod (web), and backed by CHECK constraints (DB). A text value longer than its column, or a number larger than its column, is a 422 (`VALUE_TOO_LONG`, `NUMBER_TOO_LARGE`) and never a server error: `commit`, `flush` and an app-wide handler map the database's data errors (B5). |
+| R18 | **Cost visibility:** the costing endpoints and the cost on the Roll Passport are for owner and accountant only; every other role gets `cost: null`, and a buyer never sees cost (R15 `buyer_view`). |
 
 ---
 
 ## 7. Costing method
 
+*Revised 2026-10-10 21:20 IST after the B6 design review (approved section by section by Hritwik). Changes from the first draft: support staff are their own line (7.2), pay is split by hours actually run whatever the worker's role, runs without rolls go to the order pool, "final" is defined, the month rules are exact (7.5), cost is visible to owner and accountant only (R18).*
+
 ### 7.1 Cost sources
 
-1. **Yarn:** kg issued × that lot's cost/kg, minus returns. Belongs to the order of the spinning run it was issued to.
-2. **Machine:** run duration (hours) × machine `running_cost_per_hour`.
-3. **Labour:** shift wages split across runs (§7.2).
-4. **Rework:** machine + labour cost of rework runs.
+1. **Yarn:** kg issued to a run minus kg returned, times that lot's cost/kg. Every issue and return is tied to a run (database rule), so yarn always belongs to the order of that run.
+2. **Machine:** run hours × the machine's `running_cost_per_hour`. A rework run done by hand has no machine and costs 0 here. A run still open is costed up to now and the result is **provisional**; a zero-length run costs nothing.
+3. **Labour:** attendance pay split across runs by hours actually run (7.2).
+4. **Rework:** the machine + labour of rework runs, shown as its own part.
+
+A roll's **parts** are yarn, machine, labour and rework. An order's total is the sum of its parts.
 
 ### 7.2 Labour split (shift-wage allocation)
 
-For each attendance record (worker, date, shift) with status present or half_day (absent records are skipped — no pay, nothing to split):
-- `pay` = daily_wage × (1 for present, 0.5 for half_day).
-- `paid_hours` = shift length × (1 or 0.5). Shift length handles midnight crossing.
-- `h_i` = hours each of that worker's runs overlaps the shift window; `H` = Σ h_i.
-- Each run receives `pay × h_i / max(H, paid_hours)`.
-- `idle_labour` = `pay × max(0, 1 − H / paid_hours)`.
+For each attendance record (worker, date, shift) with status present or half_day (absent records are skipped: no pay, nothing to split):
+- The shift **window** starts at the record's date and the shift's start time (IST) and lasts the shift length; a night shift that crosses midnight is dated by the day it **starts** (assumption: the attendance screen uses the same convention, to be told to Track A).
+- `pay` = daily_wage × (1 for present, 0.5 for half_day), the same rule as `GET /wages`.
+- `paid_hours` = shift length × (1 or 0.5).
+- `h_i` = hours each of that worker's runs (on any order) overlaps the window; `H` = Σ h_i.
+- Each run receives `pay × h_i / max(H, paid_hours)`, **whatever the worker's role** (a supervisor or inspector who runs a machine for 2 hours is costed for those 2 hours).
+- The leftover `pay × max(0, 1 − H / paid_hours)` goes to **idle labour** if the worker's role is `operator`, and to **support staff** otherwise (inspectors, supervisors, storekeepers, dispatch clerks, helpers when not running a machine).
 
-This guarantees Σ allocated + idle = pay exactly. One worker minding three looms: H > paid_hours, so pay is split three ways and idle = 0. A run whose operator has no present/half_day attendance record for that time (missing, or marked absent) is reported as a **data warning** (never silently costed at zero).
+So Σ allocated + idle labour + support staff = pay exactly. Support staff is overhead: it is **not** part of any roll or order cost; it is a separate line on the month report.
+A run hour that no present/half_day record of its operator covers is a **data warning** naming the run and the uncovered hours (never silently costed at zero).
 
-### 7.3 From runs to rolls
+Hand-worked (shift A 06:00-14:00 = 8 h, wage 800; the tests assert these):
+1. Present, one run of 4 h: run 400, idle labour 400.
+2. Half day (pay 400, paid hours 4), run of 2 h: run 200, idle 200; with a run of 6 h: run 400, idle 0.
+3. One weaver on three looms, 8 h each at once: H = 24, each run 800 × 8/24 = 266.666…, idle 0.
+4. Present for A and B (800 each), one run 12:00-16:00: 200 from A + 200 from B = 400; if B is not marked: 200 and a warning for 2 uncovered hours.
+5. An operator with no runs: 800 idle. A storekeeper with no runs: 800 support staff. A supervisor with a 2 h run: run 200, support staff 600.
+6. Shift C (22:00-06:00) dated 10 Oct, a run on 11 Oct 02:00-04:00: paid from the 10 Oct record.
 
-- Weaving run cost → split across the rolls it produced, by metres.
-- Dye run cost → split across the rolls loaded into it, by metres.
-- Rework run cost → the roll(s) it reworked, by metres.
-- Spinning runs + yarn → split across **all** the order's rolls, by metres.
-- **Rejected rolls'** total cost is redistributed across the order's non-rejected rolls by metres, so a roll's cost per metre is the true cost of a *good* metre. If no good rolls exist yet, the cost is shown on the order as "not yet absorbed".
-- Order-level shares (spinning, yarn, rejects) are spread over the rolls produced **so far**, so a roll's cost per metre is **provisional** until the order's last roll is inspected; the Roll Passport labels it "provisional" or "final".
+### 7.3 From runs to rolls and orders
 
-### 7.4 Order and month
+- A **weaving** run's cost goes to the rolls it produced, a **dye** run's to the rolls loaded into it, a **rework** run's to the one roll it mended, each **by metres**.
+- **Spinning** runs, and **any run with no rolls of its own** (a loom that broke before making a roll), go into the order's **pool**, spread over all the order's rolls by metres.
+- **Rejected rolls'** total cost (own runs + pool share) is redistributed across the order's non-rejected rolls by metres, so a roll's cost per metre is the true cost of a *good* metre. (Algebraically the pool then reaches the good rolls exactly as if spread over them alone.) The redistributed amount is the roll's `reject_share`; roll total = parts + reject_share; the order's `reject_cost` is the part of the order total that came from rejected rolls (not added on top).
+- If no non-rejected roll exists, `cost_per_good_metre` is blank and the whole order cost is `unabsorbed`.
+- The pool is spread over the rolls that exist **now**, so a roll's cost can still move. It is **final** only when (a) no run of the order is open, (b) every roll is settled (none is woven, in dyeing, awaiting QC, awaiting rework or in rework), and (c) the order's non-rejected woven metres have reached the ordered metres or the order is cancelled; otherwise **provisional**. The Roll Passport labels it.
+- **Order profit** = good (non-rejected) metres × price per metre − order cost (a running figure while provisional; the month report uses invoices instead).
 
-- **Order profit** = good metres × price per metre − order cost (§7.1).
-- **Month-end, three panels:**
-  - **Profit:** invoiced in the month − yarn issued in the month − wages earned in the month (idle labour as its own line) − machine running cost in the month − stock write-offs (negative adjustments × lot cost/kg, its own line).
-  - **Cash:** received from buyers − paid to suppliers − paid in wages; plus receivables and payables outstanding.
-  - **Machines:** per machine, hours running / idle / down within shift time; idle and down hours shown as **lost capacity** (hours × rated output), never as rupees.
-- **Reconciliation invariant (tested):** Σ order costs incurred in the month + idle labour = yarn issued + wages earned + machine running cost for the month.
+Hand-worked: rolls R1 1,000 m, R2 600 m, R3 400 m (rejected); order pool 20,000; one weaving run 6,000 for all three; one dye run 2,000 for all three; one rework run 500 on R2. Before redistribution R1 14,000, R2 8,900, R3 5,600 (sum 28,500). R3's 5,600 goes 3,500 to R1 and 2,100 to R2. Final: R1 17,500 = **17.50/m**, R2 11,000 = **18.33/m**, order cost per good metre 28,500 / 1,600 = **17.8125**; at 25 a metre revenue 40,000, profit **11,500**.
 
-### 7.5 Implementation
+### 7.4 Rounding
 
-Computed on request in `modules/costing` (no stored totals). Endpoints return the breakdown, not just the total, so the Roll Passport and order page can show each component.
+Everything is exact (`Decimal`) inside the engine. Figures shown are rounded half up to the paisa; a total is the sum of its rounded parts (the invoice rule). The reconciliation invariant is tested on the exact values.
+
+### 7.5 The month report
+
+The month is 00:00 IST on the 1st to 00:00 IST on the next 1st (up to now for the current month). Each cost counts in the month it is incurred: yarn on the day issued, machine cost for the hours inside the month (a run 22:00 on 31 Oct to 04:00 on 1 Nov at 60/h puts 120 in October and 240 in November), wages on the day worked (the attendance record's date).
+
+- **Profit panel:** `invoiced` (invoices issued in the month) − `yarn_issued` (issues − returns in the month × lot cost/kg) − `wages_earned` (exactly `GET /wages` `total_earned`, taken from `people.service.wage_rows`) − `machine_running_cost` − `stock_writeoffs` (negative adjustments × lot cost/kg; positive ones are not credited) = `profit`. `idle_labour` and `support_staff` are lines **inside** wages_earned, not subtracted again.
+- **Cash panel:** `received_from_buyers` (received_on in the month), `paid_to_suppliers` (paid_on in the month), `paid_wages` (wage payments paid in the month, whatever period they cover), `net_cash`; `receivables_outstanding` and `payables_outstanding` at the end of the month (at now for the current month), rebuilt from the dates. Wages still owed are on the wages page, not here.
+- **Machines:** per machine, within shift time (the union of the shifts) and from the machine's creation: down hours (downtime overlaps, an open one up to now), running hours (run overlaps), idle = the rest. `lost_capacity` = (idle + down) × rated output per hour in kg or m, never rupees. Output: spinning = kg of runs that ended in the month; weaving = metres of rolls made in the month; dyeing = metres of rolls in dye runs that ended in the month.
+- **Orders:** every order with cost or an invoice line in the month: revenue = its invoice lines in the month, cost = the order's cost incurred in the month, profit = difference.
+- **Reconciliation invariant (tested, exact):** Σ order costs incurred in the month + idle labour + support staff = yarn issued + wages earned + machine running cost. Over all months, an order's monthly costs add up to its whole cost.
+
+Hand-worked month: one order; a lot at 250/kg, 120 kg issued 3 Oct and 20 kg returned 4 Oct = yarn 25,000; a 5 kg write-off = 1,250. A spinning run 06:00-10:00 at 55 = 220; a 12 h weaving run at 60 = 720 (machine 940). Ravi (operator, 800, present, runs the spinning run): 400 allocated, 400 idle. Kiran (storekeeper, 800, present, no runs): 800 support staff. Wages earned 1,600. The weaving run has no operator attendance: no labour and a warning. Order cost 25,000 + 940 + 400 = 26,340; + idle 400 + support 800 = 27,540 = yarn 25,000 + wages 1,600 + machine 940. One invoice of 40,000 on 20 Oct: profit 40,000 − 25,000 − 1,600 − 940 − 1,250 = **11,210**. A buyer pays 15,000: receivables outstanding **25,000**.
+
+### 7.6 Implementation
+
+Computed on request, no stored totals, no migration, read-only (no locks, no events).
+- `modules/costing/engine.py`: the pure core (no database, no clock; "now" is an input).
+- `modules/costing/loader.py`: reads rows into plain records. For one order it must also load the other runs of the same operators in the same windows (labour is split across all of a worker's runs, whatever the order).
+- `modules/costing/service.py`: rounding and the response shapes; `router.py`: the three real handlers.
+- Contract: one additive field, `ProfitPanel.support_staff`; everything else byte-identical. Track A's `Owner.test.tsx` fixture needs the field and the owner page a row.
+- Known and accepted: the loader's queries are not one snapshot (a write landing between them can skew one figure for that instant; the next request is right). Speed is **unmeasured**: to be timed on a built month of about 900 runs and the number recorded in the plan.
+
+### 7.7 Build order (B6; also in `docs/plans/B6-costing.md` once written)
+
+1. Engine: labour split. 2. Engine: rolls and orders. 3. Engine: month and machines. 4. Loader and service, the roll and order endpoints, the passport. 5. The month endpoint, the contract change, the note to Track A. 6. Property test, speed, live check, docs and memory. (1 → 2 → 3; 4 needs 1 and 2; 5 needs 3 and 4; 6 last.)
 
 ---
 
@@ -317,12 +350,12 @@ Phone-first for floor roles; laptop layout for owner and accountant. Menus show 
 | QC queue | `/qc` | qc | rolls awaiting QC / rework; passed / failed / waiting counts |
 | QC inspect | `/qc/[rollCode]` | qc | camera, AI box overlay, verdict, defects |
 | Model card | `/qc/model` | qc, owner | held-out results |
-| Roll Passport | `/r/[code]` | all logged-in (buyers: own rolls only) | full life of the roll + cost per metre |
+| Roll Passport | `/r/[code]` | all logged-in (buyers: own rolls only) | full life of the roll; cost per metre for owner and accountant only (R18) |
 | Dispatch | `/dispatch`, `/dispatch/[code]` | dispatch | create dispatch; scan-to-load with live checks; per-order loaded vs remaining; confirm |
 | Invoice | `/invoices/[no]` | dispatch, accountant, buyer (own) | printable invoice |
 | Money | `/money/receivables`, `/money/payables` | accountant, owner | invoices and bills with balances; record payments |
 | People | `/people/workers`, `/people/attendance`, `/people/wages` | supervisor (attendance), accountant | worker list; mark attendance per shift (all present, untick absent); wages earned / paid / owed; record wage payment |
-| Owner | `/owner` | owner | month-end: profit, cash, machines (lost capacity), idle labour; month summary |
+| Owner | `/owner` | owner | month-end: profit, cash, machines (lost capacity), idle labour, support staff; month summary |
 | Insights | `/owner/insights` | owner | late orders, reorder suggestions, defect root causes |
 | Copilot | `/copilot` | owner, accountant, supervisor | chat with Sources panel |
 | AI settings | `/settings/ai`, `/settings/ai/report-card` | owner | provider/model/key; run and view report card |
