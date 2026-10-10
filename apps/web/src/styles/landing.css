@@ -1,0 +1,227 @@
+/* The landing page at "/": a full-photo hero, then four short cards. Colours are the app's own. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+.landing {
+  min-height: 100dvh;
+  background: var(--color-bg);
+}
+.landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 56px;
+  padding: 0 var(--space-4);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+.landing-nav {
+  display: none;
+  flex: 1;
+  justify-content: center;
+  gap: var(--space-5);
+}
+.landing-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-decoration: none;
+}
+.landing-nav a:hover {
+  color: var(--color-primary);
+}
+.landing-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+@media (min-width: 900px) {
+  .landing-nav {
+    display: flex;
+  }
+  .landing-header {
+    padding: 0 var(--space-6);
+  }
+}
+
+/* buttons used on the landing page */
+.btn-lime,
+.btn-light {
+  text-decoration: none;
+  border: 0;
+}
+.btn-lime {
+  background: #bbc863;
+  color: #14291f;
+}
+.btn-lime:hover {
+  background: #cbd777;
+}
+.btn-light {
+  background: #fffdf0;
+  color: #1f2e26;
+}
+.btn-light:hover {
+  background: #fff;
+}
+.btn-lg {
+  min-height: 48px;
+  padding: 0 var(--space-5);
+  font-size: var(--text-md);
+}
+.landing-login {
+  min-height: 36px;
+  padding: 0 var(--space-4);
+}
+
+/* hero */
+.landing-hero {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: calc(100dvh - 56px);
+  padding: var(--space-7) var(--space-4);
+  background-color: #0e251b;
+  background-size: cover;
+  background-position: center 30%;
+  color: #fffdf0;
+  text-align: center;
+  scroll-margin-top: 56px;
+}
+.landing-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgb(14 37 27 / 0.7), rgb(14 37 27 / 0.56) 45%, rgb(14 37 27 / 0.88));
+}
+.landing-hero-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 820px;
+}
+.landing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border: 1px solid rgb(187 200 99 / 0.55);
+  border-radius: 999px;
+  background: rgb(14 37 27 / 0.55);
+  backdrop-filter: blur(6px);
+  color: #f0e491;
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.landing-hero h1 {
+  font-size: clamp(2.4rem, 6.2vw, 4.4rem);
+  line-height: 1.06;
+  color: #fff;
+  text-shadow: 0 2px 28px rgb(0 0 0 / 0.45);
+}
+.landing-hero .typewriter-line {
+  color: #bbc863;
+}
+.landing-lead {
+  max-width: 58ch;
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  color: #fffdf0;
+  text-shadow: 0 1px 12px rgb(0 0 0 / 0.4);
+}
+.landing-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  color: #fffdf0;
+}
+.landing-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.landing-chips svg {
+  color: #bbc863;
+}
+.landing-cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+.landing-foot {
+  font-size: var(--text-xs);
+  color: #f0e491;
+}
+
+/* feature cards */
+.landing-features {
+  padding: var(--space-7) var(--space-4);
+}
+.landing-features-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.landing-feature {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  scroll-margin-top: 80px;
+}
+.landing-feature-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.landing-feature h2 {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+/* The landing page uses a heavy sans for its headings, as in the reference; the app itself keeps Fraunces */
+.landing .brand,
+.landing-hero h1,
+.landing-feature h2 {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.landing .brand {
+  letter-spacing: 0.01em;
+}
+.landing-hero h1 {
+  font-size: clamp(2.3rem, 5.6vw, 4.1rem);
+}
+.landing-feature h2 {
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+}

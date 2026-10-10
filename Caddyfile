@@ -1,0 +1,11 @@
+{
+	local_certs
+}
+
+# One HTTPS origin for phones: the web app on :3000 and the API on :8000.
+# Start with LAN_IP set to the laptop's Wi-Fi IPv4 address (see `ipconfig`).
+https://localhost:8443, https://{$LAN_IP}:8443 {
+	tls internal
+	reverse_proxy /api/* 127.0.0.1:8000
+	reverse_proxy 127.0.0.1:3000
+}

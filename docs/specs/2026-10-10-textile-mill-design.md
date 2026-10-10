@@ -1,6 +1,6 @@
 # Everest Textile Mills — System Design
 
-> **Summary:** Full design for the textile mill platform: architecture (Next.js + FastAPI + local Postgres), 29-table data model, business rules, per-roll costing, delay/shortage/root-cause engines, vision QC, provider-agnostic LLM layer, screens, API surface, two-track split, testing and demo.
+> **Summary:** Full design for the textile mill platform: architecture (React + Vite + FastAPI + Postgres), 29-table data model, business rules, per-roll costing, delay/shortage/root-cause engines, vision QC, provider-agnostic LLM layer, screens, API surface, two-track split, testing and demo.
 > **Last updated:** 2026-10-10
 > **Status:** Draft for team review
 
@@ -44,7 +44,7 @@ Build one working platform that replaces Everest Textile Mills' notebooks, paper
 
 ```
 laptop: npm run dev   (native processes — no containers; works on macOS and Windows)
-├── web     Next.js (App Router) + TypeScript + Tailwind + shadcn/ui
+├── web     React 19 + TypeScript on Vite, React Router, plain CSS (design tokens in one theme file)
 ├── api     FastAPI + SQLAlchemy 2 + Alembic + Pydantic v2 (single process)
 ├── db      PostgreSQL (tables + derived-status views)
 ├── proxy   Caddy — HTTPS on the local network (local certificate)
@@ -329,7 +329,7 @@ Phone-first for floor roles; laptop layout for owner and accountant. Menus show 
 | Buyer portal | `/portal`, `/portal/orders/[code]` | buyer | own orders, timeline, delivery date, assistant chat |
 | Master data | `/admin/suppliers`, `/admin/buyers`, `/admin/yarn-types`, `/admin/fabric-types`, `/admin/machines`, `/admin/shifts`, `/admin/users` | owner | create and edit the reference records (fabric types include their yarn recipe; users include role, linked worker or buyer) |
 
-Design: Tailwind + shadcn/ui; one colour scheme and spacing scale; a "Demo data" badge in the header whenever seeded data is loaded.
+Design: plain CSS with CSS variables (colours, spacing, type and radius all live in `apps/web/src/styles/theme.css`, so the look can be changed in one place) and a small set of our own components; one colour scheme and spacing scale; a "Demo data" badge in the header whenever seeded data is loaded.
 
 ---
 

@@ -115,6 +115,124 @@
         "title": "AnalyzeOut",
         "type": "object"
       },
+      "AttendanceEntry": {
+        "properties": {
+          "status": {
+            "enum": [
+              "present",
+              "half_day",
+              "absent"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "worker_id": {
+            "title": "Worker Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "worker_id",
+          "status"
+        ],
+        "title": "AttendanceEntry",
+        "type": "object"
+      },
+      "AttendanceIn": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/AttendanceEntry"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Entries",
+            "type": "array"
+          },
+          "shift_id": {
+            "title": "Shift Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "shift_id",
+          "entries"
+        ],
+        "title": "AttendanceIn",
+        "type": "object"
+      },
+      "AttendanceRow": {
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "present",
+                  "half_day",
+                  "absent"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "worker_code": {
+            "title": "Worker Code",
+            "type": "string"
+          },
+          "worker_id": {
+            "title": "Worker Id",
+            "type": "integer"
+          },
+          "worker_name": {
+            "title": "Worker Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "worker_id",
+          "worker_code",
+          "worker_name",
+          "status"
+        ],
+        "title": "AttendanceRow",
+        "type": "object"
+      },
+      "AttendanceSheet": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/AttendanceRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "shift": {
+            "$ref": "#/components/schemas/Ref"
+          }
+        },
+        "required": [
+          "date",
+          "shift",
+          "rows"
+        ],
+        "title": "AttendanceSheet",
+        "type": "object"
+      },
       "BlockIn": {
         "properties": {
           "reason": {
@@ -451,6 +569,85 @@
           "payables_outstanding"
         ],
         "title": "CashPanel",
+        "type": "object"
+      },
+      "ChatIn": {
+        "properties": {
+          "history": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ChatTurnIn"
+            },
+            "maxItems": 12,
+            "title": "History",
+            "type": "array"
+          },
+          "question": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "ChatIn",
+        "type": "object"
+      },
+      "ChatOut": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceOut"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "answer",
+          "sources",
+          "provider",
+          "model"
+        ],
+        "title": "ChatOut",
+        "type": "object"
+      },
+      "ChatTurnIn": {
+        "properties": {
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "text"
+        ],
+        "title": "ChatTurnIn",
         "type": "object"
       },
       "ClassResult": {
@@ -799,6 +996,37 @@
         "title": "DowntimeOut",
         "type": "object"
       },
+      "DraftOut": {
+        "properties": {
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceOut"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "sources",
+          "provider",
+          "model"
+        ],
+        "title": "DraftOut",
+        "type": "object"
+      },
       "EtaOut": {
         "properties": {
           "bottleneck_stage": {
@@ -865,6 +1093,34 @@
           "what_ifs"
         ],
         "title": "EtaOut",
+        "type": "object"
+      },
+      "EvalDetail": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "expected": {
+            "title": "Expected",
+            "type": "string"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "expected",
+          "answer",
+          "passed"
+        ],
+        "title": "EvalDetail",
         "type": "object"
       },
       "FabricTypeIn": {
@@ -2220,6 +2476,20 @@
         "title": "ModelCard",
         "type": "object"
       },
+      "MonthIn": {
+        "properties": {
+          "month": {
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month"
+        ],
+        "title": "MonthIn",
+        "type": "object"
+      },
       "MonthReport": {
         "properties": {
           "cash": {
@@ -3329,6 +3599,58 @@
         "title": "RecallBuyer",
         "type": "object"
       },
+      "RecallDraft": {
+        "properties": {
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "buyer_name",
+          "message"
+        ],
+        "title": "RecallDraft",
+        "type": "object"
+      },
+      "RecallDraftsOut": {
+        "properties": {
+          "drafts": {
+            "items": {
+              "$ref": "#/components/schemas/RecallDraft"
+            },
+            "title": "Drafts",
+            "type": "array"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceOut"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "drafts",
+          "sources",
+          "provider",
+          "model"
+        ],
+        "title": "RecallDraftsOut",
+        "type": "object"
+      },
       "RecallOut": {
         "properties": {
           "buyers": {
@@ -3540,6 +3862,53 @@
           "name"
         ],
         "title": "Ref",
+        "type": "object"
+      },
+      "ReportCardOut": {
+        "properties": {
+          "details": {
+            "items": {
+              "$ref": "#/components/schemas/EvalDetail"
+            },
+            "title": "Details",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "run_at": {
+            "format": "date-time",
+            "title": "Run At",
+            "type": "string"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "model",
+          "run_at",
+          "score",
+          "total",
+          "details"
+        ],
+        "title": "ReportCardOut",
         "type": "object"
       },
       "ReturnIn": {
@@ -3991,6 +4360,118 @@
         "title": "ScanIn",
         "type": "object"
       },
+      "SettingsIn": {
+        "properties": {
+          "api_key": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key"
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url"
+          },
+          "model": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "anthropic",
+              "openai_compatible"
+            ],
+            "title": "Provider",
+            "type": "string"
+          },
+          "supports_tools": {
+            "default": true,
+            "title": "Supports Tools",
+            "type": "boolean"
+          },
+          "supports_vision": {
+            "default": false,
+            "title": "Supports Vision",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "provider",
+          "model"
+        ],
+        "title": "SettingsIn",
+        "type": "object"
+      },
+      "SettingsOut": {
+        "properties": {
+          "api_key_set": {
+            "title": "Api Key Set",
+            "type": "boolean"
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url"
+          },
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "anthropic",
+              "openai_compatible"
+            ],
+            "title": "Provider",
+            "type": "string"
+          },
+          "supports_tools": {
+            "title": "Supports Tools",
+            "type": "boolean"
+          },
+          "supports_vision": {
+            "title": "Supports Vision",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "provider",
+          "model",
+          "base_url",
+          "supports_tools",
+          "supports_vision",
+          "api_key_set",
+          "configured"
+        ],
+        "title": "SettingsOut",
+        "type": "object"
+      },
       "ShiftIn": {
         "properties": {
           "end_time": {
@@ -4145,6 +4626,30 @@
           "overdue_days"
         ],
         "title": "ShortageOut",
+        "type": "object"
+      },
+      "SourceOut": {
+        "properties": {
+          "input": {
+            "additionalProperties": true,
+            "title": "Input",
+            "type": "object"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool",
+          "input",
+          "summary"
+        ],
+        "title": "SourceOut",
         "type": "object"
       },
       "StageFinish": {
@@ -4581,6 +5086,138 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "WagePaymentIn": {
+        "properties": {
+          "amount": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100000000.0,
+            "title": "Amount",
+            "type": "number"
+          },
+          "paid_at": {
+            "format": "date",
+            "title": "Paid At",
+            "type": "string"
+          },
+          "period_end": {
+            "format": "date",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "worker_id": {
+            "title": "Worker Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "worker_id",
+          "period_start",
+          "period_end",
+          "amount",
+          "paid_at"
+        ],
+        "title": "WagePaymentIn",
+        "type": "object"
+      },
+      "WageRow": {
+        "properties": {
+          "absent": {
+            "title": "Absent",
+            "type": "integer"
+          },
+          "daily_wage": {
+            "title": "Daily Wage",
+            "type": "number"
+          },
+          "earned": {
+            "title": "Earned",
+            "type": "number"
+          },
+          "half_days": {
+            "title": "Half Days",
+            "type": "integer"
+          },
+          "owed": {
+            "title": "Owed",
+            "type": "number"
+          },
+          "paid": {
+            "title": "Paid",
+            "type": "number"
+          },
+          "present": {
+            "title": "Present",
+            "type": "integer"
+          },
+          "worker_code": {
+            "title": "Worker Code",
+            "type": "string"
+          },
+          "worker_id": {
+            "title": "Worker Id",
+            "type": "integer"
+          },
+          "worker_name": {
+            "title": "Worker Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "worker_id",
+          "worker_code",
+          "worker_name",
+          "daily_wage",
+          "present",
+          "half_days",
+          "absent",
+          "earned",
+          "paid",
+          "owed"
+        ],
+        "title": "WageRow",
+        "type": "object"
+      },
+      "WageSheet": {
+        "properties": {
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/WageRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "total_earned": {
+            "title": "Total Earned",
+            "type": "number"
+          },
+          "total_owed": {
+            "title": "Total Owed",
+            "type": "number"
+          },
+          "total_paid": {
+            "title": "Total Paid",
+            "type": "number"
+          }
+        },
+        "required": [
+          "month",
+          "rows",
+          "total_earned",
+          "total_paid",
+          "total_owed"
+        ],
+        "title": "WageSheet",
+        "type": "object"
+      },
       "WhatIf": {
         "properties": {
           "days_late": {
@@ -4995,6 +5632,417 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/ai/buyer-assistant": {
+      "post": {
+        "operationId": "buyer_assistant_api_ai_buyer_assistant_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Buyer Assistant",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/ai/copilot": {
+      "post": {
+        "operationId": "copilot_api_ai_copilot_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Copilot",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/ai/explain-delay/{order_code}": {
+      "post": {
+        "description": "Words the delivery estimate and the two tested what-ifs. It cannot propose a fix that the code did not test.",
+        "operationId": "explain_delay_api_ai_explain_delay__order_code__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_code",
+            "required": true,
+            "schema": {
+              "title": "Order Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Explain Delay",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/ai/month-summary": {
+      "post": {
+        "operationId": "month_summary_api_ai_month_summary_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MonthIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Month Summary",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/ai/recall-drafts/{lot_code}": {
+      "post": {
+        "description": "A short message for each buyer who received rolls made from this yarn lot. A person reads and sends them.",
+        "operationId": "recall_drafts_api_ai_recall_drafts__lot_code__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lot_code",
+            "required": true,
+            "schema": {
+              "title": "Lot Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecallDraftsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Recall Drafts",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/ai/report-card": {
+      "get": {
+        "description": "The most recent runs, newest first, so two models can be compared.",
+        "operationId": "report_cards_api_ai_report_card_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReportCardOut"
+                  },
+                  "title": "Response Report Cards Api Ai Report Card Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Report Cards",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/ai/report-card/run": {
+      "post": {
+        "description": "Asks the model the questions in `reportcard` and marks each answer against the figure read from the data just now.",
+        "operationId": "run_report_card_api_ai_report_card_run_post",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportCardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Run Report Card",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/ai/settings": {
+      "get": {
+        "operationId": "get_settings_api_ai_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Settings",
+        "tags": [
+          "ai"
+        ]
+      },
+      "put": {
+        "description": "Saves the provider, model and address. The key is encrypted before it is stored and is never sent back.",
+        "operationId": "put_settings_api_ai_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Settings",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/attendance": {
+      "get": {
+        "description": "Every worker on the payroll for one shift on one day, with the status already marked (or none).",
+        "operationId": "get_attendance_api_attendance_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "shift_id",
+            "required": true,
+            "schema": {
+              "title": "Shift Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceSheet"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Attendance",
+        "tags": [
+          "people"
+        ]
+      },
+      "post": {
+        "description": "Marks (or corrects) attendance for a shift. Saving again for the same worker and shift changes the earlier mark.",
+        "operationId": "mark_attendance_api_attendance_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttendanceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceSheet"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Attendance",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/auth/login": {
       "post": {
         "operationId": "login_api_auth_login_post",
@@ -6958,6 +8006,48 @@
         ]
       }
     },
+    "/api/payments/wages": {
+      "post": {
+        "description": "Records a wage payment. It cannot be more than the worker is owed for the period (earned minus paid inside it).",
+        "operationId": "pay_wages_api_payments_wages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WagePaymentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WageRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pay Wages",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/portal/orders": {
       "get": {
         "operationId": "my_orders_api_portal_orders_get",
@@ -8123,6 +9213,50 @@
         "summary": "Update User",
         "tags": [
           "master data"
+        ]
+      }
+    },
+    "/api/wages": {
+      "get": {
+        "description": "Wages earned from attendance, paid so far and still owed, for each worker, for one calendar month.",
+        "operationId": "wages_api_wages_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "month",
+            "required": true,
+            "schema": {
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+              "title": "Month",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WageSheet"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Wages",
+        "tags": [
+          "people"
         ]
       }
     },

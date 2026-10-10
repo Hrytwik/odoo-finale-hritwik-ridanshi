@@ -24,12 +24,12 @@ Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here 
 
 | # | Plan | Status |
 |---|---|---|
-| A1 | Web foundation — scaffold, typed client, errors, forms, navigation, login, shell, all routes, live updates, phone HTTPS check | written: `A1-web-foundation.md` |
-| A2 | Store & orders screens | not written |
-| A3 | Floor screens | not written |
-| A4 | QC + Roll Passport screens | not written |
-| A5 | Dispatch, invoices, money screens | not written |
-| A6 | People module (API + screens) | not written |
-| A7 | Owner dashboard, insights, master-data screens | not written |
-| A8 | Language-model module (adapters, tools, report card) + AI screens | not written |
+| A1 | Web foundation — scaffold, typed client, errors, forms, navigation, login, shell, all routes, live updates, phone HTTPS check | **done** except the real-phone camera test: `A1-web-foundation.md` |
+| A2 | Store & orders screens | **done**: `A2-store-orders-screens.md` |
+| A3 | Floor screens | **done**: `A3-floor-screens.md` |
+| A4 | QC + Roll Passport screens | **done**: `A4-qc-and-roll-passport.md` |
+| A5 | Dispatch, invoices, money screens | **done**: `A5-dispatch-invoices-money.md` |
+| A6 | People module (API + screens) | **done**: `A6-people.md` |
+| A7 | Owner dashboard, insights, master-data screens | **done**: `A7-owner-insights-master-data.md` |
+| A8 | Language-model module (adapters, tools, report card) + AI screens | **in progress**: backend and screens built, wiring and screen tests left: `A8-language-model.md` |
 | A9 | Buyer portal + end-to-end demo script | not written |
