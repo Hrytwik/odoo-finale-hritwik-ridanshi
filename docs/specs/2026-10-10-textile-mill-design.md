@@ -43,7 +43,7 @@ Build one working platform that replaces Everest Textile Mills' notebooks, paper
 ## 3. Architecture
 
 ```
-laptop: docker compose up
+laptop: npm run dev   (native processes — no containers; works on macOS and Windows)
 ├── web     Next.js (App Router) + TypeScript + Tailwind + shadcn/ui
 ├── api     FastAPI + SQLAlchemy 2 + Alembic + Pydantic v2 (single process)
 ├── db      PostgreSQL (tables + derived-status views)
@@ -52,8 +52,9 @@ laptop: docker compose up
 phones / tablets → https://<laptop LAN address>
 ```
 
+- **Runs natively on both team laptops (macOS and Windows):** PostgreSQL 16 installed locally (Homebrew on macOS, the official installer on Windows), `uv` for Python, npm for the web app. From the repo root, `npm run dev` starts the API and the web app together; Caddy runs separately when phones need HTTPS.
 - **All business rules live in the API** and in database constraints. The web app never decides a rule on its own; it mirrors validation for fast feedback only.
-- **Contract:** FastAPI generates an OpenAPI description from the Pydantic models. A script (`make contracts`) writes `contracts/openapi.json` and generates `contracts/types.ts` with `openapi-typescript`. The web app imports only these types. A contract change regenerates the types and breaks the web build immediately if anything no longer matches.
+- **Contract:** FastAPI generates an OpenAPI description from the Pydantic models. A script (`npm run contracts`) writes `contracts/openapi.json` and generates `contracts/types.ts` with `openapi-typescript`. The web app imports only these types. A contract change regenerates the types and breaks the web build immediately if anything no longer matches.
 - **Example-data stubs first:** every endpoint exists from the start with its final request/response shape, returning realistic example data. Logic replaces the example data module by module with no change to the shape.
 - **Live updates:** after each committed write, the API publishes a small event (e.g. `{"type": "machine.changed", "id": 4}`) to an in-process broadcaster; `GET /api/events` streams them as Server-Sent Events. The web app listens and invalidates the matching queries (TanStack Query), which re-fetch. Limitation: in-process broadcasting requires the API to run as one process — fine for one laptop.
 - **Errors:** every error response has one shape: `{"code": "ROLL_NOT_PASSED", "message": "Roll R-0142 has not passed QC", "field": "roll_code"}`. Field errors show under the field; rule errors show as a message; database constraints are the last line of defence. Buttons that submit lock on first tap (ref-based guard) so double taps cannot double-submit.
@@ -88,8 +89,8 @@ All tables have `id` (integer primary key) and `created_at` (timestamptz). Text 
 | Table | Columns and constraints |
 |---|---|
 | `machines` | `code` unique (`LOOM-04`); `name`; `stage` ∈ spinning / weaving / dyeing; `rated_output_per_hour` > 0 (kg/h for spinning, m/h for weaving and dyeing); `running_cost_per_hour` ≥ 0; `active` bool. **No status column.** |
-| `machine_downtimes` | `machine_id`; `started_at`; `ended_at` nullable (null = still down); `reason` required; partial unique index: at most one open downtime per machine; `ended_at` > `started_at` |
-| `production_runs` | `order_id`; `machine_id` (nullable only when `stage` = rework, for manual mending); `stage` ∈ spinning / weaving / dyeing / rework; `operator_worker_id`; `started_at`; `ended_at` nullable; `output_kg` nullable (spinning only, entered when the run ends); `input_run_id` nullable (required for weaving: the spinning run of the same order whose yarn it uses); partial unique index: at most one open run per machine; `ended_at` > `started_at` |
+| `machine_downtimes` | `machine_id`; `started_at`; `ended_at` nullable (null = still down); `reason` required; partial unique index: at most one open downtime per machine; `ended_at` ≥ `started_at` |
+| `production_runs` | `order_id`; `machine_id` (nullable only when `stage` = rework, for manual mending); `stage` ∈ spinning / weaving / dyeing / rework; `operator_worker_id`; `started_at`; `ended_at` nullable; `output_kg` nullable (spinning only, entered when the run ends); `input_run_id` nullable (required for weaving: the spinning run of the same order whose yarn it uses); partial unique index: at most one open run per machine; `ended_at` ≥ `started_at` (a zero-length run from an immediate breakdown or hand-over is allowed) |
 | `rolls` | `code` unique (generated, `R-0142`, printed as QR pointing to `/r/R-0142`); `order_id`; `metres` > 0 |
 | `roll_runs` | `roll_id`, `run_id`, `purpose` ∈ produce / dye / rework; primary key (`roll_id`, `run_id`) |
 | `qc_inspections` | `roll_id`; `inspector_worker_id`; `inspected_at`; `photo_path` nullable; `ai_suggestion` jsonb nullable (`{model_version, verdict, boxes:[{x,y,w,h,defect_type,confidence}]}`); `verdict` ∈ pass / rework / reject; `overrode_ai` bool (computed by the server: AI suggestion present and verdict differs); `notes` |
@@ -371,11 +372,11 @@ services/api/alembic/         Track B — migrations
 services/api/app/modules/     one folder per module; owner per table above
 services/api/tests/           tests live with their module's owner
 services/api/ml/              Track B — training, evaluation, model file
-contracts/                    generated by Track B (`make contracts`); Track A reads only
+contracts/                    generated by Track B (`npm run contracts`); Track A reads only
 docs/specs/  docs/plans/      design and plans
 docs/TEAM_NOTES.md            notes between the two tracks
 docs/demo.md                  demo script with real numbers
-docker-compose.yml  Caddyfile  .env.example  README.md
+package.json (root scripts: dev, test, contracts)  Caddyfile  .env.example  README.md
 ```
 
 **Collaboration rules**
@@ -383,7 +384,7 @@ docker-compose.yml  Caddyfile  .env.example  README.md
 1. Only Track B writes migrations; Track A asks for column changes.
 2. `contracts/` changes need both people to agree (a change breaks the other side's build).
 3. Each track edits only its own folders; shared edits are one-line additions (a menu item, a router registration).
-4. Short branches named `a/<topic>` and `b/<topic>`; both people commit; merge to `main` only when backend tests pass, the web app builds, `docker compose up` starts cleanly and the demo script passes.
+4. Short branches named `a/<topic>` and `b/<topic>`; both people commit; merge to `main` only when backend tests pass, the web app builds, `npm run dev` starts cleanly and the demo script passes.
 5. Commit messages: plain imperative subject line, optional body, no trailers.
 6. Work follows `docs/specs` and `docs/plans`; questions go to `docs/TEAM_NOTES.md` or directly to Hritwik — no improvised design changes.
 
@@ -398,7 +399,7 @@ docker-compose.yml  Caddyfile  .env.example  README.md
 5. **AI:** vision held-out evaluation (§9); language-model report card (§10.5).
 6. **Real-device checklist, both:** HTTPS camera on real phones, QR scanning, gate entry in ~20 seconds.
 
-**Merge gate:** backend tests pass + web builds + `docker compose up` clean + demo script passes.
+**Merge gate:** backend tests pass + web builds + `npm run dev` starts cleanly + demo script passes.
 
 ---
 
