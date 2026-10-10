@@ -1,7 +1,7 @@
 # B8 — Vision Endpoint and Model Card Implementation Plan
 
 > **Summary:** Makes `POST /qc/analyze` run the fine-tuned YOLO detector on an uploaded photo (boxes with confidence, a suggested verdict, always labelled unvalidated) and `GET /qc/model-card` serve the measured held-out results with a confusion matrix; adds the committed weights and card file, makes the model-card screen show an unmeasured false-alarm rate honestly, and ends with a live check on a real server.
-> **Last updated:** 2026-10-11 01:50 IST (written, nothing built yet)
+> **Last updated:** 2026-10-11 01:55 IST (Task 1 done)
 
 > **How this plan is executed:** inline, one task at a time (atomic-workflow): test first, the full suite twice at each boundary, the important behaviours mutation-checked. Steps use checkbox (`- [ ]`) syntax.
 
@@ -12,6 +12,10 @@
 **Tech Stack:** Python 3.12, FastAPI, pytest (`uv run python -m pytest -p no:warnings -o addopts=` from `services/api`), Ultralytics YOLO (optional `ml` dependency group), Pillow, React + vitest for the one screen edit. No new dependencies.
 
 **Spec:** `docs/specs/2026-10-11-vision-endpoint-design.md` (read it first), parent `docs/specs/2026-10-10-textile-mill-design.md` §9. Background numbers: `docs/plans/BV-vision-spike.md`.
+
+## Status
+
+Task 1 done and verified (2026-10-11 01:55 IST): `qc/vision.py` (box conversion, verdict rule) and 16 tests; all six planned mutations (swap x/y, width from the right edge, area check `<`, no corner sort, `reject`, no cap) make a test fail; full backend suite 1,368 passed (1,352 before), twice.
 
 ## Global Constraints
 
@@ -65,7 +69,7 @@ The inputs and conditions the spec implies but does not spell out, most likely f
 **Interfaces:**
 - Produces: `Detection = tuple[str, tuple[float, float, float, float], float]` (defect type, corners left/top/right/bottom as 0–1 fractions, confidence); `MAX_BOXES = 100`; `to_boxes(detections: list[Detection]) -> list[schemas.Box]`; `suggest_verdict(boxes: list[schemas.Box]) -> Verdict`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `services/api/tests/test_qc_vision_boxes.py`:
 
@@ -158,9 +162,9 @@ def test_verdict_is_pass_without_boxes_and_rework_with_any_and_never_reject():
     assert suggest_verdict(to_boxes([det(conf=0.25 + i / 1000) for i in range(100)])) == "rework"
 ```
 
-- [ ] **Step 2: Run to verify it fails.** `cd services/api && uv run python -m pytest -p no:warnings -o addopts= tests/test_qc_vision_boxes.py` — Expected: collection error, `app.modules.qc.vision` does not exist.
+- [x] **Step 2: Run to verify it fails.** `cd services/api && uv run python -m pytest -p no:warnings -o addopts= tests/test_qc_vision_boxes.py` — Expected: collection error, `app.modules.qc.vision` does not exist.
 
-- [ ] **Step 3: Write the minimal implementation.** `services/api/app/modules/qc/vision.py`:
+- [x] **Step 3: Write the minimal implementation.** `services/api/app/modules/qc/vision.py`:
 
 ```python
 """Vision QC (B8): run the fine-tuned defect detector on one uploaded photo, and serve the saved model card.
@@ -201,10 +205,10 @@ def suggest_verdict(boxes: list[s.Box]) -> Verdict:
     return "rework" if boxes else "pass"
 ```
 
-- [ ] **Step 4: Run it.** Same command. Expected: all pass.
-- [ ] **Step 5: Mutation checks** (apply each, see a test fail, undo): swap `x=left` and `y=top`; use `w=right` instead of `right - left`; change `<=` to `<` in the area check; drop the `sorted` of the corners; change `"rework"` to `"reject"`; remove the cap.
-- [ ] **Step 6: Full suite twice** (`uv run python -m pytest -p no:warnings -o addopts=`), both green. Expected count: previous total + the new tests (note the number).
-- [ ] **Step 7: Commit.**
+- [x] **Step 4: Run it.** Same command. Expected: all pass.
+- [x] **Step 5: Mutation checks** (apply each, see a test fail, undo): swap `x=left` and `y=top`; use `w=right` instead of `right - left`; change `<=` to `<` in the area check; drop the `sorted` of the corners; change `"rework"` to `"reject"`; remove the cap.
+- [x] **Step 6: Full suite twice** (`uv run python -m pytest -p no:warnings -o addopts=`), both green. Expected count: previous total + the new tests (note the number).
+- [x] **Step 7: Commit.**
 
 ```bash
 git add services/api/app/modules/qc/vision.py services/api/tests/test_qc_vision_boxes.py
