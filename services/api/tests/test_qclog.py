@@ -112,3 +112,15 @@ def test_a_visitor_who_is_not_logged_in_is_refused(client):
 def test_bad_filters_are_422(client, login_as, query):
     login_as("owner")
     assert client.get(f"/api/qc/log?{query}").status_code == 422
+
+
+def test_sorting_by_date_order_or_batch(client, login_as, mill):
+    login_as("owner")
+    r1, r2, r3, _ = mill["rolls"]
+    assert codes(client.get("/api/qc/log?sort=oldest").json()) == [r1.code, r2.code, r3.code]
+    assert codes(client.get("/api/qc/log?sort=order").json()) == [r2.code, r1.code, r3.code]   # ORD of A before B, newest first inside
+    batch = codes(client.get("/api/qc/log?sort=batch").json())
+    first_lot = min(mill["lot_1"].lot_code, mill["lot_2"].lot_code)
+    expected_first = {r2.code, r1.code} if first_lot == mill["lot_1"].lot_code else {r3.code}
+    assert set(batch[: len(expected_first)]) == expected_first
+    assert client.get("/api/qc/log?sort=colour").status_code == 422

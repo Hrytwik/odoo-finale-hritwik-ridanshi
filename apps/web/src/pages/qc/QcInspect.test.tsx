@@ -85,7 +85,7 @@ describe('QcInspect: manual checking works without any AI', () => {
     await userEvent.selectOptions(screen.getByLabelText(/defect type/i), 'hole')
     await userEvent.clear(screen.getByLabelText(/how many/i))
     await userEvent.type(screen.getByLabelText(/how many/i), '2')
-    await userEvent.type(screen.getByLabelText(/notes/i), 'Near the selvedge')
+    await userEvent.type(screen.getByLabelText(/remark/i), 'Near the selvedge')
     await userEvent.click(screen.getByRole('button', { name: /record verdict/i }))
     await waitFor(() =>
       expect(api.POST).toHaveBeenCalledWith('/api/qc/inspections', {

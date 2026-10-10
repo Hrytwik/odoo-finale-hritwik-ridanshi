@@ -1,5 +1,7 @@
 import datetime as dt
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -21,13 +23,14 @@ def photo_log(
     date_to: dt.date | None = None,
     overrode_ai: bool | None = None,
     with_photo: bool = True,
+    sort: Literal["newest", "oldest", "order", "batch"] = "newest",
     q: str | None = Query(None, max_length=60),
     limit: int = Query(24, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ) -> s.LogPage:
     return service.log_page(db, limit=limit, offset=offset, order=order, lot=lot, verdict=verdict, date_from=date_from,
-                            date_to=date_to, overrode=overrode_ai, with_photo=with_photo, q=q)
+                            date_to=date_to, overrode=overrode_ai, with_photo=with_photo, q=q, sort=sort)
 
 
 @router.get("/filters", response_model=s.LogFilters)

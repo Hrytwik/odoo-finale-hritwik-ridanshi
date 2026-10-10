@@ -27,12 +27,17 @@ function meetsBar(c: Card_) {
   return !!holes && holes.recall !== null && holes.recall >= HOLE_RECALL_BAR && c.clean_false_alarm_rate !== null && c.clean_false_alarm_rate <= FALSE_ALARM_BAR
 }
 
-export default function ModelCard() {
+/** How the model did on photos it had never seen: the part of the Vision model page about accuracy. */
+export function ModelAccuracy() {
   const card = useQuery({ queryKey: ['qc', 'model-card'], queryFn: () => call(api.GET('/api/qc/model-card')) })
+  return <QueryBoundary query={card}>{(c) => (c.available ? <Evaluated c={c} /> : <NotYet />)}</QueryBoundary>
+}
+
+export default function ModelCard() {
   return (
     <>
       <PageHeader title="Vision model" description="How the defect model did on photos it had never seen. Real numbers only." />
-      <QueryBoundary query={card}>{(c) => (c.available ? <Evaluated c={c} /> : <NotYet />)}</QueryBoundary>
+      <ModelAccuracy />
     </>
   )
 }

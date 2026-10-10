@@ -2,7 +2,7 @@
 and the order and yarn lot (batch) it belongs to. Read only: checks are recorded through the QC screens."""
 import datetime as dt
 
-from sqlalchemy import and_, bindparam, func, or_, select, text
+from sqlalchemy import Integer, String, and_, bindparam, func, or_, select, text
 from sqlalchemy.orm import Session, selectinload
 
 from app.db.models import Buyer, FabricType, Order, QcInspection, Roll, Worker
@@ -34,6 +34,19 @@ WHERE l.lot_code = :lot
 GROUP BY rr.roll_id, l.id
 HAVING SUM(m.qty_kg) < 0
 """)
+
+# Each roll's first lot code, for sorting by batch.
+_ROLL_FIRST_LOT = text("""
+SELECT roll_id, MIN(lot_code) AS lot FROM (
+  SELECT rr.roll_id, l.lot_code
+  FROM roll_runs rr
+  JOIN production_runs w ON w.id = rr.run_id AND w.stage = 'weaving'
+  JOIN yarn_movements m ON m.production_run_id = w.input_run_id AND m.kind IN ('issue', 'return')
+  JOIN yarn_lots l ON l.id = m.yarn_lot_id
+  GROUP BY rr.roll_id, l.lot_code
+  HAVING SUM(m.qty_kg) < 0
+) t GROUP BY roll_id
+""").columns(roll_id=Integer, lot=String).subquery("first_lot")
 
 
 def _like(text_in: str) -> str:
@@ -87,17 +100,24 @@ def _joined(stmt):
             .join(Worker, Worker.id == QcInspection.inspector_worker_id))
 
 
-def log_page(db: Session, *, limit: int, offset: int, **filters) -> s.LogPage:
+def log_page(db: Session, *, limit: int, offset: int, sort: str = "newest", **filters) -> s.LogPage:
     conds = _conditions(db, **filters)
     if conds is None:
         return s.LogPage(items=[], counts=s.LogCounts(total=0, passed=0, rework=0, rejected=0, overrode_ai=0),
                          limit=limit, offset=offset)
     where = and_(*conds) if conds else True
 
-    rows = db.execute(
-        _joined(select(QcInspection, Roll, Order, Buyer, FabricType, Worker).options(selectinload(QcInspection.defects)))
-        .where(where).order_by(QcInspection.inspected_at.desc(), QcInspection.id.desc()).limit(limit).offset(offset)
-    ).all()
+    newest = (QcInspection.inspected_at.desc(), QcInspection.id.desc())
+    order_by = {
+        "newest": newest,
+        "oldest": (QcInspection.inspected_at.asc(), QcInspection.id.asc()),
+        "order": (Order.code.asc(), *newest),
+        "batch": (_ROLL_FIRST_LOT.c.lot.asc().nulls_last(), *newest),
+    }[sort]
+    stmt = _joined(select(QcInspection, Roll, Order, Buyer, FabricType, Worker).options(selectinload(QcInspection.defects)))
+    if sort == "batch":
+        stmt = stmt.outerjoin(_ROLL_FIRST_LOT, _ROLL_FIRST_LOT.c.roll_id == Roll.id)
+    rows = db.execute(stmt.where(where).order_by(*order_by).limit(limit).offset(offset)).all()
     lots = _lots_for(db, [roll.id for _, roll, *_ in rows])
 
     tally = {verdict: (n, over) for verdict, n, over in db.execute(

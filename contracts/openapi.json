@@ -1761,6 +1761,213 @@
         "title": "LoadRollsIn",
         "type": "object"
       },
+      "LogCounts": {
+        "properties": {
+          "overrode_ai": {
+            "title": "Overrode Ai",
+            "type": "integer"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "rejected": {
+            "title": "Rejected",
+            "type": "integer"
+          },
+          "rework": {
+            "title": "Rework",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "passed",
+          "rework",
+          "rejected",
+          "overrode_ai"
+        ],
+        "title": "LogCounts",
+        "type": "object"
+      },
+      "LogFilters": {
+        "properties": {
+          "lots": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lots",
+            "type": "array"
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/OrderOption"
+            },
+            "title": "Orders",
+            "type": "array"
+          }
+        },
+        "required": [
+          "orders",
+          "lots"
+        ],
+        "title": "LogFilters",
+        "type": "object"
+      },
+      "LogItem": {
+        "properties": {
+          "ai": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AiSuggestion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "colour": {
+            "title": "Colour",
+            "type": "string"
+          },
+          "defects": {
+            "items": {
+              "$ref": "#/components/schemas/DefectOut"
+            },
+            "title": "Defects",
+            "type": "array"
+          },
+          "fabric": {
+            "title": "Fabric",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "inspected_at": {
+            "format": "date-time",
+            "title": "Inspected At",
+            "type": "string"
+          },
+          "inspector": {
+            "title": "Inspector",
+            "type": "string"
+          },
+          "lots": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lots",
+            "type": "array"
+          },
+          "metres": {
+            "title": "Metres",
+            "type": "number"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "overrode_ai": {
+            "title": "Overrode Ai",
+            "type": "boolean"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
+          "remark": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remark"
+          },
+          "roll_code": {
+            "title": "Roll Code",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "pass",
+              "rework",
+              "reject"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "roll_code",
+          "order_code",
+          "buyer_name",
+          "fabric",
+          "colour",
+          "metres",
+          "lots",
+          "inspector",
+          "inspected_at",
+          "verdict",
+          "overrode_ai",
+          "defects",
+          "remark",
+          "photo_url",
+          "ai"
+        ],
+        "title": "LogItem",
+        "type": "object"
+      },
+      "LogPage": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/LogCounts"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LogItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "counts",
+          "limit",
+          "offset"
+        ],
+        "title": "LogPage",
+        "type": "object"
+      },
       "LoginIn": {
         "properties": {
           "password": {
@@ -3259,6 +3466,24 @@
           "profit"
         ],
         "title": "OrderMonth",
+        "type": "object"
+      },
+      "OrderOption": {
+        "properties": {
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "buyer_name"
+        ],
+        "title": "OrderOption",
         "type": "object"
       },
       "OrderOut": {
@@ -9181,6 +9406,235 @@
           }
         },
         "summary": "Record Inspection",
+        "tags": [
+          "qc"
+        ]
+      }
+    },
+    "/api/qc/log": {
+      "get": {
+        "operationId": "photo_log_api_qc_log_get",
+        "parameters": [
+          {
+            "description": "order code, buyer or fabric",
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "order code, buyer or fabric",
+              "title": "Order"
+            }
+          },
+          {
+            "description": "yarn lot (batch) code",
+            "in": "query",
+            "name": "lot",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 30,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "yarn lot (batch) code",
+              "title": "Lot"
+            }
+          },
+          {
+            "in": "query",
+            "name": "verdict",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "pass",
+                    "rework",
+                    "reject"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Verdict"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "overrode_ai",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Overrode Ai"
+            }
+          },
+          {
+            "in": "query",
+            "name": "with_photo",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "With Photo",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "newest",
+              "enum": [
+                "newest",
+                "oldest",
+                "order",
+                "batch"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Photo Log",
+        "tags": [
+          "qc"
+        ]
+      }
+    },
+    "/api/qc/log/filters": {
+      "get": {
+        "operationId": "log_filters_api_qc_log_filters_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogFilters"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Log Filters",
         "tags": [
           "qc"
         ]

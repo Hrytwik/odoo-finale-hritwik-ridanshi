@@ -52,7 +52,7 @@ export default function QcInspect() {
   return <QueryBoundary query={passport}>{(p) => <Inspection roll={p.roll} />}</QueryBoundary>
 }
 
-function Inspection({ roll }: { roll: components['schemas']['RollOut'] }) {
+export function Inspection({ roll, embedded = false, onRecorded }: { roll: components['schemas']['RollOut']; embedded?: boolean; onRecorded?: () => void }) {
   const { t } = useI18n()
   const defectLabel = useDefectLabel()
   const navigate = useNavigate()
@@ -151,7 +151,8 @@ function Inspection({ roll }: { roll: components['schemas']['RollOut'] }) {
         )
         toast.success(t('qc.inspect.recorded', { code: roll.code, verdict: t(VERDICT_WORD[verdict]) }))
         for (const queryKey of [['qc'], ['rolls'], ['orders'], ['insights']]) void queryClient.invalidateQueries({ queryKey })
-        navigate('/qc')
+        if (onRecorded) onRecorded()
+        else navigate('/qc')
       } catch (err) {
         setFormError(errorMessage(err))
       }
@@ -159,8 +160,8 @@ function Inspection({ roll }: { roll: components['schemas']['RollOut'] }) {
 
   return (
     <>
-      <PageHeader title={t('qc.inspect.title', { code: roll.code })} description={`${roll.order_code} · ${roll.fabric}, ${roll.colour} · ${formatMetres(roll.metres)}`} />
-      <div className="stack" style={{ maxWidth: 760 }}>
+      {!embedded && <PageHeader title={t('qc.inspect.title', { code: roll.code })} description={`${roll.order_code} · ${roll.fabric}, ${roll.colour} · ${formatMetres(roll.metres)}`} />}
+      <div className="stack" style={{ maxWidth: embedded ? undefined : 760 }}>
         {!waiting && <Alert tone="info">{t('qc.inspect.notWaiting', { status: t(`status.roll.${roll.status}` as Key) })}</Alert>}
 
         <Card title={t('qc.inspect.step1')}>

@@ -1195,6 +1195,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qc/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Photo Log */
+        get: operations["photo_log_api_qc_log_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/log/filters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Log Filters */
+        get: operations["log_filters_api_qc_log_filters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/qc/model-card": {
         parameters: {
             query?: never;
@@ -2215,6 +2249,76 @@ export interface components {
             /** Roll Codes */
             roll_codes: string[];
         };
+        /** LogCounts */
+        LogCounts: {
+            /** Overrode Ai */
+            overrode_ai: number;
+            /** Passed */
+            passed: number;
+            /** Rejected */
+            rejected: number;
+            /** Rework */
+            rework: number;
+            /** Total */
+            total: number;
+        };
+        /** LogFilters */
+        LogFilters: {
+            /** Lots */
+            lots: string[];
+            /** Orders */
+            orders: components["schemas"]["OrderOption"][];
+        };
+        /** LogItem */
+        LogItem: {
+            ai: components["schemas"]["AiSuggestion"] | null;
+            /** Buyer Name */
+            buyer_name: string;
+            /** Colour */
+            colour: string;
+            /** Defects */
+            defects: components["schemas"]["DefectOut"][];
+            /** Fabric */
+            fabric: string;
+            /** Id */
+            id: number;
+            /**
+             * Inspected At
+             * Format: date-time
+             */
+            inspected_at: string;
+            /** Inspector */
+            inspector: string;
+            /** Lots */
+            lots: string[];
+            /** Metres */
+            metres: number;
+            /** Order Code */
+            order_code: string;
+            /** Overrode Ai */
+            overrode_ai: boolean;
+            /** Photo Url */
+            photo_url: string | null;
+            /** Remark */
+            remark: string | null;
+            /** Roll Code */
+            roll_code: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "pass" | "rework" | "reject";
+        };
+        /** LogPage */
+        LogPage: {
+            counts: components["schemas"]["LogCounts"];
+            /** Items */
+            items: components["schemas"]["LogItem"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
         /** LoginIn */
         LoginIn: {
             /** Password */
@@ -2701,6 +2805,13 @@ export interface components {
             profit: number;
             /** Revenue */
             revenue: number;
+        };
+        /** OrderOption */
+        OrderOption: {
+            /** Buyer Name */
+            buyer_name: string;
+            /** Code */
+            code: string;
         };
         /** OrderOut */
         OrderOut: {
@@ -5986,6 +6097,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    photo_log_api_qc_log_get: {
+        parameters: {
+            query?: {
+                /** @description order code, buyer or fabric */
+                order?: string | null;
+                /** @description yarn lot (batch) code */
+                lot?: string | null;
+                verdict?: ("pass" | "rework" | "reject") | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                overrode_ai?: boolean | null;
+                with_photo?: boolean;
+                sort?: "newest" | "oldest" | "order" | "batch";
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    log_filters_api_qc_log_filters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogFilters"];
                 };
             };
         };
