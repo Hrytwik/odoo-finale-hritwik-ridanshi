@@ -17,8 +17,8 @@ rework_starters = require_roles("supervisor", "qc", "owner")
 
 
 @router.get("/qc/queue", response_model=s.QcQueue, dependencies=[Depends(queue_viewers)])
-def qc_queue() -> s.QcQueue:
-    return ex.QUEUE
+def qc_queue(db: Session = Depends(get_db)) -> s.QcQueue:
+    return service.queue(db)
 
 
 @router.post("/qc/analyze", response_model=s.AnalyzeOut, dependencies=[Depends(inspectors)])

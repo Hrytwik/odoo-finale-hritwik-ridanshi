@@ -1,6 +1,6 @@
 """Quality control: record an inspection (R9) and start a rework run (R10), the QC queue.
 Lock order (see floor/service.py): machine row, then roll rows. Timestamps come from db_now() after the locks."""
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, commit, flush
@@ -10,7 +10,7 @@ from app.core.validate import check_upload_path, invalid, not_found
 from app.db.models import MachineDowntime, ProductionRun, QcDefect, QcInspection, Roll, RollRun, User, Worker
 from app.modules.floor.service import db_now, get_machine_or_404, lock_machine
 from app.modules.qc import schemas as s
-from app.modules.rolls.service import roll_status
+from app.modules.rolls.service import roll_outs, roll_status, v_roll_status
 
 
 def get_roll_or_404(db: Session, roll_code: str, for_update: bool = False) -> Roll:
@@ -108,3 +108,26 @@ def start_rework(db: Session, body: s.ReworkIn) -> ProductionRun:
     if machine is not None:
         broadcaster.publish("machine.changed", machine.id)
     return run
+
+
+_COUNTS_SQL = text("""
+WITH latest AS (
+  SELECT DISTINCT ON (roll_id) roll_id, verdict FROM qc_inspections ORDER BY roll_id, inspected_at DESC, id DESC
+)
+SELECT
+  (SELECT count(*) FROM v_roll_status WHERE status = 'awaiting_qc') AS awaiting_qc,
+  (SELECT count(*) FROM v_roll_status WHERE status = 'awaiting_rework') AS awaiting_rework,
+  (SELECT count(*) FROM v_roll_status WHERE status = 'in_rework') AS in_rework,
+  (SELECT count(*) FROM latest WHERE verdict = 'pass') AS passed,
+  (SELECT count(*) FROM v_roll_status WHERE status = 'rejected') AS rejected
+""")
+NEEDS_ATTENTION = ("awaiting_qc", "awaiting_rework", "in_rework")
+
+
+def queue(db: Session) -> s.QcQueue:
+    """The inspector's view: how many rolls are in each state, and the rolls that need someone, oldest first.
+    'passed' is every roll whose latest verdict is pass, wherever it is now (in store, loading, dispatched)."""
+    counts = dict(db.execute(_COUNTS_SQL).mappings().one())
+    waiting = list(db.scalars(select(Roll).join(v_roll_status, v_roll_status.c.roll_id == Roll.id)
+                              .where(v_roll_status.c.status.in_(NEEDS_ATTENTION)).order_by(Roll.id)))
+    return s.QcQueue(counts=s.QcCounts(**counts), rolls=roll_outs(db, waiting))
