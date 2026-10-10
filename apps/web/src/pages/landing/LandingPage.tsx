@@ -1,6 +1,6 @@
 import { ArrowRight, Factory, House, ScanLine, ShieldCheck, Truck, Wallet, Waypoints, type LucideIcon } from 'lucide-react'
 import { Link, Navigate } from 'react-router-dom'
-import millUrl from '@/assets/photos/mill-spinning.jpg'
+import millUrl from '@/assets/photos/mill-spinning-frame.jpg'
 import { BrandMark } from '@/components/common/BrandMark'
 import { Typewriter } from '@/components/motion/Typewriter'
 import { ThemeToggle } from '@/components/shell/ThemeToggle'
