@@ -1,31 +1,35 @@
 import { ArrowRight, Factory, House, ScanLine, ShieldCheck, Truck, Wallet, Waypoints, type LucideIcon } from 'lucide-react'
+import { useMemo } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import millUrl from '@/assets/photos/mill-spinning-frame.jpg'
 import { BrandMark } from '@/components/common/BrandMark'
 import { Typewriter } from '@/components/motion/Typewriter'
 import { ThemeToggle } from '@/components/shell/ThemeToggle'
+import type { Key } from '@/i18n/en'
+import { useI18n } from '@/i18n/I18nContext'
+import { LanguageSwitcher } from '@/i18n/LanguageSwitcher'
 import { useMe } from '@/lib/auth'
 import { homeFor } from '@/lib/nav'
 
-/** The second line of the headline: typed, held, deleted, then the next. Screen readers get the first. */
-const PHRASES = ['from yarn to invoice.', 'from loom to buyer.', 'from scan to payment.']
-
-const NAV: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: '#home', label: 'Home', icon: House },
-  { href: '#production', label: 'Production', icon: Factory },
-  { href: '#quality', label: 'Quality', icon: ShieldCheck },
-  { href: '#dispatch', label: 'Dispatch', icon: Truck },
-  { href: '#accounts', label: 'Accounts', icon: Wallet },
+const NAV: { href: string; label: Key; icon: LucideIcon }[] = [
+  { href: '#home', label: 'landing.home', icon: House },
+  { href: '#production', label: 'nav.group.Production', icon: Factory },
+  { href: '#quality', label: 'nav.group.Quality', icon: ShieldCheck },
+  { href: '#dispatch', label: 'nav.group.Dispatch', icon: Truck },
+  { href: '#accounts', label: 'landing.accounts', icon: Wallet },
 ]
 
-const FEATURES: { id: string; title: string; text: string; icon: LucideIcon }[] = [
-  { id: 'production', title: 'Production', icon: Factory, text: 'See every spinning frame, loom and jigger live: who is running it, which order, and how far along it is.' },
-  { id: 'quality', title: 'Quality', icon: ShieldCheck, text: 'Inspect each roll against photos with defects boxed in. Every roll keeps a passport from yarn lot to buyer.' },
-  { id: 'dispatch', title: 'Dispatch', icon: ScanLine, text: 'Scan rolls onto the truck. A roll that is not ready, or not for that order, is refused on the spot.' },
-  { id: 'accounts', title: 'Accounts', icon: Wallet, text: 'Invoices, what buyers owe and what you owe suppliers, kept next to the work that earned them.' },
+const FEATURES: { id: string; title: Key; text: Key; icon: LucideIcon }[] = [
+  { id: 'production', title: 'nav.group.Production', icon: Factory, text: 'landing.feature.production' },
+  { id: 'quality', title: 'nav.group.Quality', icon: ShieldCheck, text: 'landing.feature.quality' },
+  { id: 'dispatch', title: 'nav.group.Dispatch', icon: ScanLine, text: 'landing.feature.dispatch' },
+  { id: 'accounts', title: 'landing.accounts', icon: Wallet, text: 'landing.feature.accounts' },
 ]
 
 export function LandingPage() {
+  const { t } = useI18n()
+  // The second line of the headline: typed, held, deleted, then the next. Screen readers get the first.
+  const phrases = useMemo(() => [t('landing.phrase1'), t('landing.phrase2'), t('landing.phrase3')], [t])
   return (
     <div className="landing">
       <header className="landing-header">
@@ -35,17 +39,18 @@ export function LandingPage() {
           </span>
           Everest Mills
         </Link>
-        <nav className="landing-nav" aria-label="Sections">
+        <nav className="landing-nav" aria-label={t('landing.sections')}>
           {NAV.map(({ href, label, icon: Icon }) => (
             <a key={href} href={href}>
-              <Icon size={15} aria-hidden /> {label}
+              <Icon size={15} aria-hidden /> {t(label)}
             </a>
           ))}
         </nav>
         <div className="landing-actions">
+          <LanguageSwitcher className="header-square" />
           <ThemeToggle className="header-square" />
           <Link to="/login" className="btn btn-lime landing-login">
-            Log in
+            {t('login.submit')}
           </Link>
         </div>
       </header>
@@ -53,44 +58,44 @@ export function LandingPage() {
       <section id="home" className="landing-hero" style={{ backgroundImage: `url(${millUrl})` }}>
         <div className="landing-hero-inner">
           <span className="landing-badge">
-            <Waypoints size={14} aria-hidden /> Textile mill management
+            <Waypoints size={14} aria-hidden /> {t('landing.badge')}
           </span>
-          <Typewriter as="h1" before="Every roll," phrases={PHRASES} />
+          <Typewriter as="h1" before={t('landing.heroBefore')} phrases={phrases} />
           <p className="landing-lead">
-            One place for the store, the floor, quality, dispatch and the books. Scan a roll and see its whole life.
+            {t('landing.lead')}
           </p>
           <ul className="landing-chips">
             <li>
-              <Factory size={14} aria-hidden /> Live floor board
+              <Factory size={14} aria-hidden /> {t('landing.chip1')}
             </li>
             <li>
-              <ShieldCheck size={14} aria-hidden /> Quality passport on every roll
+              <ShieldCheck size={14} aria-hidden /> {t('landing.chip2')}
             </li>
             <li>
-              <ScanLine size={14} aria-hidden /> Scan-to-load dispatch
+              <ScanLine size={14} aria-hidden /> {t('landing.chip3')}
             </li>
           </ul>
           <div className="landing-cta">
             <Link to="/login" className="btn btn-lime btn-lg">
-              Log in <ArrowRight size={16} aria-hidden />
+              {t('login.submit')} <ArrowRight size={16} aria-hidden />
             </Link>
             <a href="#production" className="btn btn-light btn-lg">
-              See what is inside
+              {t('landing.seeInside')}
             </a>
           </div>
-          <p className="landing-foot">Spinning · Weaving · Dyeing · Quality check · Dispatch · Accounts</p>
+          <p className="landing-foot">{t('landing.foot')}</p>
         </div>
       </section>
 
-      <section className="landing-features" aria-label="What is inside">
+      <section className="landing-features" aria-label={t('landing.inside')}>
         <div className="landing-features-grid">
           {FEATURES.map(({ id, title, text, icon: Icon }) => (
             <article key={id} id={id} className="landing-feature">
               <span className="landing-feature-icon">
                 <Icon size={20} aria-hidden />
               </span>
-              <h2>{title}</h2>
-              <p className="muted">{text}</p>
+              <h2>{t(title)}</h2>
+              <p className="muted">{t(text)}</p>
             </article>
           ))}
         </div>
