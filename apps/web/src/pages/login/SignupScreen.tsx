@@ -1,18 +1,21 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import wovenUrl from '@/assets/art/woven-plaid.svg'
 import { BrandMark } from '@/components/common/BrandMark'
 import { Typewriter } from '@/components/motion/Typewriter'
+import { useI18n } from '@/i18n/I18nContext'
+import { LanguageSwitcher } from '@/i18n/LanguageSwitcher'
 import { homeFor } from '@/lib/nav'
 import { SignupForm } from './SignupForm'
-
-// the same sentence twice: the effect types it, holds, deletes and types it again, so the words never change
-const PHRASES = ['roll by roll.', 'roll by roll.']
 
 /** The page where a buyer creates their own login. Staff logins are made by the owner, so this is for buyers only. */
 export function SignupScreen() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { t } = useI18n()
+  // the same sentence twice: the effect types it, holds, deletes and types it again, so the words never change
+  const phrases = useMemo(() => [t('signup.heroPhrase'), t('signup.heroPhrase')], [t])
   return (
     <main className="login">
       <section className="login-art">
@@ -25,20 +28,23 @@ export function SignupScreen() {
             Everest Mills
           </span>
           <div className="stack-sm">
-            <Typewriter before="Follow your orders," phrases={PHRASES} />
-            <p style={{ maxWidth: '40ch' }}>See where each order stands, when it should reach you, and ask questions in plain words.</p>
+            <Typewriter before={t('signup.heroBefore')} phrases={phrases} />
+            <p style={{ maxWidth: '40ch' }}>{t('signup.heroBody')}</p>
           </div>
         </div>
       </section>
 
       <section className="login-panel">
         <div className="login-wrap">
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <LanguageSwitcher />
+          </div>
           <div className="login-card">
             <div className="card-body stack">
               <div className="stack-sm">
-                <p className="eyebrow">For buyers</p>
-                <h1>Create your account</h1>
-                <p className="muted text-sm">Use the email the mill has for your company and the invite code they gave you.</p>
+                <p className="eyebrow">{t('signup.eyebrow')}</p>
+                <h1>{t('login.createAccount')}</h1>
+                <p className="muted text-sm">{t('signup.intro')}</p>
               </div>
               <SignupForm
                 onSuccess={(me) => {
@@ -47,7 +53,7 @@ export function SignupScreen() {
                 }}
               />
               <p className="muted text-sm">
-                Already have an account? <Link to="/login">Log in</Link>
+                {t('signup.haveAccount')} <Link to="/login">{t('login.submit')}</Link>
               </p>
             </div>
           </div>

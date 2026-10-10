@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import wovenUrl from '@/assets/art/woven-plaid.svg'
 import { BrandMark } from '@/components/common/BrandMark'
@@ -8,14 +9,13 @@ import { useI18n } from '@/i18n/I18nContext'
 import { homeFor, safeNext } from '@/lib/nav'
 import { LoginForm } from './LoginForm'
 
-/** The login page has its own sentence (the first page says "Every roll, from yarn to invoice"). The same words twice: the effect types them, holds, deletes and types them again. */
-const PHRASES = ['one login away.', 'one login away.']
-
 export function LoginScreen() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const queryClient = useQueryClient()
   const { t } = useI18n()
+  // The same words twice: the effect types them, holds, deletes and types them again.
+  const phrases = useMemo(() => [t('login.heroPhrase'), t('login.heroPhrase')], [t])
 
   return (
     <main className="login">
@@ -29,9 +29,9 @@ export function LoginScreen() {
             Everest Mills
           </span>
           <div className="stack-sm">
-            <Typewriter before="Your whole mill," phrases={PHRASES} />
+            <Typewriter before={t('login.heroBefore')} phrases={phrases} />
             <p style={{ maxWidth: '40ch' }}>
-              Store, floor, quality, dispatch and the books in one place. Scan a roll and see its whole life.
+              {t('login.heroBody')}
             </p>
           </div>
         </div>

@@ -1,34 +1,39 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowRight } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Alert } from '@/components/common/Alert'
 import { SubmitButton } from '@/components/common/SubmitButton'
 import { Field, Input } from '@/components/ui/Field'
 import { PasswordInput } from '@/components/ui/PasswordInput'
+import { useI18n } from '@/i18n/I18nContext'
 import { api, call, type components } from '@/lib/api'
 import { applyServerErrors, useSubmitLock } from '@/lib/forms'
 import { passwordProblem } from '@/lib/passwordRules'
 
 type Me = components['schemas']['Me']
 
-const schema = z
-  .object({
-    email: z.string().trim().min(1, 'Enter your email').max(60, 'That email is too long').regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, 'Enter a full email address, like name@company.com'),
-    invite_code: z.string().trim().min(1, 'Enter the invite code the mill gave you').max(30),
-    password: z.string().min(1, 'Choose a password').max(72, 'Password is too long'),
-    again: z.string().min(1, 'Type the password again'),
-  })
-  .superRefine((v, ctx) => {
-    const problem = v.password ? passwordProblem(v.password, v.email.split('@')[0] ?? '') : null
-    if (problem) ctx.addIssue({ code: 'custom', path: ['password'], message: problem })
-    if (v.again && v.password !== v.again) ctx.addIssue({ code: 'custom', path: ['again'], message: 'The two passwords are not the same' })
-  })
-type Values = z.infer<typeof schema>
+type T = ReturnType<typeof useI18n>['t']
+const makeSchema = (t: T) =>
+  z
+    .object({
+      email: z.string().trim().min(1, t('signup.emailEnter')).max(60, t('signup.emailLong')).regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, t('signup.emailBad')),
+      invite_code: z.string().trim().min(1, t('signup.inviteEnter')).max(30),
+      password: z.string().min(1, t('signup.choosePassword')).max(72, t('signup.passwordLong')),
+      again: z.string().min(1, t('signup.againEnter')),
+    })
+    .superRefine((v, ctx) => {
+      const problem = v.password ? passwordProblem(v.password, v.email.split('@')[0] ?? '') : null
+      if (problem) ctx.addIssue({ code: 'custom', path: ['password'], message: problem })
+      if (v.again && v.password !== v.again) ctx.addIssue({ code: 'custom', path: ['again'], message: t('signup.mismatch') })
+    })
+type Values = z.infer<ReturnType<typeof makeSchema>>
 
 /** A buyer makes their own login with the email the mill holds for them and the invite code the mill gave them. */
 export function SignupForm({ onSuccess }: { onSuccess: (me: Me) => void }) {
+  const { t } = useI18n()
+  const schema = useMemo(() => makeSchema(t), [t])
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { email: '', invite_code: '', password: '', again: '' } })
   const { run, pending } = useSubmitLock()
   const [formError, setFormError] = useState<string | null>(null)
@@ -47,21 +52,21 @@ export function SignupForm({ onSuccess }: { onSuccess: (me: Me) => void }) {
 
   return (
     <form onSubmit={onSubmit} noValidate className="stack">
-      <Field label="Your email" error={errors.email?.message} hint="The email the mill has on record for your company.">
+      <Field label={t('signup.email')} error={errors.email?.message} hint={t('signup.emailHint')}>
         {(c) => <Input {...c} type="email" autoComplete="email" autoCapitalize="none" autoFocus {...form.register('email')} />}
       </Field>
-      <Field label="Invite code" error={errors.invite_code?.message} hint="Given to you by the mill, like ABCD-2FGH.">
+      <Field label={t('signup.invite')} error={errors.invite_code?.message} hint={t('signup.inviteHint')}>
         {(c) => <Input {...c} autoComplete="off" autoCapitalize="characters" {...form.register('invite_code')} />}
       </Field>
-      <Field label="Choose a password" error={errors.password?.message} hint="At least 8 characters, with letters and a number.">
+      <Field label={t('signup.choosePassword')} error={errors.password?.message} hint={t('signup.passwordHint')}>
         {(c) => <PasswordInput {...c} autoComplete="new-password" {...form.register('password')} />}
       </Field>
-      <Field label="Type it again" error={errors.again?.message}>
+      <Field label={t('signup.again')} error={errors.again?.message}>
         {(c) => <PasswordInput {...c} autoComplete="new-password" {...form.register('again')} />}
       </Field>
       {formError && <Alert tone="error">{formError}</Alert>}
       <SubmitButton pending={pending} block>
-        Create my account <ArrowRight size={16} aria-hidden />
+        {t('signup.submit')} <ArrowRight size={16} aria-hidden />
       </SubmitButton>
     </form>
   )
