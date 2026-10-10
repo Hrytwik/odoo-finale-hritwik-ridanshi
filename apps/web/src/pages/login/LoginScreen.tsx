@@ -6,6 +6,7 @@ import wavesUrl from '@/assets/art/waves-teal.svg'
 import { BorderTrail } from '@/components/motion/BorderTrail'
 import { GlowEffect } from '@/components/motion/GlowEffect'
 import { Spotlight } from '@/components/motion/Spotlight'
+import { TextEffect } from '@/components/motion/TextEffect'
 import { homeFor, safeNext } from '@/lib/nav'
 import { LoginForm } from './LoginForm'
 
@@ -27,7 +28,9 @@ export function LoginScreen() {
             Everest Mills
           </span>
           <div className="stack-sm">
-            <h2>Every roll, from yarn to invoice.</h2>
+            <TextEffect as="h2" preset="fade-in-blur" delay={0.2}>
+              Every roll, from yarn to invoice.
+            </TextEffect>
             <p style={{ color: 'var(--color-on-ink-muted)', maxWidth: '38ch' }}>
               One place for the store, the floor, quality, dispatch and the books. Scan a roll and see its whole life.
             </p>

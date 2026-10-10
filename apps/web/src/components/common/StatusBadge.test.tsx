@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { MACHINE_STATUS, ORDER_STAGE, ROLL_STATUS, StatusBadge } from './StatusBadge'
+import { StatusBadge } from './StatusBadge'
+import { MACHINE_STATUS, ORDER_STAGE, ROLL_STATUS } from './statusMaps'
 
 describe('StatusBadge', () => {
   it('has a non-empty label for every status the API can send', () => {

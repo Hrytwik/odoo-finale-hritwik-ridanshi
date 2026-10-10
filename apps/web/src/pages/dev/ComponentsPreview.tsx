@@ -12,6 +12,7 @@ import { Dialog } from '@/components/ui/Dialog'
 import { Field, Input, Select, Textarea } from '@/components/ui/Field'
 import { Table } from '@/components/ui/Table'
 import { formatKg, formatMetres, formatMoney } from '@/lib/format'
+import MotionShowcase from './MotionShowcase'
 
 const TONES: Tone[] = ['green', 'amber', 'red', 'blue', 'violet', 'gray']
 
@@ -35,6 +36,8 @@ export default function ComponentsPreview() {
           </>
         }
       />
+
+      <MotionShowcase />
 
       <Card title="Buttons">
         <div className="row">
