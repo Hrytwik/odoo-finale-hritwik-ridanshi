@@ -1,5 +1,5 @@
 """The Roll Passport: the whole life of one roll, assembled on request from runs, yarn issues, inspections and dispatch.
-Cost is empty until costing (B6). A buyer gets the reduced buyer_view, and only for rolls of their own orders (R15)."""
+Cost is filled in for owner and accountant only (R18). A buyer gets the reduced buyer_view, and only for rolls of their own orders (R15)."""
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
@@ -8,6 +8,7 @@ from app.core.validate import not_found
 from app.db.models import (
     Dispatch, DispatchItem, Invoice, ProductionRun, QcInspection, Roll, RollRun, User, YarnLot, YarnMovement,
 )
+from app.modules.costing import service as costing
 from app.modules.passport.schemas import Passport, PassportDispatch, PassportLot, PassportRun
 from app.modules.qc.service import inspection_out
 from app.modules.rolls.service import roll_out
@@ -81,6 +82,7 @@ def get_passport(db: Session, user: User, roll_code: str) -> Passport:
                           machine_name=r.machine.name if r.machine else None, operator=r.operator.name,
                           started_at=r.started_at, ended_at=r.ended_at) for r in runs],
         inspections=[inspection_out(db, i) for i in inspections],
-        cost=None, dispatch=_dispatch(db, roll),
+        cost=costing.roll_cost_for(db, roll) if user.role in costing.FINANCE else None,
+        dispatch=_dispatch(db, roll),
     )
     return buyer_view(passport) if user.role == "buyer" else passport

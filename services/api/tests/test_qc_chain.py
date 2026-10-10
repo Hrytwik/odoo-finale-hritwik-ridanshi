@@ -104,7 +104,7 @@ def test_receive_to_passed_rolls_through_the_api(client, db, login_as):
     assert [l["lot_code"] for l in p["yarn_lots"]] == [lot["lot_code"]]
     assert [(i["verdict"], [d["defect_type"] for d in i["defects"]]) for i in p["inspections"]] == [
         ("rework", ["hole"]), ("pass", [])]
-    assert p["roll"]["status"] == "in_store" and p["cost"] is None and p["dispatch"] is None
+    assert p["roll"]["status"] == "in_store" and p["cost"]["roll_code"] == roll_b and p["dispatch"] is None
 
     # the buyer of the order sees their own roll, reduced; a roll that does not exist is a 404
     client.cookies.set(COOKIE_NAME, create_token(buyer_user.id))        # the order's own buyer (login_as would make a new one)
