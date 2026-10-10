@@ -72,3 +72,8 @@ def install_error_handlers(app: FastAPI) -> None:
         first_field, first_msg = next(iter(fields.items()))
         body = ErrorBody(code="VALIDATION_ERROR", message=first_msg, field=first_field, fields=fields)
         return JSONResponse(status_code=422, content=body.model_dump())
+
+KNOWN_CONSTRAINTS.update({
+    "uq_open_run_per_machine": ("MACHINE_BUSY", "machine_code", "This machine already has a running job"),
+    "uq_open_downtime_per_machine": ("MACHINE_DOWN", "machine_code", "This machine is already marked as down"),
+})
