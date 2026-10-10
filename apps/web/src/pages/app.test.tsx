@@ -14,12 +14,16 @@ const meFor = (role: Role) => ({ id: 3, username: role, role, display_name: 'Arj
 const reply = (status: number, body?: unknown) =>
   Promise.resolve(status < 400 ? { data: body, response: new Response(null, { status }) } : { error: body, response: new Response(null, { status }) })
 
+const ROLL = { id: 142, code: 'R-0142', order_code: 'ORD-0012', buyer_name: 'Sharma Fabrics', fabric: 'Poplin 58in', colour: 'navy', metres: 110, status: 'in_store', created_at: '2026-10-10T10:00:00Z' }
+const PASSPORT = { roll: ROLL, order_code: 'ORD-0012', buyer_name: 'Sharma Fabrics', deadline: '2026-10-20', yarn_lots: [], runs: [], inspections: [], cost: null, dispatch: null }
+
 function setup(role: Role, path: string, opts: { demo?: boolean; meStatus?: number } = {}) {
   vi.mocked(api.GET).mockImplementation(((url: string) => {
     if (url === '/api/auth/me') return opts.meStatus && opts.meStatus >= 400
       ? reply(opts.meStatus, { code: 'NOT_AUTHENTICATED', message: 'Please log in', field: null, fields: null })
       : reply(200, meFor(role))
     if (url === '/api/health') return reply(200, { status: 'ok', demo_data: !!opts.demo })
+    if (url === '/api/rolls/{roll_code}/passport') return reply(200, PASSPORT)
     return reply(404, { code: 'NOT_FOUND', message: 'nope', field: null, fields: null })
   }) as never)
   const router = createMemoryRouter(routeObjects, { initialEntries: [path] })
@@ -102,7 +106,7 @@ describe('role guard', () => {
 
   it('lets everyone open a roll passport', async () => {
     setup('buyer', '/r/R-0142')
-    expect(await screen.findByRole('heading', { level: 1, name: 'Roll passport' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'R-0142' })).toBeInTheDocument()
   })
 
   it('shows Page not found for an unknown address', async () => {

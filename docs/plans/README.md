@@ -27,7 +27,7 @@ Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here 
 | A1 | Web foundation — scaffold, typed client, errors, forms, navigation, login, shell, all routes, live updates, phone HTTPS check | **done** except the real-phone camera test: `A1-web-foundation.md` |
 | A2 | Store & orders screens | **done**: `A2-store-orders-screens.md` |
 | A3 | Floor screens | **done**: `A3-floor-screens.md` |
-| A4 | QC + Roll Passport screens | not written |
+| A4 | QC + Roll Passport screens | **done**: `A4-qc-and-roll-passport.md` |
 | A5 | Dispatch, invoices, money screens | not written |
 | A6 | People module (API + screens) | not written |
 | A7 | Owner dashboard, insights, master-data screens | not written |
