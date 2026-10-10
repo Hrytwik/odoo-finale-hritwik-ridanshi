@@ -1,7 +1,7 @@
 # Everest Textile Mills — System Design
 
 > **Summary:** Full design for the textile mill platform: architecture (React + Vite + FastAPI + Postgres), 29-table data model, business rules, per-roll costing, delay/shortage/root-cause engines, vision QC, provider-agnostic LLM layer, screens, API surface, two-track split, testing and demo.
-> **Last updated:** 2026-10-10 22:39 IST (§7 costing built and live-checked; month range rule added; R18)
+> **Last updated:** 2026-10-10 22:56 IST (§7 costing built and live-checked; §8 intelligence revised after the B7 design review)
 > **Status:** Draft for team review
 
 ---
@@ -257,27 +257,61 @@ Computed on request, no stored totals, no migration, read-only (no locks, no eve
 
 ## 8. Calculated intelligence (no language model)
 
+*Revised 2026-10-10 22:56 IST after the B7 design review (approved section by section by Hritwik). Changes from the first draft: the exact test is written in the project (no scipy), shifts run per stage are a setting, an order with no work left at a stage passes straight through it, remaining spinning uses kg spun, the QC day is skipped when everything has passed, what-ifs name the orders they harm, the portal and the order dates are specified (8.5).*
+
 ### 8.1 Delivery date and delay warning
 
-- **Remaining work per order per stage:** spinning kg = outstanding need; weaving m = qty − woven (excluding rejected); dyeing m = woven − dyed. QC is not capacity-modelled (see the fixed QC day below).
-- **Daily capacity per stage** = Σ over active, not-down machines of rated output × shift hours per day × the stage's **observed efficiency** (actual output ÷ rated output over run hours in the last 7 days; default 0.8 when there is no history).
-- **Queue:** earliest-deadline-first at every stage. An order cannot finish a stage before finishing the previous one: `finish(stage) = max(finish(previous stage), queue completion time at this stage)`.
-- **Delivery date** = dyeing finish + 1 day QC + 1 day dispatch buffer (both constants in config).
-- **Late warning** when the delivery date > deadline: days late and the bottleneck stage (the stage that adds the most delay).
-- **What-ifs (code, not the language model):** (a) +1 shift at the bottleneck stage (capacity × (shifts + 1) / shifts) — offered only when fewer than 3 shifts are configured; (b) move this order to the front of every queue. Each returns the new delivery date.
-- Simplification: each stage is one pool of capacity; changeover time is ignored.
+- **Open orders:** confirmed orders with metres still to dispatch (drafts, cancelled and fully dispatched orders are left out).
+- **Remaining work per order per stage:** spinning kg = ordered yarn need − kg already spun; weaving m = qty − (woven − rejected); dyeing m = woven − dyed. QC is not capacity-modelled.
+- **Daily capacity per stage** = Σ over active machines that are not down of rated output × the stage's hours per day × the stage's **observed efficiency**. *Hours per day* = the total length of the first N shifts, where N comes from the setting `STAGE_SHIFTS` (for example `weaving=2,dyeing=2`; a stage not listed runs all configured shifts). *Efficiency* = output ÷ rated output over the stage's runs that ended in the last 7 days (a spinning run counts only if its output was recorded), capped at 1; with less than one hour of such run time, the default 0.8.
+- **Queue:** earliest-deadline-first at every stage (ties: confirmed earlier, then order code). With `work` the order's remaining work at a stage and `C` the cumulative work of that order and all orders ahead of it divided by the capacity: an order with **no work left at a stage passes straight through** (finish = its finish at the previous stage); otherwise `finish(stage) = max(finish(previous stage), C)`.
+- **Delivery date** = today + ceil(dyeing finish in days) + dispatch day + QC day. The QC day is skipped when every metre of the order has already passed QC. Both buffers are settings (`QC_DAYS`, `DISPATCH_DAYS`, default 1 each).
+- **Late warning** when the delivery date is after the deadline: days late (0 when on time) and the **bottleneck stage** = the stage that adds the most delay (`max(0, C − finish(previous))`; the earlier stage wins a tie); none when on time.
+- **No working machine at a stage that has work:** the date is unknown. The order list shows null, `GET /orders/{code}/eta` answers 409 ("no working machine at weaving"), and the order is left out of the late list.
+- **What-ifs** (code, not the language model), offered only for a late order and only when they strictly improve its date: (a) **add a shift** at the bottleneck stage, only if that stage runs fewer than all configured shifts (label like "Add a third shift on weaving"); (b) **move the order to the front of every queue**, omitted if it is already first. The label of (b) names every other order it would make later or newly late ("…(ORD-A would be 3 days late)").
+- Known limits: the schedule assumes yarn is available (a shortage is reported by 8.2) and ignores rework work and changeover; the mill is assumed to run seven days a week (the data model has no calendar).
+
+Hand-worked (capacities per day: spinning 200 kg, weaving 100 m, dyeing 150 m; today 10 Oct; ORD-A deadline 14 Oct with 100 kg, 300 m, 300 m left; ORD-B deadline 25 Oct with 400 kg, 200 m, 200 m; ORD-C deadline 30 Oct with 0 kg, 100 m, 100 m): ORD-A finishes spinning at day 0.5, weaving at 3, dyeing at 3 → delivery 3 + 1 + 1 days = **15 Oct, 1 day late**, delay added per stage 0.5 / 2.5 / 0, bottleneck **weaving**; ORD-B finishes at day 5 (**17 Oct**), ORD-C at day 6 (**18 Oct**). Weaving at 2 of 3 shifts: ×1.5 capacity → ORD-A **14 Oct, 0 days late** (B 16 Oct, C 16 Oct). If ORD-B's deadline were 16 Oct it would be 1 day late; moving it to the front delivers it **14 Oct** and puts ORD-A at 17 Oct, **3 days late**. Capacity: two looms rated 25 m/h, 2 shifts of 8 h, efficiency 0.8 → 2 × 25 × 16 × 0.8 = **640 m/day**; a third shift → **960**.
 
 ### 8.2 Yarn shortage forecast (reorder-point rule)
 
-For each yarn type: spread each confirmed order's outstanding need evenly over its spinning window from §8.1; project on-hand stock day by day; find the first day it falls below the reorder level. `order_by` = that day − supplier lead time (the yarn type's most recent supplier). `suggested_kg` = outstanding need − on hand + reorder level, rounded up to 50 kg. If `order_by` is in the past: "order now — N days late".
+- For each yarn type: on hand = stock in unblocked lots; each confirmed order's outstanding yarn (from `v_order_yarn_need`) is drawn **evenly over its spinning window** = today to its spinning finish from 8.1, rounded up, at least 1 day (an order that cannot spin: all at once). Walk forward day by day; the stock cannot rise, so it ends at on hand − total outstanding = `free_kg`; a type is reported exactly when `free_kg` < its reorder level (the same test as the stock page's "below reorder"). The walk finds **when**.
+- `falls_below_on` = the date during which stock first ends a day below the level (today if it already is). `supplier` = the supplier of the type's most recent lot (none if never received). `order_by` = `falls_below_on` − that supplier's lead time (blank without a supplier). `overdue_days` = days past `order_by`, else 0. `suggested_kg` = reorder level − `free_kg`, rounded **up** to a multiple of 50 kg. Most urgent first (earliest `order_by`, then yarn code).
+- Known limit: there are no purchase orders, so yarn already ordered but not received cannot be counted.
+
+Hand-worked (today 10 Oct): cotton 800 kg on hand, reorder level 300, lead time 5 days; ORD-A draws 200 kg over 1 day, ORD-B 400 kg over 3 days; end-of-day stock 466.67, 333.33, 200 → falls below on **12 Oct**, order by **7 Oct**, **3 days overdue**, `free_kg` 200, suggested **100 kg**. The contract's example (free −417.5, level 300) gives 717.5 → **750 kg**, falling today, order by 5 Oct, 5 days overdue.
 
 ### 8.3 Defect root cause
 
-Factors: weaving machine, dyeing machine, weaving operator, weaving shift (from the weaving run's start time), yarn lot. For each value, compare the share of inspected rolls with defects against all other rolls using **Fisher's exact test** (one-sided, `scipy.stats.fisher_exact`), only for groups with ≥ 5 inspected rolls, with a **Bonferroni** correction (α = 0.05 ÷ number of tests). Output per flagged value: counts, rates and p-value, e.g. "Lot L-17: 9 of 20 rolls defective vs 4% elsewhere". Uses only inspector-confirmed defects (`qc_defects`).
+- A roll is **defective** if an inspector ever confirmed a defect on it (`qc_defects` only, never the AI suggestion); only inspected rolls count. Groups per factor: weaving machine, dyeing machine (its latest dye run; none → no group), weaving operator, weaving shift (the shift whose hours contain the weaving run's start time), and yarn lot (**every** lot with a net positive issue to the spinning run that fed the weaving run; a roll can be in several lots).
+- A group of at least 5 inspected rolls (with a non-empty rest) is compared with all other inspected rolls using **Fisher's exact test, one-sided**, written in the project with exact fractions (the hypergeometric tail; no scipy). **Bonferroni:** flagged when p < 0.05 ÷ the number of groups tested.
+- Output: only groups whose rate is above the rest's, sorted by p-value, at most 10 rows (the correction still counts every group tested); each row has defective / inspected, rate, rest rate, p-value, flagged.
+- Verified once against `scipy.stats.fisher_exact` in a scratch environment on 6,006 tables (worst relative difference 1.4×10⁻¹⁵); the repository tests use known values and a brute-force enumeration.
+- Limits: a flag is a pattern, not proof (two flagged factors may share one cause); Bonferroni is cautious; a rework roll counts once.
+
+Hand-worked: 100 inspected rolls, 12 defective, 14 groups tested (5 lots, 2 weaving machines, 4 operators, 3 shifts), threshold 0.05 ÷ 14 = **0.0036**. **Lot L-17**: 9 of 20 vs 3 of 80 (3.75%) elsewhere, p = **0.0000137**, flagged. **Operator 1**: 6 of 25 vs 8%, p = 0.043: flagged at an uncorrected 0.05, **not** flagged with the correction. **LOOM-05**: 8 of 50 vs 8%, p = 0.18.
 
 ### 8.4 Recall chain
 
-Blocked lot → its issue movements → spinning runs → weaving runs whose `input_run_id` is one of those → rolls produced → each roll's status, order, buyer and dispatch. Output grouped by: on the floor / in store / loading / dispatched (with buyer and dispatch code). Simplification stated openly: each weaving run draws from one spinning run.
+Lot → spinning runs with a **net positive issue** of it (the passport's rule, run the other way) → weaving runs whose `input_run_id` is one of those → the rolls they produced → each roll's status, order, buyer and truck. Groups: `on_floor` (woven, dyeing, awaiting QC, awaiting rework, in rework and **rejected**, the status shown on the row), `in_store`, `loading` (with the truck's code), `dispatched` (with the dispatch code). `buyers`: per buyer, all rolls from the lot, how many have left on a **confirmed** truck, and those trucks' codes. Works on any lot (blocked or not) and reports `is_blocked`; an unknown lot is a 404; roles store and owner. Over-inclusive on purpose (a spinning run that used two lots counts against both). Each weaving run draws from one spinning run (stated simplification). A test pins that a roll's passport lists a lot exactly when the lot's recall lists the roll.
+
+Hand-worked: lot L-0017, 120 kg issued to spinning run S1, 50 kg issued to S2 and fully returned (net 0, excluded). S1 fed one weaving run that made R1 (dyeing), R2 and R3 (in store), R4 (dispatched, DSP-1, Sharma), R5 (on loading truck DSP-2, Kavya), R6 (rejected): `on_floor` R1, R6; `in_store` R2, R3; `loading` R5; `dispatched` R4. Sharma: 5 rolls, 1 dispatched, [DSP-1]; Kavya: 1 roll, 0 dispatched, [].
+
+### 8.5 Order dates and the buyer portal
+
+- **Dates on orders.** The orders router (not the order service, which would be a circular import) asks insights once for the whole mill's delivery dates and passes each order's date to `order_out`: `delivery_date` and `days_late` (0 when on time) on the list, detail, create, confirm, cancel and edit routes; null for an order not waiting for production.
+- **`GET /portal/orders`** (buyer only): the logged-in buyer's own **confirmed** orders, newest first; the buyer comes from the login. `progress_pct` = metres passed quality check (including dispatched) ÷ ordered metres × 100, capped at 100, one decimal.
+- **`GET /portal/orders/{code}`**: the same fields plus `timeline` (built by a function; the `v_order_timeline` view was never created), sorted by time: "Order confirmed", "Spinning started", "Weaving started", "Dyeing started" (first run of each), "First rolls passed quality check" (earliest pass), and one "N m dispatched (CODE)" per confirmed truck; and `dispatches` (code, date, the metres **of this order** on it, invoice number). Buyer-safe wording: no machines, operators, lots, suppliers or costs. A foreign order, a missing order and the buyer's own draft or cancelled order give the **identical 404** (R15).
+- Hand-worked: confirmed 1 Oct 10:00, spinning first ran 2 Oct, weaving 4 Oct, dyeing 6 Oct, first roll passed 8 Oct, 330 m left on DSP-0007 on 9 Oct with INV-0007: six timeline entries in that order and one dispatch of 330 m; 1,500 of 5,000 metres passed → `progress_pct` **30.0**.
+- The assistant's buyer tools call these handlers by name with the database and the user, so they read real data unchanged.
+
+### 8.6 Implementation
+
+Computed on request, no stored values, no migration, read-only (no locks, no events); all response shapes already exist, so `contracts/` is byte-identical. `modules/insights/engine/` (pure: `fisher`, `schedule`, `shortage`, `rootcause`; exact fractions; "today" is an input), `insights/loader.py` (rows → plain records), `insights/service.py` (rounding, shapes, order dates), `insights/recall.py` (the recall joins; the route stays under `store`), `portal/service.py`. Settings in `app/config.py` (defaults from the spec): `QC_DAYS`, `DISPATCH_DAYS`, `DEFAULT_EFFICIENCY` 0.8, `EFFICIENCY_WINDOW_DAYS` 7, `EFFICIENCY_MIN_HOURS` 1, `STAGE_SHIFTS`, `ROOT_CAUSE_MIN_GROUP` 5, `ROOT_CAUSE_ALPHA` 0.05, `REORDER_ROUND_KG` 50. The handlers keep the names the assistant calls (`late_orders`, `order_eta`, `shortages`, `root_causes`, `lot_recall`, `my_orders`, `my_order`) and take `db` (and `user` for the portal). Accepted: the loader's queries are not one snapshot. Speed to be measured on a synthetic busy mill and recorded in the plan.
+
+### 8.7 Build order (B7; also in `docs/plans/B7-intelligence.md` once written)
+
+1. The exact test and the root-cause engine. 2. The schedule engine. 3. The shortage engine. 4. Loader and service, the four insight routes, the settings, real dates on orders. 5. The recall chain and its route. 6. The real buyer portal. 7. Live check, docs, memory. (1, 2, 3 independent; 4 needs 1-3; 5 independent; 6 needs 4; 7 last.)
 
 ---
 
@@ -466,6 +500,7 @@ One continuous story, same order / lot / rolls throughout, "Demo data" badge vis
 - A lot's "intended order" is information only; it does not reserve stock.
 - Live updates assume a single API process.
 - Stages follow the brief (spinning → weaving → dyeing) even though mills that buy yarn usually do not spin it.
+- The mill is assumed to run seven days a week (no working calendar in the data model); the delivery-date schedule assumes yarn is available and ignores rework work; there are no purchase orders, so yarn already ordered is not counted; a night shift is dated by the day it starts; recall is deliberately over-inclusive when a spinning run used several lots.
 
 **Unverified — to be measured or checked during the build:**
 - Weavers commonly mind several looms at once (the costing handles it either way).
