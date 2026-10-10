@@ -39,6 +39,14 @@ beforeEach(() => {
   URL.revokeObjectURL = vi.fn()
 })
 
+describe('QcInspect: a login with no linked inspector', () => {
+  it('says why it cannot record a verdict, and does not offer to', async () => {
+    setup({ GET: { '/api/auth/me': { ...me('owner'), worker_id: null } } })
+    expect(await screen.findByText(/not linked to an inspector/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /record verdict/i })).toBeDisabled()
+  })
+})
+
 describe('QcInspect: manual checking works without any AI', () => {
   it('shows which roll is being checked', async () => {
     setup()

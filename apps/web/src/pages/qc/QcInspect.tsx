@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input, Select, Textarea } from '@/components/ui/Field'
+import { useMe } from '@/lib/auth'
 import { DEFECT_LABEL } from '@/lib/defects'
 import { api, call, errorMessage, type components } from '@/lib/api'
 import { useSubmitLock } from '@/lib/forms'
@@ -52,6 +53,9 @@ function Inspection({ roll }: { roll: components['schemas']['RollOut'] }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { run, pending } = useSubmitLock()
+  // the server records the inspector from the login's linked worker; a login without one (the owner's) cannot record a verdict
+  const me = useMe()
+  const noInspector = me.data !== undefined && me.data.worker_id === null
 
   const [photo, setPhoto] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
@@ -241,8 +245,13 @@ function Inspection({ roll }: { roll: components['schemas']['RollOut'] }) {
             </div>
           </Card>
 
+          {noInspector && (
+            <Alert tone="info">
+              Your login is not linked to an inspector, so you cannot record a verdict. The owner can link a worker to this login on the Users screen.
+            </Alert>
+          )}
           {formError && <Alert tone="error">{formError}</Alert>}
-          <SubmitButton pending={pending} block>
+          <SubmitButton pending={pending} disabled={noInspector} block>
             Record verdict
           </SubmitButton>
         </form>
