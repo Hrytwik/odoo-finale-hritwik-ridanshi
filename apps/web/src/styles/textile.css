@@ -410,7 +410,15 @@ h1 {
 }
 .machine-down .machine-thread {
   background: repeating-linear-gradient(135deg, #1f2e26 0 5px, #fffdf0 5px 10px);
+  /* one tile is exactly one stripe pair along the diagonal (10px * sqrt 2), so sliding it by a tile loops without a jump */
+  background-size: 14.142px 14.142px;
   border: 1px solid #1f2e26;
+  animation: hazard-slide 0.7s linear infinite;
+}
+@keyframes hazard-slide {
+  to {
+    background-position: 14.142px 0;
+  }
 }
 .machine-down .machine-thread i {
   display: none;
@@ -553,6 +561,7 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   .live-dot,
   .machine-running .machine-thread i,
+  .machine-down .machine-thread,
   .typewriter-caret {
     animation: none;
   }
@@ -750,31 +759,26 @@ h1 {
   font-size: 11px;
   font-family: var(--font-sans);
 }
-.chart-bar {
-  fill: var(--color-primary-soft);
-  stroke: #658c58;
-  stroke-width: 1.5;
+.chart-bar.is-revenue {
+  fill: #658c58;
 }
-.chart-line {
-  stroke: var(--color-text);
-  stroke-width: 2.5;
-  stroke-linejoin: round;
+.chart-bar.is-cost {
+  fill: var(--color-primary);
 }
-.chart-dot {
-  fill: var(--color-surface);
-  stroke: var(--color-text);
-  stroke-width: 2;
+.chart-value {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-sans);
 }
-.chart-dot.is-last {
-  stroke-width: 3;
+.chart-profit {
+  fill: var(--color-primary);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-display);
 }
-.chart-fill-top {
-  stop-color: #658c58;
-  stop-opacity: 0.35;
-}
-.chart-fill-bottom {
-  stop-color: #658c58;
-  stop-opacity: 0;
+.chart-profit.is-loss {
+  fill: var(--color-danger);
 }
 .chart-legend {
   display: flex;
@@ -788,17 +792,16 @@ h1 {
   vertical-align: middle;
   margin-right: 6px;
 }
-.chart-key-bar {
+.chart-key {
   width: 12px;
   height: 12px;
-  border: 1.5px solid #658c58;
   border-radius: 3px;
-  background: var(--color-primary-soft);
 }
-.chart-key-line {
-  width: 16px;
-  height: 0;
-  border-top: 2.5px solid var(--color-text);
+.chart-key.is-revenue {
+  background: #658c58;
+}
+.chart-key.is-cost {
+  background: var(--color-primary);
 }
 
 /* ---------- Insights ---------- */

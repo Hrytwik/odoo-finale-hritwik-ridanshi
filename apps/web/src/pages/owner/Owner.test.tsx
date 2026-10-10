@@ -69,13 +69,22 @@ describe('Owner dashboard', () => {
     expect(panel).toHaveTextContent(/We still owe suppliers\s*₹2,48,500/)
   })
 
-  it('draws revenue and profit for each order, with a table for screen readers', async () => {
+  it('draws revenue and cost side by side for each order, with the profit or loss written above', async () => {
     mockApi({ GET: { '/api/reports/month': REPORT } })
     renderPage(<OwnerDashboard />)
-    const chart = await screen.findByRole('img', { name: /revenue and net profit for 2 orders/i })
-    expect(chart.querySelectorAll('.chart-bar')).toHaveLength(2)
-    const table = screen.getByRole('table', { name: /revenue and net profit for 2 orders/i })
+    const chart = await screen.findByRole('img', { name: /revenue and cost for 2 orders/i })
+    expect(chart.querySelectorAll('.chart-bar.is-revenue')).toHaveLength(2)
+    expect(chart.querySelectorAll('.chart-bar.is-cost')).toHaveLength(2)
+    expect(within(chart as unknown as HTMLElement).getByText('Loss ₹1 L')).toHaveClass('is-loss')
+    expect(within(chart as unknown as HTMLElement).getByText('Profit ₹1.2 L')).not.toHaveClass('is-loss')
+  })
+
+  it('gives the chart a table for screen readers', async () => {
+    mockApi({ GET: { '/api/reports/month': REPORT } })
+    renderPage(<OwnerDashboard />)
+    const table = await screen.findByRole('table', { name: /revenue and cost for 2 orders/i })
     expect(within(table).getByText('ORD-0013')).toBeInTheDocument()
+    expect(within(table).getByText('116800')).toBeInTheDocument()
   })
 
   it('warns about data problems before the numbers are relied on', async () => {
