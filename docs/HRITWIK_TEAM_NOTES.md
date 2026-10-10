@@ -1,9 +1,30 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 18:11 IST
+> **Last updated:** 2026-10-10 19:12 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 19:12 IST — QC, rework and the Roll Passport are real (shapes unchanged; read the new error codes)
+
+**From:** Hritwik → Ridanshi
+
+Quality control now runs on real data and real rules. **No shape changed:** `contracts/` is byte-identical. Please `git pull`, then `npm run db:migrate` (one new migration, `roll status uses the latest run`).
+
+**What is real now:** `POST /qc/inspections`, `POST /rework-runs`, `GET /qc/queue` and `GET /rolls/{code}/passport`. **Still example data:** `POST /qc/analyze` and `GET /qc/model-card` (the vision model is connected in B8; both already say "not available", and QC works without it). The passport's `cost` is `null` until costing (B6) and `dispatch` is `null` until dispatch (B5), the shapes already allow both.
+
+**Behaviour you should know about**
+- **Inspecting a roll** needs the roll to be `awaiting_qc` (its dye run has ended): otherwise `ROLL_WRONG_STATUS` (409, the message names the current status). A **rework or reject needs at least one defect** (`DEFECTS_REQUIRED`, 422 on `defects`); a pass may carry defects; **each defect type once** per inspection (422). `photo_path` must be a path from `POST /uploads` (anything else is a 422 on `photo_path`). `overrode_ai` is worked out by the server (a suggestion was sent and its verdict differs), so the screen does not need to send it.
+- **Who can inspect:** the inspector is the logged-in user's linked worker. A QC login always has one. **The owner login has no linked worker, so the owner gets `INSPECTOR_REQUIRED` (409)** unless you link a worker to that user on the Users screen. If your QC screen is shown to the owner, either hide the inspect button or show that message.
+- **Rework:** `POST /rework-runs` takes a roll that is `awaiting_rework`, an operator, and optionally a machine. Without a machine it is manual mending; with one it must be a **dyeing** machine that is active, not down and not busy (`WRONG_STAGE`, `MACHINE_INACTIVE`, `MACHINE_DOWN`, `MACHINE_BUSY`). End it with the ordinary **End run** (no output): the roll goes back to `awaiting_qc` for a new inspection. A breakdown on that machine ends it too.
+- **QC queue:** `counts.passed` is every roll whose latest verdict is pass (in store, on a loading dispatch, or dispatched). `rolls` lists only rolls that need someone (awaiting QC, awaiting rework, in rework), oldest first.
+- **Roll Passport:** runs are listed oldest first and include the spinning run that fed the weaving; **a roll whose dyeing run was handed over shows two dyeing runs** (the old and the new one). Yarn lots are the lots with a net positive issue to that spinning run. A **buyer who asks for another buyer's roll gets exactly the same 404 as for a roll that does not exist**, and a buyer sees only status, order, quality checks (inspector shown as "Quality team", no photo or AI output) and dispatch.
+
+**A fix you will see on the floor screens:** handing over a **dyeing** run used to make its loaded rolls look finished (`awaiting_qc`) while dyeing carried on. Now the loaded rolls move to the new run and **stay `dyeing`** until the *latest* dye run ends; the order's dyed metres, its quality-check stage and the machine's output today count each roll once. The new run's `roll_codes` lists the same rolls.
+
+**To try it on your machine with the demo mill** (`npm run db:demo` on an empty database): rolls `R-0001` and `R-0002` are loaded in the running `DYE-01`: end that dyeing run (or hand it over first and end the new run), and both rolls appear in the QC queue as `awaiting_qc`. Log in as `qc` (password `everest123`) to inspect them.
 
 ---
 
