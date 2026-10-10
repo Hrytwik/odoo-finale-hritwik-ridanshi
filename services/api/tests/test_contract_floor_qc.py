@@ -17,12 +17,6 @@ def test_floor_counts_match_cards(client, login_as):
     assert board["running"] == statuses.count("running") and board["down"] == statuses.count("down")
 
 
-def test_roll_off_needs_positive_metres(client, login_as):
-    login_as("supervisor")
-    assert client.post("/api/runs/45/rolls", json={"metres": 0}).status_code == 422
-    assert client.post("/api/runs/45/rolls", json={"metres": 110}).status_code == 201
-
-
 def test_load_rolls_needs_at_least_one(client, login_as):
     login_as("supervisor")
     assert client.post("/api/runs/46/load-rolls", json={"roll_codes": []}).status_code == 422

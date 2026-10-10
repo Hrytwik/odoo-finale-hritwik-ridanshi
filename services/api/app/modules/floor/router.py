@@ -6,8 +6,10 @@ from app.core.enums import RunStage
 from app.db.session import get_db
 from app.modules.floor import board
 from app.modules.floor import examples as ex
+from app.modules.floor import rolls as floor_rolls
 from app.modules.floor import service
 from app.modules.floor import schemas as s
+from app.modules.rolls import service as roll_service
 from app.modules.rolls.schemas import RollOut
 
 router = APIRouter(tags=["floor"])
@@ -47,14 +49,13 @@ def handover(run_id: int, body: s.HandoverIn, db: Session = Depends(get_db)) -> 
 
 
 @router.post("/runs/{run_id}/rolls", response_model=RollOut, status_code=201, dependencies=[Depends(operators)])
-def roll_off(run_id: int, body: s.RollOffIn) -> RollOut:
-    return ex.ROLL.model_copy(update={"metres": body.metres})
+def roll_off(run_id: int, body: s.RollOffIn, db: Session = Depends(get_db)) -> RollOut:
+    return roll_service.roll_out(db, floor_rolls.roll_off(db, run_id, body))
 
 
 @router.post("/runs/{run_id}/load-rolls", response_model=s.RunOut, dependencies=[Depends(operators)])
-def load_rolls(run_id: int, body: s.LoadRollsIn) -> s.RunOut:
-    return ex.RUN.model_copy(update={"id": run_id, "stage": "dyeing", "machine_code": "DYE-01",
-                                     "roll_codes": body.roll_codes})
+def load_rolls(run_id: int, body: s.LoadRollsIn, db: Session = Depends(get_db)) -> s.RunOut:
+    return board.run_out(db, floor_rolls.load_rolls(db, run_id, body))
 
 
 @router.post("/machines/{machine_code}/breakdown", response_model=s.MachineCard, dependencies=[Depends(operators)])

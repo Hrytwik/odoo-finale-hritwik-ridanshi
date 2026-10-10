@@ -46,11 +46,15 @@ def test_staff_can_list_rolls(client, login_as, role):
     assert r.status_code == 200 and isinstance(r.json(), list)
 
 
-def test_rolls_filter_by_status_and_order(client, login_as):
-    login_as("supervisor")
-    woven = client.get("/api/rolls", params={"status": "woven", "order_code": "ORD-0012"}).json()
-    assert woven and all(x["status"] == "woven" and x["order_code"] == "ORD-0012" for x in woven)
-    assert client.get("/api/rolls", params={"status": "rejected"}).json() == []
+def test_rolls_filter_by_status_and_order(client, db, login_as):
+    from tests.factories import make_machine, make_order, make_roll, make_run
+
+    login_as("dispatch")
+    order = make_order(db)
+    roll = make_roll(db, order, make_run(db, order, make_machine(db, stage="weaving")))
+    woven = client.get("/api/rolls", params={"status": "woven", "order_code": order.code}).json()
+    assert [r["code"] for r in woven] == [roll.code] and all(r["status"] == "woven" for r in woven)
+    assert client.get("/api/rolls", params={"status": "rejected", "order_code": order.code}).json() == []
     assert client.get("/api/rolls", params={"order_code": "ORD-9999"}).json() == []
 
 
