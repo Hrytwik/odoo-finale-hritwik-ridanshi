@@ -1210,3 +1210,14 @@ h1 {
   background: var(--color-primary);
   border: 2px solid var(--color-surface);
 }
+
+/* The chat page: the conversation takes the whole width and the height left under the page title */
+.chat-fill {
+  max-width: none;
+  height: max(440px, calc(100dvh - 300px));
+}
+.chat-fill .chat-log {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}

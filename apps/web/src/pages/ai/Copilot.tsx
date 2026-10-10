@@ -15,6 +15,7 @@ export default function Copilot() {
       <PageHeader eyebrow="AI" title="Copilot" description="Ask about orders, yarn, late work and defects. The answer comes from the mill's own numbers, never from a guess." />
       <ChatPanel
         label="Ask the copilot"
+        fill
         placeholder="For example: which orders will be late?"
         suggestions={finance ? FINANCE : MANAGER}
         send={(question, history) => call(api.POST('/api/ai/copilot', { body: { question, history } }))}

@@ -33,11 +33,14 @@ export function ChatPanel({
   suggestions,
   placeholder,
   label,
+  fill = false,
 }: {
   send: (question: string, history: { role: 'user' | 'assistant'; text: string }[]) => Promise<Chat>
   suggestions: string[]
   placeholder: string
   label: string
+  /** use the whole width, and the height of the page, instead of a box */
+  fill?: boolean
 }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
@@ -69,7 +72,7 @@ export function ChatPanel({
     })
 
   return (
-    <section className="chat" aria-label={label}>
+    <section className={fill ? 'chat chat-fill' : 'chat'} aria-label={label}>
       <div className="chat-log" role="log" aria-live="polite">
         {messages.length === 0 && (
           <div className="chat-empty">

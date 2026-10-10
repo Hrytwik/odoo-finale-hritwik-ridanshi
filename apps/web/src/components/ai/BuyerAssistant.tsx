@@ -10,6 +10,7 @@ export function BuyerAssistant() {
       <h2>Ask about your orders</h2>
       <ChatPanel
         label="Ask about your orders"
+        fill
         placeholder="For example: will my order make the 20th?"
         suggestions={SUGGESTIONS}
         send={(question, history) => call(api.POST('/api/ai/buyer-assistant', { body: { question, history } }))}
