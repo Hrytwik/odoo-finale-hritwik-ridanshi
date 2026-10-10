@@ -1,9 +1,52 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 23:46 IST
+> **Last updated:** 2026-10-11 00:05 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-11 00:05 IST — Re: "what done does not yet cover": item by item, plus what you need to review from me
+
+**From:** Ridanshi → Hritwik
+
+**Thank you for B6 and B7, and for merging my branch.** I merged your `main` (up to `5e12aad`) into `a/web-textile` with no conflicts and no migration clash. After the merge: **backend all green, web 557 passed, `tsc -b` and `oxlint` clean, `npm run contracts` gives the committed contract.** I saw one backend test fail once in a full run and could not make it fail again in three more runs, so treat it as intermittent; I will tell you if it comes back. Your list, in your order:
+
+**1. "Nobody has clicked the full app against the real backend." Partly done, not finished.**
+- Done, on a live server with the demo mill: I logged in as the owner and as the buyer in a browser and checked the Workers screen, the buyer portal (real delivery date 15 Oct against a 24 Oct deadline, real timeline), the sign-up page, the new bell and the Copilot. I also read the real month report, late orders, shortages and the recall for `L-0001` over HTTP.
+- Not done: a click-through of every screen on real numbers. The 557 web tests do run against a fake API, you are right. **I will write the Playwright demo script and walk every screen on the real backend next; that is the proper answer to this item and it is mine.**
+
+**2. "The demo mill looks empty." Not done. This is yours (B9). What I see today:** the month report shows net **-₹2,31,792** with **0 invoiced**, and warnings like "Run 2 (LOOM-04) has 4.47 hours not covered by its operator's attendance"; late orders is empty; root causes is empty. **To make the jury screens tell a story, please seed:** attendance for the shift of the demo runs; runs that last hours, not seconds; one invoiced and paid order so profit is not only a loss; the bad yarn lot (your L-17) with rolls at two buyers so the recall lights up; one rework loss; one genuinely late order. Low yarn already shows (`30S-COT-RAW`). **Please also give the two demo buyers fake emails in `db:seed`** (I used `accounts@sharmafabrics.example` and `orders@kavyagarments.example` in my dev database only), because buyer sign-up needs an email on the buyer record (see section below).
+
+**3. "The AI has not been proven for the jury." Hosted: done. Local model: not done.**
+- Done: the Copilot, the buyer assistant and the new delay-notice drafts all ran for real against Groq (model `openai/gpt-oss-120b`) through `/settings/ai`. The Copilot now has 26 read-only look-ups (orders, fabric and yarn types, machines, the floor board, lots, rolls, QC queue, dispatches, receivables, payables, wages, buyers, suppliers, workers) plus the old insight ones, so it can answer about any screen; a provider's per-minute limit is waited out and retried; the settings page lists the models a key can use (`GET /ai/models`). Your dev database has no key: paste one on `/settings/ai` (the key is stored encrypted, never in a file).
+- Not done: the "Wi-Fi off, local model" step. When I tried Ollama earlier its server did not answer, so I have not proven it. It needs an OpenAI-compatible address (`http://localhost:11434/v1`) and a model that can call tools; a local address needs no key. **Whoever has Ollama running should try it, or we drop the offline claim from the pitch.**
+
+**4. "Phones and QR are untested." Partly done.** Caddy is installed (winget, 2.11.7) and running here; `npm run https` starts it and prints the phone address; a login over HTTPS through it works; the app is now laid out for phones (new `phone.css`). On a real phone, my first scan of a roll's QR opened its passport as designed. **Not tested on a phone:** scanning rolls onto a truck at dispatch. Windows treated the Wi-Fi as Public, so the firewall needs one allow rule for port 8443 (the script prints it). A scan button is now in the top bar for every staff login.
+
+**5. "Small loose ends."**
+- "Support staff" row on the owner page: **not done, mine, next** (I saw `support_staff` in your new contract).
+- Playwright end-to-end script: **not done, mine** (see item 1).
+- `.env`: per machine, git-ignored; mine exists. Yours is yours to make.
+
+**6. Vision is parked:** agreed, nothing from me.
+
+## What I added that touches you, please review
+
+**One new table and migration: `buyer_notices` (`a7c3d9e1b204`, down_revision `422bff951354`).** I wrote it myself, in a separate commit, because the bell was needed now; `alembic check` reports no difference between it and the model (`db/models/notices.py`). It is the only head in my branch (you added none). **Please review it before it goes into `main`, or regenerate it your way.** Columns: order, buyer, kind (only `delay` for now), reason, message, sent_by, read_at.
+
+**New endpoints (contract additions only, regenerated with `npm run contracts`):**
+- `POST /auth/signup` (public, five wrong tries per address lock it), `GET /auth/buyer-invites` (owner). A buyer signs up with the email on their buyer record plus an **invite code** worked out from the buyer id, the email and `JWT_SECRET` (nothing stored); the login is created and linked to the buyer in one step. **Changing `JWT_SECRET` changes every invite code.**
+- `POST /orders/{code}/delay-notice/draft` and `POST /orders/{code}/delay-notice` (owner), `GET /portal/notifications` and `POST /portal/notifications/read` (buyer). The owner picks one reason from a fixed list, a sentence is drafted (language model if set up, otherwise a fixed template), the owner may edit it, and it lands in that buyer's bell. A new live event, `notice.changed`, refreshes the bell.
+- `GET /ai/models` (owner).
+
+**Two small edits in your files, both with tests:** `modules/master/router.py` now applies the same password rules (8+ characters, letters and a number, not common, not the username) when the owner **creates or resets** a login (before, `123456` was accepted); and `app/main.py` includes the new `notices` router. `tests/test_contract_portal.py` and one line of `tests/test_llm_api.py` were rewritten for real portal data earlier.
+
+**A guard test that applies to your new endpoints too:** `tests/test_auth_sweep.py` calls every path in the API's own list with no login and fails if any answers anything but 401 (only `GET /health`, `POST /auth/login`, `POST /auth/logout` and `POST /auth/signup` are public). **Any endpoint you add needs `require_roles(...)` or `current_user`.**
+
+**Not pushed yet:** all of this is on my machine on `a/web-textile`; Ridanshi pushes the branch when she says so, and I will add a line here when she has.
+
 
 ---
 
