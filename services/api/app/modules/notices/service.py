@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, commit
 from app.core.events import broadcaster
-from app.db.models import BuyerNotice, MessagingSettings, Order, User
+from app.db.models import BuyerNotice, Dispatch, Invoice, MessagingSettings, Order, User
 from app.modules.llm import crypto
 from app.modules.llm.runtime import build_adapter, load_config
 from app.modules.llm.types import AdapterError, Turn
@@ -27,6 +27,7 @@ REASONS: dict[str, tuple[str, str]] = {
     "transport": ("Transport problem", "there is a transport problem"),
     "buyer_change": ("Change to the order", "the order was changed"),
     "other": ("Other", "of an unexpected problem at the mill"),
+    "dispatched": ("Order dispatched", ""),
 }
 
 SYSTEM = (
@@ -88,7 +89,7 @@ def draft(db: Session, order_code: str, reason: str) -> s.DraftOut:
 
 
 def _out(notice: BuyerNotice, order_code: str) -> s.NoticeOut:
-    return s.NoticeOut(id=notice.id, order_code=order_code, reason=notice.reason, reason_label=REASONS[notice.reason][0],
+    return s.NoticeOut(id=notice.id, kind=notice.kind, order_code=order_code, reason=notice.reason, reason_label=REASONS[notice.reason][0],
                        message=notice.message, created_at=notice.created_at, read=notice.read_at is not None,
                        whatsapp_status=notice.whatsapp_status, whatsapp_detail=notice.whatsapp_detail)
 
@@ -98,6 +99,11 @@ def send(db: Session, user: User, order_code: str, body: s.NoticeIn) -> s.Notice
     if order.state != "confirmed":
         raise AppError("ORDER_NOT_CONFIRMED", "A delay notice can only be sent for a confirmed order", status=409)
     notice = BuyerNotice(order_id=order.id, buyer_id=order.buyer_id, kind="delay", reason=body.reason, message=body.message, sent_by=user.id)
+    return _deliver(db, notice, order)
+
+
+def _deliver(db: Session, notice: BuyerNotice, order: Order) -> s.NoticeOut:
+    """Saves the notice for the buyer's bell, then also sends it on WhatsApp when that is connected and possible."""
     db.add(notice)
     commit(db)  # the bell notice is saved first: whatever happens on WhatsApp cannot lose it
     db.refresh(notice)
@@ -115,6 +121,35 @@ def send(db: Session, user: User, order_code: str, body: s.NoticeIn) -> s.Notice
     commit(db)
     db.refresh(notice)
     return _out(notice, order.code)
+
+
+def inr(amount) -> str:
+    """12345678.5 as 1,23,45,678.50, the way rupee amounts are written."""
+    whole, _, fraction = f"{float(amount):.2f}".partition(".")
+    head, tail = whole[:-3], whole[-3:]
+    groups = []
+    while len(head) > 2:
+        groups.insert(0, head[-2:])
+        head = head[:-2]
+    if head:
+        groups.insert(0, head)
+    return "\u20b9" + ",".join(groups + [tail]) + "." + fraction
+
+
+def notify_dispatched(db: Session, dispatch_code: str) -> list[s.NoticeOut]:
+    """When a truck is confirmed: tell the buyer, for each of their orders on it, how much left the mill and the invoice.
+    Facts only, so no model is involved. Called after the dispatch is saved; the caller never lets a failure here undo it."""
+    dispatch = db.scalar(select(Dispatch).where(Dispatch.code == dispatch_code))
+    invoice = db.scalar(select(Invoice).where(Invoice.dispatch_id == dispatch.id)) if dispatch else None
+    if dispatch is None or invoice is None or dispatch.state != "dispatched":
+        return []
+    sent = []
+    for line in sorted(invoice.lines, key=lambda ln: ln.order_id):
+        order = db.get(Order, line.order_id)
+        message = (f"{float(line.metres):g} m of your order {order.code} has left the mill on truck {dispatch.vehicle_no} "
+                   f"(dispatch {dispatch.code}). Your invoice {invoice.invoice_no} is {inr(line.amount)}.")
+        sent.append(_deliver(db, BuyerNotice(order_id=order.id, buyer_id=dispatch.buyer_id, kind="dispatch", reason="dispatched", message=message), order))
+    return sent
 
 
 def mine(db: Session, user: User) -> s.NotificationsOut:

@@ -27,7 +27,7 @@ class BuyerNotice(IdMixin, Base):
     whatsapp_sid: Mapped[str | None] = mapped_column(String(60))
     __table_args__ = (
         nonblank("message"),
-        CheckConstraint("kind IN ('delay')", name="kind_valid"),
+        CheckConstraint("kind IN ('delay','dispatch')", name="kind_valid"),
         CheckConstraint("whatsapp_status IN ('not_sent','sent','failed','skipped')", name="whatsapp_status_valid"),
         Index("ix_buyer_notices_buyer_id_created_at", "buyer_id", "created_at"),
     )

@@ -2586,17 +2586,19 @@ export interface components {
             created_at: string;
             /** Id */
             id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "delay" | "dispatch";
             /** Message */
             message: string;
             /** Order Code */
             order_code: string;
             /** Read */
             read: boolean;
-            /**
-             * Reason
-             * @enum {string}
-             */
-            reason: "yarn_shortage" | "machine_breakdown" | "power_cut" | "staff_shortage" | "quality_rework" | "dye_delay" | "transport" | "buyer_change" | "other";
+            /** Reason */
+            reason: ("yarn_shortage" | "machine_breakdown" | "power_cut" | "staff_shortage" | "quality_rework" | "dye_delay" | "transport" | "buyer_change" | "other") | "dispatched";
             /** Reason Label */
             reason_label: string;
             /** Whatsapp Detail */

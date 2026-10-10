@@ -2917,6 +2917,14 @@
             "title": "Id",
             "type": "integer"
           },
+          "kind": {
+            "enum": [
+              "delay",
+              "dispatch"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "message": {
             "title": "Message",
             "type": "string"
@@ -2930,19 +2938,27 @@
             "type": "boolean"
           },
           "reason": {
-            "enum": [
-              "yarn_shortage",
-              "machine_breakdown",
-              "power_cut",
-              "staff_shortage",
-              "quality_rework",
-              "dye_delay",
-              "transport",
-              "buyer_change",
-              "other"
+            "anyOf": [
+              {
+                "enum": [
+                  "yarn_shortage",
+                  "machine_breakdown",
+                  "power_cut",
+                  "staff_shortage",
+                  "quality_rework",
+                  "dye_delay",
+                  "transport",
+                  "buyer_change",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "dispatched",
+                "type": "string"
+              }
             ],
-            "title": "Reason",
-            "type": "string"
+            "title": "Reason"
           },
           "reason_label": {
             "title": "Reason Label",
@@ -2972,6 +2988,7 @@
         },
         "required": [
           "id",
+          "kind",
           "order_code",
           "reason",
           "reason_label",

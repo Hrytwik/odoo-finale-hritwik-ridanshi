@@ -3,17 +3,18 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, StringConstraints
 
-Reason = Literal[
+DelayReason = Literal[
     "yarn_shortage", "machine_breakdown", "power_cut", "staff_shortage", "quality_rework", "dye_delay", "transport", "buyer_change", "other",
 ]
+Reason = DelayReason | Literal["dispatched"]  # what a notice can be about: a delay, or the order leaving the mill
 
 
 class ReasonIn(BaseModel):
-    reason: Reason
+    reason: DelayReason
 
 
 class NoticeIn(BaseModel):
-    reason: Reason
+    reason: DelayReason
     message: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=400)]
 
 
@@ -33,6 +34,7 @@ class DraftOut(BaseModel):
 
 class NoticeOut(BaseModel):
     id: int
+    kind: Literal["delay", "dispatch"]
     order_code: str
     reason: Reason
     reason_label: str
