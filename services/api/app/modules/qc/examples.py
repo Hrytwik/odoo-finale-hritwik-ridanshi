@@ -3,7 +3,7 @@ import datetime as dt
 from app.core.schemas import Ref
 from app.modules.floor.examples import NOW, ROLL
 from app.modules.qc.schemas import (
-    AiSuggestion, Box, DefectOut, InspectionOut, ModelCard, QcCounts, QcQueue,
+    AiSuggestion, Box, DefectOut, InspectionOut, QcCounts, QcQueue,
 )
 
 SUGGESTION = AiSuggestion(model_version="example", verdict="rework", boxes=[
@@ -17,8 +17,4 @@ INSPECTION = InspectionOut(
 QUEUE = QcQueue(
     counts=QcCounts(awaiting_qc=4, awaiting_rework=1, in_rework=0, passed=11, rejected=1),
     rolls=[ROLL.model_copy(update={"status": "awaiting_qc"})],
-)
-MODEL_CARD = ModelCard(
-    available=False, model_version=None, trained_at=None, datasets=[], test_defective=0, test_clean=0,
-    clean_false_alarm_rate=None, per_class=[], confusion_labels=[], confusion_matrix=[],
 )

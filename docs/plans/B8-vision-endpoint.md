@@ -1,7 +1,7 @@
 # B8 — Vision Endpoint and Model Card Implementation Plan
 
 > **Summary:** Makes `POST /qc/analyze` run the fine-tuned YOLO detector on an uploaded photo (boxes with confidence, a suggested verdict, always labelled unvalidated) and `GET /qc/model-card` serve the measured held-out results with a confusion matrix; adds the committed weights and card file, makes the model-card screen show an unmeasured false-alarm rate honestly, and ends with a live check on a real server.
-> **Last updated:** 2026-10-11 02:10 IST (Tasks 1-4 done)
+> **Last updated:** 2026-10-11 02:15 IST (Tasks 1-5 done)
 
 > **How this plan is executed:** inline, one task at a time (atomic-workflow): test first, the full suite twice at each boundary, the important behaviours mutation-checked. Steps use checkbox (`- [ ]`) syntax.
 
@@ -22,6 +22,8 @@ Task 2 done and verified (2026-10-11 02:02 IST): `qc/vision.py` (photo reading, 
 Task 3 done and verified (2026-10-11 02:06 IST): `ml/metrics.py` gains `ImageMatch`, `match_image` (the old matching, shared) and `confusion_matrix`; `evaluate` now uses the shared matching and every existing metric test stayed green; 11 new tests (cells, wrong-name = miss + false alarm, one defect found once, unknown class is an error, and rows/columns equal the per-class scores on 300 random photos, checked non-empty); four mutations all die; full backend suite 1,416 passed (1,405 before), twice.
 
 Task 4 done and verified (2026-10-11 02:10 IST): `ml/model_card.py` and 6 tests; ran it: `ml/models/best.pt` (5,466,629 bytes, byte-identical to the trained run) and `ml/models/model_card.json` committed; the card's per-class numbers equal the saved evaluation report exactly (hole 24/2/4, stain 18/11/4, thread fault 8/24/4; 59 defective, 0 clean, false-alarm rate null) and the matrix rows sum to 26, 29 and 32; git accepts both files; full backend suite 1,422 passed (1,416 before), twice.
+
+Task 5 done and verified (2026-10-11 02:15 IST): `vision.read_card` and the real `/qc/model-card` route (14 tests: the committed card passes the schema and adds up, roles, missing/empty/garbled/wrong-shape card = "not evaluated yet", never a 500); example `MODEL_CARD` removed; `ModelCard.tsx` now shows "Not measured" and "Not yet validated" (info tone, not an error) when the false-alarm rate is null, with 3 new web tests that failed first; `dev:api` starts with `--group ml`. Mutations: always-NO_CARD, uncaught TypeError, uncaught bad JSON, a broken matrix cell and a made-up 0.0 rate all die (catching `ValidationError` separately is an equivalent mutant: it subclasses `ValueError`). Backend 1,436 passed (1,422 before), twice; web 526 passed + 4 failing that are NOT from this change: `Money.test.tsx` (2) and `People.test.tsx` (2) compare against `new Date().toISOString()` (UTC date) while the app uses the local date, so they fail between 00:00 and 05:30 IST (2026-10-10 vs 2026-10-11 at 02:12) and will pass after 05:30; `tsc -b` clean. To tell Ridanshi in the team note.
 
 ## Global Constraints
 
@@ -1048,7 +1050,7 @@ git commit -m "Build the model card from the held-out photos and ship the weight
 - Consumes: the committed `ml/models/model_card.json` (Task 4); `CARD_PATH` (Task 2).
 - Produces: `read_card() -> schemas.ModelCard` (never raises).
 
-- [ ] **Step 1: Write the failing backend tests.** `services/api/tests/test_qc_model_card.py`:
+- [x] **Step 1: Write the failing backend tests.** `services/api/tests/test_qc_model_card.py`:
 
 ```python
 """B8 Task 5: GET /qc/model-card serves the saved card, and degrades to 'not evaluated yet' when it cannot."""
@@ -1110,9 +1112,9 @@ def test_a_missing_or_broken_card_is_not_evaluated_yet_not_an_error(client, logi
     assert body["available"] is False and body["per_class"] == [] and body["confusion_matrix"] == []
 ```
 
-- [ ] **Step 2: Run to verify they fail** (the route still returns example data, so `available` is False and the first assertions fail).
+- [x] **Step 2: Run to verify they fail** (the route still returns example data, so `available` is False and the first assertions fail).
 
-- [ ] **Step 3: Implement.** In `vision.py` add `from pydantic import ValidationError` to the imports and append:
+- [x] **Step 3: Implement.** In `vision.py` add `from pydantic import ValidationError` to the imports and append:
 
 ```python
 NO_CARD = s.ModelCard(available=False, model_version=None, trained_at=None, datasets=[], test_defective=0, test_clean=0,
@@ -1132,8 +1134,8 @@ def read_card() -> s.ModelCard:
 
 Router: `def model_card() -> s.ModelCard: return vision.read_card()`. In `examples.py` delete the `MODEL_CARD = ModelCard(...)` block and `ModelCard` from the import list.
 
-- [ ] **Step 4: Run the backend tests;** pass. Mutation checks: change the `labels[-1]` or break one matrix cell in a temporary copy of the card (the sums test fails); make `read_card` return `NO_CARD` always (the route test fails).
-- [ ] **Step 5: Web test first.** In `apps/web/src/pages/qc/ModelCard.test.tsx` add, after `WEAK`:
+- [x] **Step 4: Run the backend tests;** pass. Mutation checks: change the `labels[-1]` or break one matrix cell in a temporary copy of the card (the sums test fails); make `read_card` return `NO_CARD` always (the route test fails).
+- [x] **Step 5: Web test first.** In `apps/web/src/pages/qc/ModelCard.test.tsx` add, after `WEAK`:
 
 ```tsx
 const UNMEASURED = { ...GOOD, test_clean: 0, clean_false_alarm_rate: null }
@@ -1164,7 +1166,7 @@ describe('ModelCard when false alarms on clean cloth were not measured', () => {
 
 Run `cd apps/web && npx vitest run src/pages/qc/ModelCard.test.tsx` — Expected: the two new tests fail (the KPI shows `0%`; the alert says "below the bar").
 
-- [ ] **Step 6: Edit `ModelCard.tsx`.** In `Evaluated`, replace the `<Alert>` block with:
+- [x] **Step 6: Edit `ModelCard.tsx`.** In `Evaluated`, replace the `<Alert>` block with:
 
 ```tsx
       <Alert tone={c.clean_false_alarm_rate === null || good ? 'info' : 'error'}>
@@ -1197,10 +1199,10 @@ and replace the `<KpiCard label="False alarms on clean cloth" .../>` with:
 
 Re-run the file's tests (all, new and old, pass), then `npx vitest run` (whole web suite), `npx tsc -b`, `npx oxlint` — all clean. (The tone is `info` for an unmeasured rate, so an unvalidated model is not announced as an error.)
 
-- [ ] **Step 7: `package.json`:** change `dev:api` to `uv run --directory services/api --group ml uvicorn app.main:app --reload --host 0.0.0.0 --port 8000` so a fresh clone installs the vision libraries (the model cannot run without them).
-- [ ] **Step 8: Remove the now-unused example** from `examples.py` (see Files), run `grep -rn "MODEL_CARD" services/api` (nothing left), full backend suite twice, green; `test_committed_contract_matches_the_code` passes.
-- [ ] **Step 9: Hritwik's server and app.** If `:8000` is up, `GET /api/health` answers; open the model-card page in his running app to see the real card.
-- [ ] **Step 10: Commit.**
+- [x] **Step 7: `package.json`:** change `dev:api` to `uv run --directory services/api --group ml uvicorn app.main:app --reload --host 0.0.0.0 --port 8000` so a fresh clone installs the vision libraries (the model cannot run without them).
+- [x] **Step 8: Remove the now-unused example** from `examples.py` (see Files), run `grep -rn "MODEL_CARD" services/api` (nothing left), full backend suite twice, green; `test_committed_contract_matches_the_code` passes.
+- [x] **Step 9: Hritwik's server and app.** If `:8000` is up, `GET /api/health` answers; open the model-card page in his running app to see the real card.
+- [x] **Step 10: Commit.**
 
 ```bash
 git add services/api/app/modules/qc services/api/tests/test_qc_model_card.py apps/web/src/pages/qc package.json

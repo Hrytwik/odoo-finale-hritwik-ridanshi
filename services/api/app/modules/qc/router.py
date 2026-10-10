@@ -6,7 +6,6 @@ from app.db.models import User
 from app.db.session import get_db
 from app.modules.floor import board
 from app.modules.floor.schemas import RunOut
-from app.modules.qc import examples as ex
 from app.modules.qc import schemas as s
 from app.modules.qc import service, vision
 
@@ -39,4 +38,4 @@ def start_rework(body: s.ReworkIn, db: Session = Depends(get_db)) -> RunOut:
 
 @router.get("/qc/model-card", response_model=s.ModelCard, dependencies=[Depends(queue_viewers)])
 def model_card() -> s.ModelCard:
-    return ex.MODEL_CARD
+    return vision.read_card()

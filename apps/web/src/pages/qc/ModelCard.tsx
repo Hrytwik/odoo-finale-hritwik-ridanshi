@@ -51,10 +51,12 @@ function Evaluated({ c }: { c: Card_ }) {
   const good = meetsBar(c)
   return (
     <div className="stack">
-      <Alert tone={good ? 'info' : 'error'}>
-        {good
-          ? `This model meets the bar: it finds at least ${pct(HOLE_RECALL_BAR)} of holes with no more than ${pct(FALSE_ALARM_BAR)} false alarms on clean cloth.`
-          : `This model is below the bar (holes found at least ${pct(HOLE_RECALL_BAR)}, false alarms at most ${pct(FALSE_ALARM_BAR)}), so it is offered as a supporting suggestion only.`}
+      <Alert tone={c.clean_false_alarm_rate === null || good ? 'info' : 'error'}>
+        {c.clean_false_alarm_rate === null
+          ? 'Not yet validated: false alarms on clean cloth have not been measured (the test photos had no clean cloth), so this model is offered as an unvalidated suggestion only.'
+          : good
+            ? `This model meets the bar: it finds at least ${pct(HOLE_RECALL_BAR)} of holes with no more than ${pct(FALSE_ALARM_BAR)} false alarms on clean cloth.`
+            : `This model is below the bar (holes found at least ${pct(HOLE_RECALL_BAR)}, false alarms at most ${pct(FALSE_ALARM_BAR)}), so it is offered as a supporting suggestion only.`}
       </Alert>
 
       <AnimatedGroup className="grid-cards">
@@ -70,12 +72,20 @@ function Evaluated({ c }: { c: Card_ }) {
             {c.test_defective} defective and {c.test_clean} clean, never seen in training
           </span>
         </div>
-        <KpiCard
-          label="False alarms on clean cloth"
-          value={(c.clean_false_alarm_rate ?? 0) * 100}
-          format={(n) => `${Math.round(n)}%`}
-          tone={c.clean_false_alarm_rate !== null && c.clean_false_alarm_rate > FALSE_ALARM_BAR ? 'danger' : undefined}
-        />
+        {c.clean_false_alarm_rate === null ? (
+          <div className="kpi">
+            <span className="kpi-label">False alarms on clean cloth</span>
+            <span className="kpi-value">Not measured</span>
+            <span className="muted text-sm">no clean test photos yet</span>
+          </div>
+        ) : (
+          <KpiCard
+            label="False alarms on clean cloth"
+            value={c.clean_false_alarm_rate * 100}
+            format={(n) => `${Math.round(n)}%`}
+            tone={c.clean_false_alarm_rate > FALSE_ALARM_BAR ? 'danger' : undefined}
+          />
+        )}
       </AnimatedGroup>
 
       <Reveal>

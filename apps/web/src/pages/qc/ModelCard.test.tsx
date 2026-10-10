@@ -19,6 +19,7 @@ const GOOD = {
     { name: 'Our own cloth photos', url: 'javascript:alert(1)', licence: 'Own work' },
   ],
 }
+const UNMEASURED = { ...GOOD, test_clean: 0, clean_false_alarm_rate: null }
 const WEAK = { ...GOOD, clean_false_alarm_rate: 0.3, per_class: [{ ...GOOD.per_class[0], recall: 0.6 }, ...GOOD.per_class.slice(1)] }
 
 beforeEach(() => {
@@ -106,6 +107,32 @@ describe('ModelCard: does it meet the bar from the spec?', () => {
     mockApi({ GET: { '/api/qc/model-card': WEAK } })
     renderPage(<ModelCard />)
     expect(await screen.findByText(/below the bar/i)).toBeInTheDocument()
+  })
+})
+
+describe('ModelCard when false alarms on clean cloth were not measured', () => {
+  it('says "Not measured", never 0%', async () => {
+    mockApi({ GET: { '/api/qc/model-card': UNMEASURED } })
+    renderPage(<ModelCard />)
+    await screen.findByText('yolo-v1')
+    const kpi = screen.getByText('False alarms on clean cloth').closest('.kpi') as HTMLElement
+    expect(kpi).toHaveTextContent(/not measured/i)
+    expect(kpi).not.toHaveTextContent('0%')
+  })
+
+  it('calls the model unvalidated, not "below the bar"', async () => {
+    mockApi({ GET: { '/api/qc/model-card': UNMEASURED } })
+    renderPage(<ModelCard />)
+    expect(await screen.findByText(/not yet validated/i)).toBeInTheDocument()
+    expect(screen.queryByText(/below the bar/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/meets the bar/i)).not.toBeInTheDocument()
+  })
+
+  it('is not announced as an error', async () => {
+    mockApi({ GET: { '/api/qc/model-card': UNMEASURED } })
+    renderPage(<ModelCard />)
+    await screen.findByText(/not yet validated/i)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })
 

@@ -12,6 +12,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import get_args
 
+from pydantic import ValidationError
+
 from app.core.enums import DefectType, Verdict
 from app.core.validate import check_upload_path, invalid, not_found
 from app.modules.qc import schemas as s
@@ -159,3 +161,18 @@ def analyze_photo(photo_path: str) -> s.AnalyzeOut:
     boxes = to_boxes([d for d in detections if d[2] >= CONFIDENCE])
     return s.AnalyzeOut(available=True, message=NOTICE, suggestion=s.AiSuggestion(
         model_version=_model_version(), verdict=suggest_verdict(boxes), boxes=boxes))
+
+
+NO_CARD = s.ModelCard(available=False, model_version=None, trained_at=None, datasets=[], test_defective=0, test_clean=0,
+                      clean_false_alarm_rate=None, per_class=[], confusion_labels=[], confusion_matrix=[])
+
+
+def read_card() -> s.ModelCard:
+    """The saved model card, or 'not evaluated yet' if the file is missing or unusable (the page must not break)."""
+    try:
+        return s.ModelCard(available=True, **json.loads(CARD_PATH.read_text()))
+    except FileNotFoundError:
+        return NO_CARD
+    except (OSError, ValueError, TypeError, ValidationError):
+        logger.warning("the model card file %s is unusable", CARD_PATH, exc_info=True)
+        return NO_CARD
