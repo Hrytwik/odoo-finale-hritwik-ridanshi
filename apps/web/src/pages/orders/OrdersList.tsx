@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Table } from '@/components/ui/Table'
+import type { Key } from '@/i18n/en'
+import { useI18n } from '@/i18n/I18nContext'
 import { api, call, type components } from '@/lib/api'
 import { useMe } from '@/lib/auth'
 import { formatDate, formatKg, formatMetres } from '@/lib/format'
@@ -31,6 +33,7 @@ const MATCH: Record<Filter, (o: Order) => boolean> = {
 }
 
 export default function OrdersList() {
+  const { t } = useI18n()
   const orders = useQuery({ queryKey: ['orders'], queryFn: () => call(api.GET('/api/orders')) })
   const me = useMe()
   const [filter, setFilter] = useState<Filter>('All')
@@ -40,14 +43,14 @@ export default function OrdersList() {
   return (
     <>
       <PageHeader
-        eyebrow="Production"
-        title="Orders"
-        description="Every buyer order with progress, yarn and delivery status. Updates live."
+        eyebrow={t('nav.group.Production')}
+        title={t('nav.orders')}
+        description={t('orders.description')}
         actions={
           canCreate && (
             <Link to="/orders/new">
               <Button>
-                <Plus size={16} aria-hidden /> New order
+                <Plus size={16} aria-hidden /> {t('orders.new')}
               </Button>
             </Link>
           )
@@ -57,12 +60,12 @@ export default function OrdersList() {
         {(all) =>
           all.length === 0 ? (
             <EmptyState
-              title="No orders yet"
-              description="Create the first order for a buyer to see it here."
+              title={t('portal.emptyTitle')}
+              description={t('orders.emptyDescription')}
               action={
                 canCreate && (
                   <Link to="/orders/new">
-                    <Button>New order</Button>
+                    <Button>{t('orders.new')}</Button>
                   </Link>
                 )
               }
@@ -73,7 +76,7 @@ export default function OrdersList() {
                 <AnimatedBackground defaultValue="All" onValueChange={(id) => id && setFilter(id as Filter)} className="pill-highlight">
                   {FILTERS.map((f) => (
                     <button key={f} type="button" data-id={f} className="pill-tab">
-                      {f}{' '}
+                      {t(`orders.filter.${f}` as Key)}{' '}
                       <span className="pill-count">{all.filter(MATCH[f]).length}</span>
                     </button>
                   ))}
@@ -84,8 +87,8 @@ export default function OrdersList() {
                 <input
                   type="search"
                   className="input"
-                  aria-label="Find an order"
-                  placeholder="Find an order: code, buyer, fabric, colour or stage"
+                  aria-label={t('orders.findAria')}
+                  placeholder={t('orders.findPlaceholder')}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
@@ -103,18 +106,19 @@ export default function OrdersList() {
 }
 
 function OrdersTable({ orders, searching }: { orders: Order[]; searching: boolean }) {
-  if (orders.length === 0) return <EmptyState title={searching ? 'No order matches your search' : 'No orders match this filter'} description={searching ? 'Try a different word, or clear the search box.' : undefined} />
+  const { t } = useI18n()
+  if (orders.length === 0) return <EmptyState title={searching ? t('orders.noMatchSearch') : t('orders.noMatchFilter')} description={searching ? t('orders.noMatchSearchHint') : undefined} />
   return (
     <Table>
       <thead>
         <tr>
-          <th>Order</th>
-          <th>Fabric</th>
-          <th className="num">Quantity</th>
-          <th>Stage</th>
-          <th style={{ minWidth: 160 }}>Passed QC</th>
-          <th>Yarn</th>
-          <th>Deadline</th>
+          <th>{t('qc.col.order')}</th>
+          <th>{t('qc.col.fabric')}</th>
+          <th className="num">{t('orders.col.quantity')}</th>
+          <th>{t('common.stage')}</th>
+          <th style={{ minWidth: 160 }}>{t('orders.col.passedQc')}</th>
+          <th>{t('passport.yarn')}</th>
+          <th>{t('orders.col.deadline')}</th>
         </tr>
       </thead>
       <tbody>
@@ -135,7 +139,7 @@ function OrdersTable({ orders, searching }: { orders: Order[]; searching: boolea
               <StageBar stage={o.stage} />
             </td>
             <td>
-              <ProgressBar label={`${o.code} passed`} value={o.progress.passed_m} max={o.qty_metres} unit="m" />
+              <ProgressBar label={t('orders.passedLabel', { code: o.code })} value={o.progress.passed_m} max={o.qty_metres} unit="m" />
             </td>
             <td>
               <YarnChip order={o} />
@@ -144,7 +148,7 @@ function OrdersTable({ orders, searching }: { orders: Order[]; searching: boolea
               {formatDate(o.deadline)}
               {isLate(o) && (
                 <div>
-                  <Badge tone="red">{o.days_late} days late</Badge>
+                  <Badge tone="red">{t('insight.daysLate', { days: o.days_late ?? 0 })}</Badge>
                 </div>
               )}
             </td>
@@ -156,8 +160,9 @@ function OrdersTable({ orders, searching }: { orders: Order[]; searching: boolea
 }
 
 function YarnChip({ order }: { order: Order }) {
+  const { t } = useI18n()
   if (order.state !== 'confirmed' && order.yarn_status !== 'short') return <span className="muted">-</span>
-  if (order.yarn_status === 'short') return <Badge tone="red">Short {formatKg(order.short_kg)}</Badge>
-  if (order.yarn_status === 'can_start') return <Badge tone="green">Yarn ready</Badge>
+  if (order.yarn_status === 'short') return <Badge tone="red">{t('orders.yarnShort', { qty: formatKg(order.short_kg) })}</Badge>
+  if (order.yarn_status === 'can_start') return <Badge tone="green">{t('orders.yarnReady')}</Badge>
   return <span className="muted">-</span>
 }

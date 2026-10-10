@@ -11,6 +11,7 @@ import { login } from './areas/login'
 import { machine } from './areas/machine'
 import { drafts } from './areas/drafts'
 import { money } from './areas/money'
+import { orders } from './areas/orders'
 import { owner } from './areas/owner'
 import { passport } from './areas/passport'
 import { photolog } from './areas/photolog'
@@ -208,6 +209,6 @@ const core = {
 } as const
 
 /** The core sentences plus each screen's own file under `areas/`. Add a screen's area here. */
-export const en = { ...core, ...englishOf(store), ...englishOf(dispatch), ...englishOf(inspect), ...englishOf(machine), ...englishOf(portal), ...englishOf(passport), ...englishOf(login), ...englishOf(landing), ...englishOf(shipments), ...englishOf(owner), ...englishOf(drafts), ...englishOf(money), ...englishOf(common), ...englishOf(photolog) }
+export const en = { ...core, ...englishOf(store), ...englishOf(dispatch), ...englishOf(inspect), ...englishOf(machine), ...englishOf(portal), ...englishOf(passport), ...englishOf(login), ...englishOf(landing), ...englishOf(shipments), ...englishOf(owner), ...englishOf(drafts), ...englishOf(money), ...englishOf(common), ...englishOf(photolog), ...englishOf(orders) }
 
 export type Key = keyof typeof en

@@ -18,6 +18,8 @@ import { Dialog } from '@/components/ui/Dialog'
 import { Field, Input } from '@/components/ui/Field'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Table } from '@/components/ui/Table'
+import type { Key } from '@/i18n/en'
+import { useI18n } from '@/i18n/I18nContext'
 import { api, call, errorMessage, type components } from '@/lib/api'
 import { useMe } from '@/lib/auth'
 import { todayIso } from '@/lib/dates'
@@ -28,14 +30,9 @@ import { ShipmentsCard } from './Shipments'
 
 type Order = components['schemas']['OrderOut']
 
-const STAGE_NAME = { spinning: 'Spinning', weaving: 'Weaving', dyeing: 'Dyeing' } as const
-
-function lateText(days: number) {
-  if (days <= 0) return 'on time'
-  return `${days} ${days === 1 ? 'day' : 'days'} late`
-}
 
 export default function OrderDetail() {
+  const { t } = useI18n()
   const { code = '' } = useParams()
   const me = useMe()
   const role = me.data?.role
@@ -60,13 +57,13 @@ export default function OrderDetail() {
           <div className="stack">
             <div className="row">
               <StatusBadge kind="order" value={o.stage} />
-              {o.state === 'draft' && <Badge tone="gray">Draft: not confirmed yet</Badge>}
+              {o.state === 'draft' && <Badge tone="gray">{t('orders.draftBadge')}</Badge>}
             </div>
             <AnimatedGroup className="grid-cards">
-              <KpiCard label="Ordered" value={o.qty_metres} format={formatMetres} />
-              <KpiCard label="Passed quality check" value={o.progress.passed_m} format={formatMetres} />
-              <KpiCard label="Dispatched" value={o.progress.dispatched_m} format={formatMetres} />
-              <KpiCard label="Price per metre" value={o.price_per_metre} format={formatMoney} />
+              <KpiCard label={t('orders.kpi.ordered')} value={o.qty_metres} format={formatMetres} />
+              <KpiCard label={t('orders.kpi.passed')} value={o.progress.passed_m} format={formatMetres} />
+              <KpiCard label={t('orders.kpi.dispatched')} value={o.progress.dispatched_m} format={formatMetres} />
+              <KpiCard label={t('orders.kpi.price')} value={o.price_per_metre} format={formatMoney} />
             </AnimatedGroup>
             <Reveal>
               <ProgressCard order={o} />
@@ -97,50 +94,54 @@ export default function OrderDetail() {
 }
 
 function ProgressCard({ order }: { order: Order }) {
+  const { t } = useI18n()
   const p = order.progress
   const q = order.qty_metres
   return (
-    <Card title="Progress">
+    <Card title={t('orders.progress')}>
       <div className="stack">
-        <ProgressBar label="Yarn spun" value={p.spun_kg} max={p.need_kg} unit="kg" tone="blue" />
-        <ProgressBar label="Woven" value={p.woven_m} max={q} unit="m" tone="blue" />
-        <ProgressBar label="Dyed" value={p.dyed_m} max={q} unit="m" tone="violet" />
-        <ProgressBar label="Passed quality check" value={p.passed_m} max={q} unit="m" tone="green" />
-        <ProgressBar label="Dispatched" value={p.dispatched_m} max={q} unit="m" tone="gray" />
-        <ProgressBar label="Rejected" value={p.rejected_m} max={q} unit="m" tone="red" />
+        <ProgressBar label={t('orders.bar.spun')} value={p.spun_kg} max={p.need_kg} unit="kg" tone="blue" />
+        <ProgressBar label={t('orders.bar.woven')} value={p.woven_m} max={q} unit="m" tone="blue" />
+        <ProgressBar label={t('orders.bar.dyed')} value={p.dyed_m} max={q} unit="m" tone="violet" />
+        <ProgressBar label={t('orders.kpi.passed')} value={p.passed_m} max={q} unit="m" tone="green" />
+        <ProgressBar label={t('orders.kpi.dispatched')} value={p.dispatched_m} max={q} unit="m" tone="gray" />
+        <ProgressBar label={t('ship.rejectedLabel')} value={p.rejected_m} max={q} unit="m" tone="red" />
       </div>
     </Card>
   )
 }
 
 function DeliveryCard({ query, deadline }: { query: ReturnType<typeof useQuery<components['schemas']['EtaOut']>>; deadline: string }) {
+  const { t } = useI18n()
+  const stageName = (s: string) => t(`floor.stage.${s}` as Key)
+  const lateText = (days: number) => (days <= 0 ? t('insight.onTime').toLowerCase() : t(days === 1 ? 'insight.dayLate' : 'insight.daysLate', { days }))
   return (
-    <Card title="Delivery">
+    <Card title={t('orders.delivery')}>
       <QueryBoundary query={query} rows={2}>
         {(eta) => (
           <div className="stack">
             <div className="row">
               <CalendarClock size={18} aria-hidden />
               <span>
-                Expected delivery <strong>{formatDate(eta.delivery_date)}</strong>, deadline {formatDate(deadline)}
+                {t('orders.expectedDelivery', { date: formatDate(eta.delivery_date), deadline: formatDate(deadline) })}
               </span>
               <Badge tone={eta.days_late > 0 ? 'red' : 'green'}>{lateText(eta.days_late)}</Badge>
             </div>
             {eta.bottleneck_stage && (
               <p className="muted text-sm">
-                Bottleneck: <strong>{STAGE_NAME[eta.bottleneck_stage]}</strong>. This stage adds the most delay.
+                {t('orders.bottleneck', { stage: stageName(eta.bottleneck_stage) })}
               </p>
             )}
             <div className="row">
               {eta.stages.map((s) => (
                 <Badge key={s.stage} tone="blue">
-                  {STAGE_NAME[s.stage]} done {formatDate(s.finish_date)}
+                  {t('orders.stageDoneOn', { stage: stageName(s.stage), date: formatDate(s.finish_date) })}
                 </Badge>
               ))}
             </div>
             {eta.what_ifs.length > 0 && (
               <div className="stack-sm">
-                <strong className="text-sm">What if…</strong>
+                <strong className="text-sm">{t('orders.whatIf')}</strong>
                 {eta.what_ifs.map((w) => (
                   <div key={w.kind} className="shortage">
                     <span>{w.label}</span>
@@ -159,22 +160,23 @@ function DeliveryCard({ query, deadline }: { query: ReturnType<typeof useQuery<c
 }
 
 function YarnCard({ query }: { query: ReturnType<typeof useQuery<components['schemas']['YarnCheckOut']>> }) {
+  const { t } = useI18n()
   return (
-    <Card title="Yarn check">
+    <Card title={t('orders.yarnCheck')}>
       <QueryBoundary query={query} rows={2}>
         {(check) => {
           const short = check.lines.reduce((sum, l) => sum + l.short_kg, 0)
           return (
             <div className="stack">
-              <div>{check.can_start ? <Badge tone="green">Enough yarn to start</Badge> : <Badge tone="red">Short {formatKg(short)}</Badge>}</div>
+              <div>{check.can_start ? <Badge tone="green">{t('orders.enoughYarn')}</Badge> : <Badge tone="red">{t('orders.yarnShort', { qty: formatKg(short) })}</Badge>}</div>
               <Table>
                 <thead>
                   <tr>
-                    <th>Yarn</th>
-                    <th className="num">Needed</th>
-                    <th className="num">Already issued</th>
-                    <th className="num">Available</th>
-                    <th className="num">Short</th>
+                    <th>{t('passport.yarn')}</th>
+                    <th className="num">{t('orders.col.needed')}</th>
+                    <th className="num">{t('orders.col.issued')}</th>
+                    <th className="num">{t('orders.col.available')}</th>
+                    <th className="num">{t('orders.col.short')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -198,49 +200,50 @@ function YarnCard({ query }: { query: ReturnType<typeof useQuery<components['sch
 }
 
 function CostCard({ query }: { query: ReturnType<typeof useQuery<components['schemas']['OrderCost']>> }) {
+  const { t } = useI18n()
   return (
-    <Card title="Cost and profit">
+    <Card title={t('orders.cost.title')}>
       <QueryBoundary query={query} rows={3}>
         {(c) => (
           <div className="stack">
             <AnimatedGroup className="grid-cards">
-              <KpiCard label="Total cost" value={c.total} format={formatMoney} />
-              <KpiCard label="Revenue" value={c.revenue} format={formatMoney} hint={`${formatMetres(c.good_metres)} good metres`} />
-              <KpiCard label="Profit" value={c.profit} format={formatMoney} tone={c.profit < 0 ? 'danger' : undefined} hint={c.provisional ? 'provisional: the order is not finished' : 'final'} />
+              <KpiCard label={t('orders.cost.total')} value={c.total} format={formatMoney} />
+              <KpiCard label={t('chart.revenue')} value={c.revenue} format={formatMoney} hint={t('orders.cost.goodMetres', { metres: formatMetres(c.good_metres) })} />
+              <KpiCard label={t('chart.profitWord')} value={c.profit} format={formatMoney} tone={c.profit < 0 ? 'danger' : undefined} hint={c.provisional ? t('orders.cost.provisional') : t('orders.cost.final')} />
             </AnimatedGroup>
             <Table>
               <thead>
                 <tr>
-                  <th>Where the money went</th>
-                  <th className="num">Amount</th>
+                  <th>{t('passport.whereMoney')}</th>
+                  <th className="num">{t('common.amount')}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>Yarn</td>
+                  <td>{t('passport.yarn')}</td>
                   <td className="num">{formatMoney(c.parts.yarn)}</td>
                 </tr>
                 <tr>
-                  <td>Machines</td>
+                  <td>{t('passport.machinesCost')}</td>
                   <td className="num">{formatMoney(c.parts.machine)}</td>
                 </tr>
                 <tr>
-                  <td>Labour</td>
+                  <td>{t('passport.labour')}</td>
                   <td className="num">{formatMoney(c.parts.labour)}</td>
                 </tr>
                 <tr>
-                  <td>Rework</td>
+                  <td>{t('passport.stage.rework')}</td>
                   <td className="num">{formatMoney(c.parts.rework)}</td>
                 </tr>
                 <tr>
-                  <td>Rejected rolls ({formatMetres(c.rejected_metres)})</td>
+                  <td>{t('orders.cost.rejectedRolls', { metres: formatMetres(c.rejected_metres) })}</td>
                   <td className="num">{formatMoney(c.reject_cost)}</td>
                 </tr>
               </tbody>
             </Table>
             {c.cost_per_good_metre !== null && (
               <p className="muted text-sm">
-                True cost of a good metre: <strong>{formatMoney(c.cost_per_good_metre)}</strong> (rejects and rework included).
+                {t('orders.cost.trueCost', { amount: formatMoney(c.cost_per_good_metre) })}
               </p>
             )}
             {c.warnings.length > 0 && (
@@ -264,23 +267,24 @@ function CostCard({ query }: { query: ReturnType<typeof useQuery<components['sch
 type DialogKind = 'confirm' | 'cancel' | 'deadline' | null
 
 function Actions({ order, canWrite }: { order: Order; canWrite: boolean }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState<DialogKind>(null)
   if (!canWrite || order.state === 'cancelled') return null
   return (
     <>
       {order.state === 'draft' && (
         <Button onClick={() => setOpen('confirm')}>
-          <CheckCircle2 size={16} aria-hidden /> Confirm order
+          <CheckCircle2 size={16} aria-hidden /> {t('orders.confirm')}
         </Button>
       )}
       {order.state === 'confirmed' && (
         <Button variant="secondary" onClick={() => setOpen('deadline')}>
-          Change deadline
+          {t('orders.changeDeadline')}
         </Button>
       )}
       {order.state === 'confirmed' && <DelayNoticeButton orderCode={order.code} buyerName={order.buyer.name} />}
       <Button variant="secondary" onClick={() => setOpen('cancel')}>
-        <XCircle size={16} aria-hidden /> Cancel order
+        <XCircle size={16} aria-hidden /> {t('orders.cancelOrder')}
       </Button>
       <ConfirmDialog order={order} open={open === 'confirm'} onClose={() => setOpen(null)} />
       <CancelDialog order={order} open={open === 'cancel'} onClose={() => setOpen(null)} />
@@ -321,18 +325,19 @@ function ActionDialog({ open, onClose, title, error, children }: { open: boolean
 }
 
 function ConfirmDialog({ order, open, onClose }: { order: Order; open: boolean; onClose: () => void }) {
+  const { t } = useI18n()
   const { act, pending, error, path } = useOrderAction(order, onClose)
   return (
-    <ActionDialog open={open} onClose={onClose} title={`Confirm ${order.code}?`} error={error}>
+    <ActionDialog open={open} onClose={onClose} title={t('orders.confirmTitle', { code: order.code })} error={error}>
       <p>
-        Confirming tells the floor to plan this order for {order.buyer.name}. After this only the deadline can change, and it can be cancelled only until production starts.
+        {t('orders.confirmBody', { buyer: order.buyer.name })}
       </p>
       <div className="row">
-        <SubmitButton pending={pending} onClick={() => act(() => call(api.POST('/api/orders/{order_code}/confirm', path)), `${order.code} confirmed`)}>
-          Confirm order
+        <SubmitButton pending={pending} onClick={() => act(() => call(api.POST('/api/orders/{order_code}/confirm', path)), t('orders.confirmedToast', { code: order.code }))}>
+          {t('orders.confirm')}
         </SubmitButton>
         <Button variant="secondary" onClick={onClose}>
-          Not yet
+          {t('orders.notYet')}
         </Button>
       </div>
     </ActionDialog>
@@ -340,16 +345,17 @@ function ConfirmDialog({ order, open, onClose }: { order: Order; open: boolean; 
 }
 
 function CancelDialog({ order, open, onClose }: { order: Order; open: boolean; onClose: () => void }) {
+  const { t } = useI18n()
   const { act, pending, error, path } = useOrderAction(order, onClose)
   return (
-    <ActionDialog open={open} onClose={onClose} title={`Cancel ${order.code}?`} error={error}>
-      <p>This cannot be undone. An order that already has production runs cannot be cancelled.</p>
+    <ActionDialog open={open} onClose={onClose} title={t('orders.cancelTitle', { code: order.code })} error={error}>
+      <p>{t('orders.cancelBody')}</p>
       <div className="row">
-        <SubmitButton variant="danger" pending={pending} onClick={() => act(() => call(api.POST('/api/orders/{order_code}/cancel', path)), `${order.code} cancelled`)}>
-          Yes, cancel order
+        <SubmitButton variant="danger" pending={pending} onClick={() => act(() => call(api.POST('/api/orders/{order_code}/cancel', path)), t('orders.cancelledToast', { code: order.code }))}>
+          {t('orders.yesCancel')}
         </SubmitButton>
         <Button variant="secondary" onClick={onClose}>
-          Keep order
+          {t('orders.keepOrder')}
         </Button>
       </div>
     </ActionDialog>
@@ -357,26 +363,27 @@ function CancelDialog({ order, open, onClose }: { order: Order; open: boolean; o
 }
 
 function DeadlineDialog({ order, open, onClose }: { order: Order; open: boolean; onClose: () => void }) {
+  const { t } = useI18n()
   const { act, pending, error, setError, path } = useOrderAction(order, onClose)
   const [deadline, setDeadline] = useState(order.deadline)
   const [today] = useState(todayIso)
   return (
-    <ActionDialog open={open} onClose={onClose} title="Change deadline" error={error}>
-      <Field label="New deadline" error={deadline && deadline < today ? 'The deadline cannot be in the past' : undefined}>
+    <ActionDialog open={open} onClose={onClose} title={t('orders.changeDeadline')} error={error}>
+      <Field label={t('orders.newDeadline')} error={deadline && deadline < today ? t('orders.err.deadlinePast') : undefined}>
         {(c) => <Input {...c} type="date" min={today} value={deadline} onChange={(e) => setDeadline(e.target.value)} />}
       </Field>
       <div className="row">
         <SubmitButton
           pending={pending}
           onClick={() => {
-            if (!deadline || deadline < today) return setError('Choose a deadline that is today or later')
-            return act(() => call(api.PATCH('/api/orders/{order_code}', { ...path, body: { deadline } })), 'Deadline changed')
+            if (!deadline || deadline < today) return setError(t('orders.deadlineTodayOrLater'))
+            return act(() => call(api.PATCH('/api/orders/{order_code}', { ...path, body: { deadline } })), t('orders.deadlineChanged'))
           }}
         >
-          Save deadline
+          {t('orders.saveDeadline')}
         </SubmitButton>
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('dispatch.cancel')}
         </Button>
       </div>
     </ActionDialog>

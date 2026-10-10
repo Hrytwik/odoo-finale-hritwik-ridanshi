@@ -282,6 +282,10 @@ export const money = {
     en: '{days} days late', hi: '{days} दिन देर', kn: '{days} ದಿನ ತಡ', ta: '{days} நாள் தாமதம்', te: '{days} రోజులు ఆలస్యం',
     mr: '{days} दिवस उशीर', bn: '{days} দিন দেরি', gu: '{days} દિવસ મોડું', ml: '{days} ദിവസം വൈകി', pa: '{days} ਦਿਨ ਦੇਰੀ',
   },
+  'insight.dayLate': {
+    en: '{days} day late', hi: '{days} दिन देर', kn: '{days} ದಿನ ತಡ', ta: '{days} நாள் தாமதம்', te: '{days} రోజులు ఆలస్యం',
+    mr: '{days} दिवस उशीर', bn: '{days} দিন দেরি', gu: '{days} દિવસ મોડું', ml: '{days} ദിവസം വൈകി', pa: '{days} ਦਿਨ ਦੇਰੀ',
+  },
   'insight.onTime': {
     en: 'On time', hi: 'समय पर', kn: 'ಸಮಯಕ್ಕೆ ಸರಿ', ta: 'சரியான நேரத்தில்', te: 'సమయానికి',
     mr: 'वेळेवर', bn: 'সময়মতো', gu: 'સમયસર', ml: 'സമയത്ത്', pa: 'ਸਮੇਂ ਸਿਰ',

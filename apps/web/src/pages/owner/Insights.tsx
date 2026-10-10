@@ -69,7 +69,7 @@ export default function Insights() {
 function LateOrder({ order: o }: { order: Eta }) {
   const { t } = useI18n()
   const stageName = (s: string) => t(`floor.stage.${s}` as Key)
-  const lateText = (days: number) => (days > 0 ? t('insight.daysLate', { days }) : t('insight.onTime').toLowerCase())
+  const lateText = (days: number) => (days > 0 ? t(days === 1 ? 'insight.dayLate' : 'insight.daysLate', { days }) : t('insight.onTime').toLowerCase())
   return (
     <article className="card insight">
       <div className="card-body stack-sm">
