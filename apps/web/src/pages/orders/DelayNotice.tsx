@@ -78,7 +78,7 @@ function DelayNoticeDialog({ orderCode, buyerName, onClose }: { orderCode: strin
         const sent = await call(api.POST('/api/orders/{order_code}/delay-notice', { ...path, body: { reason, message } }))
         if (sent.whatsapp_status === 'sent') toast.success(`${buyerName} has been told, in the app and on WhatsApp`)
         else if (sent.whatsapp_status === 'failed') toast.warning(`${buyerName} was told in the app. WhatsApp: ${sent.whatsapp_detail ?? 'it was not delivered'}`)
-        else toast.success(`${buyerName} has been told in the app. Not sent on WhatsApp: ${sent.whatsapp_detail ?? 'it is not connected'}`)
+        else toast.success(`${buyerName} has been told in the app.`)
         onClose()
       } catch (err) {
         setError(errorMessage(err))
@@ -116,7 +116,7 @@ function DelayNoticeDialog({ orderCode, buyerName, onClose }: { orderCode: strin
         <div className="stack-sm">
           <p className="eyebrow">Also on WhatsApp</p>
           <WhatsAppPreview message={message} trackingUrl={channel.tracking_url} />
-          <p className={channel.whatsapp_ready ? 'muted text-sm' : 'text-sm text-danger'}>{channel.whatsapp_ready ? `It will also be sent to ${channel.to}.` : channel.problem}</p>
+          <p className={channel.whatsapp_ready || channel.phone ? 'muted text-sm' : 'text-sm text-danger'}>{channel.whatsapp_ready ? `It will also be sent to ${channel.to}.` : channel.problem}</p>
           {channel.phone && (
             <p className="row">
               <a className="btn btn-secondary" href={whatsappLink(channel.phone, message, channel.tracking_url)} target="_blank" rel="noopener noreferrer">

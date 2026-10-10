@@ -55,7 +55,7 @@ def channel(db: Session, order: Order) -> s.ChannelOut:
     number = whatsapp.normalise_phone(order.buyer.phone)
     tracking = f"{config.public_url.rstrip('/')}/portal/orders/{order.code}" if config.public_url else None
     if not config.ready:
-        problem = "WhatsApp is not connected yet (owner: AI > WhatsApp)." if not config.enabled else "WhatsApp is switched on but its details are incomplete."
+        problem = "Automatic WhatsApp sending is switched off. Use the button below to send it from your own WhatsApp." if not config.enabled else "Automatic WhatsApp sending is switched on but its details are incomplete."
     elif not order.buyer.phone or not order.buyer.phone.strip():
         problem = f"{order.buyer.name} has no phone number. Add one under Buyers."
     elif number is None:

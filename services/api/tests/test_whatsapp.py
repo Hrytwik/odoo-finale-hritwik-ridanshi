@@ -203,7 +203,7 @@ def test_without_a_connection_the_notice_says_it_was_not_sent_on_whatsapp(client
     login_as("owner")
     order = make_order(db, buyer=make_buyer(db, phone="98450 12345"))
     r = client.post(f"/api/orders/{order.code}/delay-notice", json={"reason": "other", "message": "Delayed."})
-    assert r.json()["whatsapp_status"] == "skipped" and "not connected" in r.json()["whatsapp_detail"] and outbox == []
+    assert r.json()["whatsapp_status"] == "skipped" and "switched off" in r.json()["whatsapp_detail"] and outbox == []
 
 
 def test_the_draft_tells_the_owner_where_it_would_go_or_why_not(client, connected, db):
