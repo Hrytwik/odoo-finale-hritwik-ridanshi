@@ -219,6 +219,11 @@ h1 {
 .table td a.code:hover {
   text-decoration: underline;
 }
+.table td .code-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
 
 /* ---------- Stage bar on orders: five segments, filled up to the current stage ---------- */
 .stage-legend {
@@ -550,5 +555,103 @@ h1 {
   .machine-running .machine-thread i,
   .typewriter-caret {
     animation: none;
+  }
+}
+
+/* ---------- Invoice: laid out like paper ---------- */
+.invoice {
+  max-width: 860px;
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+.invoice-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 2px solid var(--color-primary);
+}
+.invoice-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.invoice-brand strong {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+}
+.invoice-no {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.invoice-no strong {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+}
+.invoice-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
+}
+.invoice-meta dt,
+.invoice-totals dt {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.invoice-meta dd,
+.invoice-totals dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+.invoice-lines {
+  background: transparent;
+}
+.invoice-totals {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 320px;
+  margin: var(--space-5) 0 0 auto;
+}
+.invoice-totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.invoice-totals dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.invoice-balance {
+  padding-top: var(--space-2);
+  border-top: 2px solid var(--color-primary);
+  font-size: 1.15rem;
+}
+.invoice-balance dd {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+@media print {
+  .no-print,
+  .shell-header,
+  .sidebar,
+  .sidebar-drawer {
+    display: none !important;
+  }
+  body,
+  .shell-main {
+    background: #fff;
+    padding: 0;
+  }
+  .invoice {
+    max-width: none;
+    border: 0;
+    padding: 0;
   }
 }
