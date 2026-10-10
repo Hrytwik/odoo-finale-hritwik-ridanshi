@@ -1,9 +1,41 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 19:53 IST
+> **Last updated:** 2026-10-10 20:43 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 20:43 IST — Dispatch, invoices and money are real (shapes unchanged); your login hardening is next on my list
+
+**From:** Hritwik → Ridanshi
+
+**Thank you for the note and for verifying the merge on real data.** I will merge `a/web-textile` (login hardening, the QC "no linked inspector" message, your UI commits) as soon as you push it; I have read your note about the four files but not yet the code (I will review it at the merge); I will follow your merge advice (take our side of `main.py` and `contracts/*` if they conflict, keep your middleware line and routers, run `npm run contracts` again). Two things I will check after the merge: that my `login_as` test helper (a token without the password fingerprint) still works, and that `db:seed` and `db:demo` are unaffected.
+
+**Dispatch, invoices and money now run on real data. No shape changed:** `contracts/` is byte-identical. After you pull, run `npm run db:migrate` (one new migration, `dispatch and invoice codes`). It is covered by 1,002 backend tests including a whole-chain test (yarn in, order, spin, weave, dye, QC with a rework, a truck, an invoice, payments, payables); a run on a live server is still to come, so tell me if any screen disagrees.
+
+**What is real now:** `GET/POST /dispatches`, `GET /dispatches/{code}`, `POST /dispatches/{code}/items` (scan), `DELETE /dispatches/{code}/items/{roll_code}`, `POST /dispatches/{code}/confirm`, `GET /invoices/{no}`, `GET /money/receivables`, `GET /money/payables`, `POST /payments/buyer`, `POST /payments/supplier`. **Still example data:** costing and the month report (B6), insights, ETA and recall trace (B7), the vision endpoints (B8), the buyer portal. The example receivable (INV-0007, ₹19,600) and payable (L-0017, ₹200,000) rows are gone: both lists now show real rows.
+
+**Loading a truck**
+- A dispatch is for one buyer; it can carry several of that buyer's orders. Codes are `DSP-0007` and invoices `INV-0007`. `vehicle_no` at most 30 characters, `driver_name` at most 120 (422 on the field otherwise).
+- Scanning a roll is refused with: `DISPATCH_LOCKED` (the truck is already confirmed), `WRONG_BUYER`, `ALREADY_DISPATCHED` (the message says "this dispatch" or "another dispatch"; **a repeated scan of the same roll on the same truck is refused, not ignored**, so your scanner screen should show it as a gentle "already scanned"), `ROLL_NOT_PASSED` (the message names the roll's status, for example "rejected" or "awaiting_qc"), 404 for an unknown roll.
+- The truck comes back whole after each scan: each roll with status `loading`, `orders` (ordered, previously dispatched on **confirmed** trucks, loaded now, remaining never below 0, `over_shipped`) and `warnings`. **Over-shipping only warns, it never blocks.**
+- Taking a roll off works only while the truck is `loading`; the roll returns to `in_store`.
+
+**Confirming and the invoice**
+- Confirm needs at least one roll (`EMPTY_DISPATCH`), and a second confirm is `DISPATCH_LOCKED` (no second invoice). After confirming nothing on the dispatch or invoice can change.
+- The invoice has **one line per order**, with metres, the order's price as the rate, and amount = metres x rate rounded to the paisa; **the total is the sum of the rounded lines**. Shipped metres are billed even when over-shipped.
+- `GET /invoices/{no}`: dispatch, accountant, owner and the buyer (own invoices only; **another buyer's invoice and a missing invoice give the same 404**). `paid_amount` and `balance` are summed from the real payments.
+
+**Payments and the lists**
+- `POST /payments/buyer` and `/payments/supplier`: the amount is rounded to the paisa, and an amount that rounds to zero is refused; **a payment that would exceed what is still owed is `OVERPAYMENT` (409 on `amount`, the message says how much is owed; the same code your wage payments use)**; a future date is `FUTURE_DATE` (422), and a date before the invoice or bill date is a 422 on `received_on` or `paid_on`; `reference` at most 120 characters. The response is the updated receivable or payable row.
+- **Please disable the Record payment button while a payment is being sent.** Two identical partial payments are both valid, so the backend cannot tell a double-click from two real instalments; it only stops you paying more than is owed.
+- Receivables list every invoice (fully paid ones too), newest first; payables list every supplier bill (created when yarn is received) with its lot code, soonest due first; `overdue` is true only when the due date has passed and something is still owed.
+
+**A new safety net for every form:** a text value longer than its database column or a number too big for its column is now a clean **422** with code `VALUE_TOO_LONG` (the message gives the limit, for example "at most 60 characters") or `NUMBER_TOO_LARGE`, with no field name (the database does not say which field). Before this a 61-character challan number crashed the server. Limits worth mirroring in your forms: challan number 60, order colour 60, vehicle number 30, driver name 120, payment reference 120.
+
+**To try it with the demo mill** (`npm run db:demo` on an empty database): end the running dyeing run on `DYE-01`, log in as `qc` and pass `R-0001` and `R-0002`, then log in as `dispatch`, create a dispatch for Sharma Fabrics and scan both rolls; confirm it, then log in as `accountant` and record a payment.
 
 ---
 
