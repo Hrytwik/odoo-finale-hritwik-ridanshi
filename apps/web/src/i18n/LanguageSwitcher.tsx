@@ -16,23 +16,22 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         <Languages size={18} aria-hidden />
       </Button>
       <Dialog open={open} onClose={() => setOpen(false)} title={t('language.title')}>
-        <ul className="stack" style={{ listStyle: 'none', margin: 0, padding: 0, gap: 4 }}>
+        <ul className="lang-list">
           {LANGUAGES.map((l) => (
             <li key={l.code}>
               <button
                 type="button"
-                className="nav-link"
+                className="lang-option"
                 lang={l.code}
                 aria-pressed={l.code === lang}
-                style={{ width: '100%', justifyContent: 'space-between' }}
                 onClick={() => {
                   setLang(l.code)
                   setOpen(false)
                 }}
               >
                 <span>
-                  {l.native}
-                  {l.code !== 'en' && <span className="muted text-sm"> · {l.english}</span>}
+                  <span className="lang-native">{l.native}</span>
+                  {l.code !== 'en' && <span className="lang-english">{l.english}</span>}
                 </span>
                 {l.code === lang && <Check size={16} aria-hidden />}
               </button>
