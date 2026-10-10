@@ -27,7 +27,6 @@ export const bn: Partial<Record<Key, string>> = {
   'nav.insights': 'অন্তর্দৃষ্টি',
   'nav.copilot': 'কোপাইলট',
   'nav.aiSettings': 'এআই সেটিংস',
-  'nav.whatsapp': 'হোয়াটসঅ্যাপ',
   'nav.suppliers': 'সরবরাহকারী',
   'nav.buyers': 'ক্রেতা',
   'nav.buyerInvites': 'ক্রেতা আমন্ত্রণ',

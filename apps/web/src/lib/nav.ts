@@ -1,4 +1,4 @@
-import { Bot, Boxes, ClipboardCheck, ClipboardList, Factory, FileText, Gauge, IdCard, Layers, LineChart, MessageCircle, PackageCheck, PackagePlus, Ruler, Settings, ShieldCheck, ShoppingBag, Ticket, Truck, Users, Wallet, Warehouse, type LucideIcon } from 'lucide-react'
+import { Bot, Boxes, ClipboardCheck, ClipboardList, Factory, FileText, Gauge, IdCard, Layers, LineChart, PackageCheck, PackagePlus, Ruler, Settings, ShieldCheck, ShoppingBag, Ticket, Truck, Users, Wallet, Warehouse, type LucideIcon } from 'lucide-react'
 import type { components } from '@contracts/types'
 import type { Key } from '@/i18n/en'
 
@@ -23,7 +23,6 @@ export const NAV: NavItem[] = [
   { labelKey: 'nav.insights', href: '/owner/insights', label: 'Insights', group: 'Owner', roles: ['owner'], icon: LineChart },
   { labelKey: 'nav.copilot', href: '/copilot', label: 'Copilot', group: 'AI', roles: ['owner', 'accountant', 'supervisor'], icon: Bot },
   { labelKey: 'nav.aiSettings', href: '/settings/ai', label: 'AI settings', group: 'AI', roles: ['owner'], icon: Settings },
-  { labelKey: 'nav.whatsapp', href: '/settings/whatsapp', label: 'WhatsApp', group: 'AI', roles: ['owner'], icon: MessageCircle },
   { labelKey: 'nav.suppliers', href: '/admin/suppliers', label: 'Suppliers', group: 'Master data', roles: ['owner'], icon: Truck },
   { labelKey: 'nav.buyers', href: '/admin/buyers', label: 'Buyers', group: 'Master data', roles: ['owner'], icon: ShoppingBag },
   { labelKey: 'nav.buyerInvites', href: '/admin/buyer-invites', label: 'Buyer invites', group: 'Master data', roles: ['owner'], icon: Ticket },

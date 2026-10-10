@@ -27,7 +27,6 @@ export const te: Partial<Record<Key, string>> = {
   'nav.insights': 'అంతర్దృష్టులు',
   'nav.copilot': 'కోపైలట్',
   'nav.aiSettings': 'ఏఐ సెట్టింగ్‌లు',
-  'nav.whatsapp': 'వాట్సాప్',
   'nav.suppliers': 'సరఫరాదారులు',
   'nav.buyers': 'కొనుగోలుదారులు',
   'nav.buyerInvites': 'కొనుగోలుదారు ఆహ్వానాలు',

@@ -27,7 +27,6 @@ export const kn: Partial<Record<Key, string>> = {
   'nav.insights': 'ಒಳನೋಟಗಳು',
   'nav.copilot': 'ಕೋಪೈಲಟ್',
   'nav.aiSettings': 'ಎಐ ಸೆಟ್ಟಿಂಗ್‌ಗಳು',
-  'nav.whatsapp': 'ವಾಟ್ಸಾಪ್',
   'nav.suppliers': 'ಪೂರೈಕೆದಾರರು',
   'nav.buyers': 'ಖರೀದಿದಾರರು',
   'nav.buyerInvites': 'ಖರೀದಿದಾರ ಆಹ್ವಾನಗಳು',

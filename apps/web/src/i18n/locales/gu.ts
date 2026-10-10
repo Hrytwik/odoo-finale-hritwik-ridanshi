@@ -27,7 +27,6 @@ export const gu: Partial<Record<Key, string>> = {
   'nav.insights': 'આંતરદૃષ્ટિ',
   'nav.copilot': 'કોપાયલટ',
   'nav.aiSettings': 'એઆઈ સેટિંગ્સ',
-  'nav.whatsapp': 'વોટ્સએપ',
   'nav.suppliers': 'સપ્લાયર્સ',
   'nav.buyers': 'ખરીદદારો',
   'nav.buyerInvites': 'ખરીદદાર આમંત્રણ',

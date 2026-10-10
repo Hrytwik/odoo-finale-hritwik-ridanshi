@@ -46,7 +46,6 @@ const core = {
   'nav.insights': 'Insights',
   'nav.copilot': 'Copilot',
   'nav.aiSettings': 'AI settings',
-  'nav.whatsapp': 'WhatsApp',
   'nav.suppliers': 'Suppliers',
   'nav.buyers': 'Buyers',
   'nav.buyerInvites': 'Buyer invites',

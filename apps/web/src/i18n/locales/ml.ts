@@ -27,7 +27,6 @@ export const ml: Partial<Record<Key, string>> = {
   'nav.insights': 'ഉൾക്കാഴ്ചകൾ',
   'nav.copilot': 'കോപൈലറ്റ്',
   'nav.aiSettings': 'എഐ ക്രമീകരണങ്ങൾ',
-  'nav.whatsapp': 'വാട്സ്ആപ്പ്',
   'nav.suppliers': 'വിതരണക്കാർ',
   'nav.buyers': 'വാങ്ങുന്നവർ',
   'nav.buyerInvites': 'വാങ്ങുന്നവർക്കുള്ള ക്ഷണങ്ങൾ',

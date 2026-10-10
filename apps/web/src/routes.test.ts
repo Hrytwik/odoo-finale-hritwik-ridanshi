@@ -5,8 +5,8 @@ import { ROUTES } from './routes'
 const ROLES: Role[] = ['owner', 'accountant', 'store', 'supervisor', 'qc', 'dispatch', 'buyer']
 
 describe('route table', () => {
-  it('has one route for every screen in spec section 11, plus the buyer invites and WhatsApp pages (36)', () => {
-    expect(ROUTES).toHaveLength(36)
+  it('has one route for every screen in spec section 11, plus the buyer invites page (35)', () => {
+    expect(ROUTES).toHaveLength(35)
   })
 
   it('has no duplicate paths', () => {
