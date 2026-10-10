@@ -1,9 +1,34 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 15:18 IST
+> **Last updated:** 2026-10-10 16:05 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 16:05 IST — Store and orders are now real (shapes unchanged; one thing will break on your side)
+
+**From:** Hritwik → Ridanshi
+
+The yarn store and the orders now run on real data and real rules. **No shape changed:** `contracts/openapi.json` and `types.ts` are byte-identical, so your screens compile as before. This is on branch `b/store-orders` until I merge and push `main`; I will tell you when it is on `main`. After you pull, run `npm run db:migrate` (two new migrations: code sequences and stock views).
+
+**What is real now**
+- `POST/GET /lots`, `GET /lots/{code}`, `POST /lots/{code}/block`, `GET /stock`, `POST /movements/issue|return|adjust`, and all of `/orders` (create, list, read, confirm, cancel, deadline, yarn check). `GET /lots/{code}/recall` is still example data until B7.
+- The stock numbers and the yarn check now agree because they come from the same database views. Example from a live run: lot 800 kg; order A needs 630, order B needs 400 → stock says outstanding 1,030, free −230, below reorder; B's yarn check says available 170, short 230.
+- Order `progress` and `stage` are computed from real runs, rolls, inspections and dispatches (they stay at zero / "waiting to start" until the floor and QC plans write that data). `delivery_date` and `days_late` stay `null` until B7.
+- Dates are India time. A deadline of today is fine; yesterday is `DEADLINE_IN_PAST` (422).
+
+**One thing that will break for you:** issuing yarn (`POST /movements/issue`) needs a **real open spinning run of a confirmed order**. Until plan B3 (floor) is done there are no real runs, so the run ids you take from the example `/api/floor` data will get `404 NOT_FOUND` on `run_id`. Receive, stock, orders, adjust and block all work now. Test your issue screen against the error shapes below until B3 lands.
+
+**Error codes you can show (all in the standard `{code, message, field}` shape)**
+- Receive: `DUPLICATE_CHALLAN` (409, `challan_no`), 404 on `yarn_type_id` / `supplier_id` / `intended_order_code`, 422 on `challan_photo_path` (must be a path the upload endpoint returned).
+- Issue / return / adjust: `LOT_BLOCKED`, `RUN_NOT_OPEN`, `YARN_NOT_IN_RECIPE`, `INSUFFICIENT_STOCK` (the message says how many kg are available), `RETURN_EXCEEDS_ISSUED`; block: `LOT_ALREADY_BLOCKED`.
+- Orders: `ORDER_NOT_DRAFT`, `ORDER_HAS_RUNS`, `ORDER_ALREADY_CANCELLED`, `ORDER_CANCELLED`, `DEADLINE_IN_PAST`.
+- A quantity or price that rounds to zero (`0.0004` kg) is `VALIDATION_ERROR` on that field. Numbers are rounded half up to 3 decimals for kg and metres, 2 for money.
+- **A JSON `true` or `false` is now refused for every quantity, price and rate field** (it used to be read as 1 or 0). If any form sends a checkbox value in one of those fields, that will show up as a 422.
+
+**Test data tip:** `npm run db:seed` only creates the dev users, workers and one buyer. To receive a lot you first need a yarn type, a supplier and a fabric type with a recipe (create them as `owner` through `/yarn-types`, `/suppliers`, `/fabric-types`), and orders need a real `buyer_id` and `fabric_type_id`.
 
 ---
 

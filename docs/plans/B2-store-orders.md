@@ -1,11 +1,11 @@
 # B2 — Store and Orders (real logic) Implementation Plan
 
 > **Summary:** Replaces the example-data stubs for the yarn store and the order lifecycle with real, tested logic: lot receiving (lot + ledger entry + supplier bill in one transaction), stock from the ledger, yarn issue/return/adjust with row locking, free-stock and "enough yarn?" calculation, order create/confirm/cancel/deadline, order progress and stage, block lot, and live events. API shapes do not change.
-> **Last updated:** 2026-10-10 (Tasks 1-6 done)
+> **Last updated:** 2026-10-10 (complete, 2026-10-10)
 
 ## Status
 
-Tasks 1 to 6 are done and verified (full suite 504 passed, twice; `contracts/` unchanged). Next: Task 7 (boundary checks, live check, docs, merge). Decisions taken while building Task 3 (not in the original plan):
+**B2 is complete** (Tasks 1 to 7). Full suite 504 passed, twice; `contracts/` byte-identical (also guarded by `test_committed_contract_matches_the_code`). Task 7 live check ran against a throwaway database and a real server on the dev users: receive 800 kg at 250, duplicate challan 409, `true` as a quantity 422, stock and yarn check agreeing (outstanding 1,030, free −230, order B short 230), cancel releasing the reservation, adjust, over-adjust refused, block and block-again, buyer/store/supervisor 403s, no login 401. Issue/return could not be live-checked (they need a real run, B3). Spec §4.5 note and the note to Ridanshi are written. Merged to `main` locally, not pushed. Decisions taken while building Task 3 (not in the original plan):
 
 - **Boolean guard on every numeric request field.** pydantic reads JSON `true`/`false` as 1.0/0.0 for a float, so `{"qty_kg": true}` was accepted as 1 kg. `NoBool` (in `app/core/schemas.py`) is now part of every numeric input type, written **after** `Field(...)` (`Annotated[float, Field(gt=0), NoBool]`); in the other order pydantic writes `gt`/`le` into the OpenAPI schema and changes the contract. `tests/test_input_numbers.py` scans every `*In`/`*Patch` model, so new numeric fields are covered automatically. Not covered: `true` for integer id fields (reads as 1).
 - **Contract guard:** `tests/test_contract.py::test_committed_contract_matches_the_code` fails if `contracts/openapi.json` differs from what the code produces (after an intended API change run `npm run contracts`).

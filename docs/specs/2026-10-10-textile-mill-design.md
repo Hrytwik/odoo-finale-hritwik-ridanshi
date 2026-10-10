@@ -132,7 +132,7 @@ Total: 29 tables.
 | `v_yarn_type_stock` | per yarn type: `on_hand_kg` (unblocked lots), `outstanding_kg` (all confirmed orders), `free_kg` = on_hand − outstanding, `below_reorder` = free_kg < reorder_level_kg |
 | `v_machine_status` | **down** if an open downtime exists; else **running** if an open run exists; else **idle** (active machines only) |
 | `v_roll_status` | see §5 |
-| `v_order_progress` | spun_kg vs need_kg; woven / dyed / passed / rejected / dispatched metres vs qty_metres; buyer-facing stage (§5) |
+| `v_order_progress` | spun_kg vs need_kg; woven / dyed / passed / rejected / dispatched metres vs qty_metres; buyer-facing stage (§5). **Implemented as functions** (`progress` and `stage` in `modules/orders/service.py`, recomputed on every read), not as a SQL view; the stock views (`v_lot_stock`, `v_order_yarn_need`, `v_yarn_type_stock`) are real SQL views |
 | `v_order_timeline` | union of dated events per order (confirmed, first spinning/weaving/dyeing run, rolls passed, dispatches) for the buyer portal |
 
 ---
