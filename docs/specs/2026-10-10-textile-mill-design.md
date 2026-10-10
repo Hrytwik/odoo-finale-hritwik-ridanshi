@@ -1,7 +1,7 @@
 # Everest Textile Mills — System Design
 
 > **Summary:** Full design for the textile mill platform: architecture (React + Vite + FastAPI + Postgres), 29-table data model, business rules, per-roll costing, delay/shortage/root-cause engines, vision QC, provider-agnostic LLM layer, screens, API surface, two-track split, testing and demo.
-> **Last updated:** 2026-10-10 22:56 IST (§7 costing built and live-checked; §8 intelligence revised after the B7 design review)
+> **Last updated:** 2026-10-10 23:16 IST (§7 costing built and live-checked; §8 intelligence revised after the B7 design review and Track A's portal)
 > **Status:** Draft for team review
 
 ---
@@ -257,7 +257,7 @@ Computed on request, no stored totals, no migration, read-only (no locks, no eve
 
 ## 8. Calculated intelligence (no language model)
 
-*Revised 2026-10-10 22:56 IST after the B7 design review (approved section by section by Hritwik). Changes from the first draft: the exact test is written in the project (no scipy), shifts run per stage are a setting, an order with no work left at a stage passes straight through it, remaining spinning uses kg spun, the QC day is skipped when everything has passed, what-ifs name the orders they harm, the portal and the order dates are specified (8.5).*
+*Revised 2026-10-10 22:56 IST after the B7 design review (approved section by section by Hritwik). Changes from the first draft: the exact test is written in the project (no scipy), shifts run per stage are a setting, an order with no work left at a stage passes straight through it, remaining spinning uses kg spun, the QC day is skipped when everything has passed, what-ifs name the orders they harm, the order dates and the portal's delivery date are specified (8.5); the portal itself was built by Track A.*
 
 ### 8.1 Delivery date and delay warning
 
@@ -300,18 +300,19 @@ Hand-worked: lot L-0017, 120 kg issued to spinning run S1, 50 kg issued to S2 an
 ### 8.5 Order dates and the buyer portal
 
 - **Dates on orders.** The orders router (not the order service, which would be a circular import) asks insights once for the whole mill's delivery dates and passes each order's date to `order_out`: `delivery_date` and `days_late` (0 when on time) on the list, detail, create, confirm, cancel and edit routes; null for an order not waiting for production.
-- **`GET /portal/orders`** (buyer only): the logged-in buyer's own **confirmed** orders, newest first; the buyer comes from the login. `progress_pct` = metres passed quality check (including dispatched) ÷ ordered metres × 100, capped at 100, one decimal.
-- **`GET /portal/orders/{code}`**: the same fields plus `timeline` (built by a function; the `v_order_timeline` view was never created), sorted by time: "Order confirmed", "Spinning started", "Weaving started", "Dyeing started" (first run of each), "First rolls passed quality check" (earliest pass), and one "N m dispatched (CODE)" per confirmed truck; and `dispatches` (code, date, the metres **of this order** on it, invoice number). Buyer-safe wording: no machines, operators, lots, suppliers or costs. A foreign order, a missing order and the buyer's own draft or cancelled order give the **identical 404** (R15).
-- Hand-worked: confirmed 1 Oct 10:00, spinning first ran 2 Oct, weaving 4 Oct, dyeing 6 Oct, first roll passed 8 Oct, 330 m left on DSP-0007 on 9 Oct with INV-0007: six timeline entries in that order and one dispatch of 330 m; 1,500 of 5,000 metres passed → `progress_pct` **30.0**.
+- **The portal API was built by Track A** (`portal/service.py`; merged 2026-10-10) and is described here as it is. **`GET /portal/orders`** (buyer only): the logged-in buyer's own **confirmed or cancelled** orders (never drafts), newest first; the buyer comes from the login. `progress_pct` is a rough share of the work done: half the weight on weaving, a quarter on dyeing and a quarter on metres passed quality check, 100 once dispatched (the screens say "a rough share").
+- **`GET /portal/orders/{code}`**: the same fields plus `timeline` (built by a function; the `v_order_timeline` view was never created), sorted by time: "Order confirmed", "Spinning started", "Weaving started", "Dyeing started" (first run of each), "First rolls passed quality check" (earliest pass), and one "N m dispatched (CODE)" per confirmed truck; and `dispatches` (code, date, the metres **of this order** on it, invoice number; only trucks that have left). Buyer-safe wording: no machines, operators, lots, suppliers or costs. A foreign order, a missing order and the buyer's own draft give the **identical 404** (R15).
+- **B7's part is the delivery date.** `delivery_date` on the portal comes from the same whole-mill schedule as the staff screens (8.1): the portal service asks the insights service for the dates, because the order service cannot (insights already reads from it). A cancelled order has none.
+- Hand-worked (B7's part): on the delivery-date mill, an order due in 3 days whose schedule says 4 shows its buyer `delivery_date` today + 4, the same as the staff screen.
 - The assistant's buyer tools call these handlers by name with the database and the user, so they read real data unchanged.
 
 ### 8.6 Implementation
 
-Computed on request, no stored values, no migration, read-only (no locks, no events); all response shapes already exist, so `contracts/` is byte-identical. `modules/insights/engine/` (pure: `fisher`, `schedule`, `shortage`, `rootcause`; exact fractions; "today" is an input), `insights/loader.py` (rows → plain records), `insights/service.py` (rounding, shapes, order dates), `insights/recall.py` (the recall joins; the route stays under `store`), `portal/service.py`. Settings in `app/config.py` (defaults from the spec): `QC_DAYS`, `DISPATCH_DAYS`, `DEFAULT_EFFICIENCY` 0.8, `EFFICIENCY_WINDOW_DAYS` 7, `EFFICIENCY_MIN_HOURS` 1, `STAGE_SHIFTS`, `ROOT_CAUSE_MIN_GROUP` 5, `ROOT_CAUSE_ALPHA` 0.05, `REORDER_ROUND_KG` 50. The handlers keep the names the assistant calls (`late_orders`, `order_eta`, `shortages`, `root_causes`, `lot_recall`, `my_orders`, `my_order`) and take `db` (and `user` for the portal). Accepted: the loader's queries are not one snapshot. Speed to be measured on a synthetic busy mill and recorded in the plan.
+Computed on request, no stored values, no migration, read-only (no locks, no events); all response shapes already exist, so `contracts/` is byte-identical. `modules/insights/engine/` (pure: `fisher`, `schedule`, `shortage`, `rootcause`; exact fractions; "today" is an input), `insights/loader.py` (rows → plain records), `insights/service.py` (rounding, shapes, order dates), `insights/recall.py` (the recall joins; the route stays under `store`). The portal service is Track A's; B7 changes only where it gets the delivery date. Settings in `app/config.py` (defaults from the spec): `QC_DAYS`, `DISPATCH_DAYS`, `DEFAULT_EFFICIENCY` 0.8, `EFFICIENCY_WINDOW_DAYS` 7, `EFFICIENCY_MIN_HOURS` 1, `STAGE_SHIFTS`, `ROOT_CAUSE_MIN_GROUP` 5, `ROOT_CAUSE_ALPHA` 0.05, `REORDER_ROUND_KG` 50. The handlers keep the names the assistant calls (`late_orders`, `order_eta`, `shortages`, `root_causes`, `lot_recall`, `my_orders`, `my_order`) and take `db` (and `user` for the portal). Accepted: the loader's queries are not one snapshot. Speed to be measured on a synthetic busy mill and recorded in the plan.
 
 ### 8.7 Build order (B7; also in `docs/plans/B7-intelligence.md` once written)
 
-1. The exact test and the root-cause engine. 2. The schedule engine. 3. The shortage engine. 4. Loader and service, the four insight routes, the settings, real dates on orders. 5. The recall chain and its route. 6. The real buyer portal. 7. Live check, docs, memory. (1, 2, 3 independent; 4 needs 1-3; 5 independent; 6 needs 4; 7 last.)
+1. The exact test and the root-cause engine. 2. The schedule engine. 3. The shortage engine. 4. Loader and service, the four insight routes, the settings, real dates on orders. 5. The recall chain and its route. 6. The buyer portal's real delivery date (the portal itself is Track A's). 7. Live check, docs, memory. (1, 2, 3 independent; 4 needs 1-3; 5 independent; 6 needs 4; 7 last.)
 
 ---
 

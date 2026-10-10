@@ -1,13 +1,13 @@
 # B7 — Intelligence (delivery dates, shortages, root causes, recall, buyer portal) Implementation Plan
 
-> **Summary:** Replaces the example data behind `GET /orders/{code}/eta`, `/insights/late-orders`, `/insights/shortages`, `/insights/root-causes` and `/lots/{code}/recall` with real calculations (earliest-deadline-first delivery dates with what-ifs, a yarn reorder forecast, an exact Fisher test with Bonferroni correction for defect root causes, and the recall chain), fills in `delivery_date` and `days_late` on every order, and makes the buyer portal API (`GET /portal/orders`, `GET /portal/orders/{code}`) real. No contract change, no migration.
-> **Last updated:** 2026-10-10 23:08 IST (plan written; the pure engines in Tasks 1-3 and their 40 tests were run in a scratch folder before this plan was shown, the database code in Tasks 4-6 was only compile-checked)
+> **Summary:** Replaces the example data behind `GET /orders/{code}/eta`, `/insights/late-orders`, `/insights/shortages`, `/insights/root-causes` and `/lots/{code}/recall` with real calculations (earliest-deadline-first delivery dates with what-ifs, a yarn reorder forecast, an exact Fisher test with Bonferroni correction for defect root causes, and the recall chain), fills in `delivery_date` and `days_late` on every order, and gives the buyer portal (built by Ridanshi on her branch, merged into main 2026-10-10 23:14 IST) its real delivery date. No contract change, no migration.
+> **Last updated:** 2026-10-10 23:15 IST (plan revised after merging Ridanshi's branch; plan written; the pure engines in Tasks 1-3 and their 40 tests were run in a scratch folder before this plan was shown, the database code in Tasks 4-6 was only compile-checked)
 
 > **How this plan is executed:** inline, one task at a time (atomic-workflow): test first, the full suite twice at each boundary, the important behaviours mutation-checked. Steps use checkbox (`- [ ]`) syntax.
 
 **Goal:** the owner sees honest delivery dates, shortage warnings and defect suspects, the store can see where a recalled lot went, and a buyer can ask "will my order make the 20th?" and get the real answer.
 
-**Architecture:** a pure engine package (`insights/engine/`: exact `fractions.Fraction` arithmetic, no database, no clock) takes plain records built by `insights/loader.py`; `insights/service.py` shapes the existing response models; the recall chain (`insights/recall.py`) and the portal (`portal/service.py`) are plain read-only queries. Nothing is stored, locked or published. The orders router fills in each order's dates from one whole-mill schedule.
+**Architecture:** a pure engine package (`insights/engine/`: exact `fractions.Fraction` arithmetic, no database, no clock) takes plain records built by `insights/loader.py`; `insights/service.py` shapes the existing response models; the recall chain (`insights/recall.py`) is a plain read-only query. Nothing is stored, locked or published. The orders router fills in each order's dates from one whole-mill schedule.
 
 **Tech Stack:** Python 3.12, FastAPI, SQLAlchemy 2, PostgreSQL, pytest (`uv run python -m pytest -p no:warnings -o addopts=`). No new dependencies (the exact test replaces scipy).
 
@@ -15,14 +15,14 @@
 
 ## Status
 
-Written 2026-10-10 23:08 IST after the design was approved section by section (spec §8). **Verified before this plan was shown:** the four pure engines (`fisher`, `schedule`, `shortage`, `rootcause`) and their 40 tests were written and run in a scratch folder outside the repository (40 passed); the exact test agrees with `scipy.stats.fisher_exact` on 6,006 tables (worst relative difference 1.4e-15; scipy was installed only in a scratch environment); about twenty deliberate breaks of the engines were each caught by a test, after two weak tests were strengthened (a shift that does not change the date must not be offered; the 'harms' label); one of my own hand calculations was wrong and the engine was right (day 7 ends exactly at the level). **NOT run yet:** `loader.py`, `service.py`, the routes, `recall.py`, the portal, the settings and every API test (Tasks 4-6) have only been compile-checked; run them in the repository test-first (atomic-workflow step 3) and expect small fixes. Tasks 1-7 are all still to do.
+Written 2026-10-10 23:08 IST after the design was approved section by section (spec §8). **Verified before this plan was shown:** the four pure engines (`fisher`, `schedule`, `shortage`, `rootcause`) and their 40 tests were written and run in a scratch folder outside the repository (40 passed); the exact test agrees with `scipy.stats.fisher_exact` on 6,006 tables (worst relative difference 1.4e-15; scipy was installed only in a scratch environment); about twenty deliberate breaks of the engines were each caught by a test, after two weak tests were strengthened (a shift that does not change the date must not be offered; the 'harms' label); one of my own hand calculations was wrong and the engine was right (day 7 ends exactly at the level). **NOT run yet:** `loader.py`, `service.py`, the routes, `recall.py`, the portal, the settings and every API test (Tasks 4-6) have only been compile-checked; run them in the repository test-first (atomic-workflow step 3) and expect small fixes. Tasks 1-7 are all still to do. **Update 23:15 IST:** Ridanshi's branch (portal backend and screens, 19 more assistant look-ups, auth sweep test) was merged into `main` (backend 1,264 passed twice, 3 skipped by design; web 527 passed; contract regenerates with no diff); her portal already does what Task 6 first planned except the delivery date, so Task 6 was rewritten to that one change. Baseline is now **1,264 passed**; the expected counts below already use it.
 
 ## Global Constraints
 
 - Everything is **read-only**: no locks, no events, no migration, no new table. `contracts/` stays byte-identical (every shape already exists).
 - Arithmetic in the engines is exact (`fractions.Fraction`); floats appear only in the JSON. Days are counted from today (`core.clock.today_ist()`); the engine never reads a clock.
 - Roles are unchanged: late orders, ETA and root causes for owner, accountant, supervisor; shortages also for store; recall for store and owner; portal for buyers only.
-- Buyers see only their own confirmed orders; a foreign order, a missing order and the buyer's own draft or cancelled order give the identical 404 (R15). Portal wording never names a machine, operator, lot, supplier or cost.
+- The portal (Ridanshi's `portal/service.py`) shows a buyer only their own confirmed or cancelled orders; a foreign order, a missing order and the buyer's own draft give the identical 404 (R15); its wording never names a machine, operator, lot, supplier or cost. Her seven tests in `tests/test_contract_portal.py` guard that; B7 does not change it.
 - Settings (`app/config.py`, spec defaults): `QC_DAYS` 1, `DISPATCH_DAYS` 1, `DEFAULT_EFFICIENCY` 0.8, `EFFICIENCY_WINDOW_DAYS` 7, `EFFICIENCY_MIN_HOURS` 1, `STAGE_SHIFTS` empty, `ROOT_CAUSE_MIN_GROUP` 5, `ROOT_CAUSE_ALPHA` 0.05, `REORDER_ROUND_KG` 50.
 - Tests that depend on dates are relative to today, except the portal timeline test which uses fixed October 2026 instants.
 - The assistant's handlers keep their names (`late_orders`, `order_eta`, `shortages`, `root_causes`, `lot_recall`, `my_orders`, `my_order`) and take `db` (and `user` for the portal): the assistant calls them by name and passes those.
@@ -41,13 +41,13 @@ Written 2026-10-10 23:08 IST after the design was approved section by section (s
 
 **Recall mill:** lot L, 120 kg issued to S1, 50 kg issued to S2 and returned (net 0); S1's weaving run made R1 (dyeing), R2 and R3 (in store), R4 (dispatched, Sharma), R5 (on a loading truck, Kavya), R6 (rejected); S2's roll R7 is excluded. `on_floor` R1, R6; `in_store` R2, R3; `loading` R5; `dispatched` R4; Sharma 5 rolls, 1 dispatched; Kavya 1 roll, 0 dispatched, no truck codes.
 
-**Portal:** confirmed 1 Oct 10:00, spinning 2 Oct 09:00, weaving 4 Oct 08:00, dyeing 6 Oct 08:00, first roll passed 8 Oct 11:00, 330 m on a truck 9 Oct 12:00 (INV-0007): six timeline entries in that order, one dispatch of 330 m; 330 + 600 + 570 = 1,500 of 5,000 m passed → **30.0**.
+**Portal:** Ridanshi's portal is already built and tested (timeline, trucks, `progress_pct` as a rough share: half weaving, a quarter dyeing, a quarter passed quality check, 100 once dispatched). B7 adds only the real delivery date: on the delivery mill, order A shows its buyer **today + 4 days** (deadline today + 3), the same date the staff screens show, and a cancelled order shows none.
 
 ## Review Focus (inputs the spec implies but no task would otherwise test)
 
 1. **No machine working at a stage that has work, an empty mill, an order with no work left at a stage:** an unknown date, never a crash or a division by zero. Tasks 2 and 4.
 2. **An order that is a draft, cancelled or already fully dispatched:** no date, `409 NOT_SCHEDULED` on the ETA route, not in the late list. Task 4.
-3. **A buyer asking for someone else's order, a missing order or their own draft:** the identical 404; and no internal name in any portal text. Task 6.
+3. **The portal's date and the staff date can disagree** (the portal reads the order service, which cannot see the schedule): one source for both, tested side by side. Task 6.
 4. **A lot nobody used, an unknown lot, a lot that fed a roll that is later rejected:** an empty recall, a 404, a rejected roll shown on the floor. Task 5.
 5. **Tiny samples and ties:** a group under five rolls is never tested; equal bottlenecks and equal deadlines break ties the same way every time. Tasks 1 and 2.
 
@@ -70,20 +70,19 @@ services/api/
     router.py                           the four real handlers (examples.py deleted)
   app/modules/store/router.py           the recall route calls insights.recall
   app/modules/orders/router.py          fills delivery_date and days_late
-  app/modules/portal/service.py         the buyer's orders, timeline, trucks (new)
-  app/modules/portal/router.py          real handlers (examples.py deleted)
+  app/modules/portal/service.py         (Ridanshi's) now takes the delivery date from insights; portal/examples.py deleted
   tests/
     test_insights_fisher.py             Task 1       test_insights_rootcause.py   Task 1
     test_insights_schedule.py           Task 2       test_insights_shortage.py    Task 3
     insights_world.py                   the hand-worked mills (Task 4; recall mill added in Task 5)
     test_insights_settings.py           Task 4       test_insights_api.py         Task 4
-    test_recall_api.py                  Task 5       test_portal_api.py           Task 6
+    test_recall_api.py                  Task 5       test_portal_dates.py         Task 6
 docs: this plan, docs/plans/README.md, spec header, memory, the team note
 ```
 
 **Dependency order:** Tasks 1, 2, 3 are independent pure code; Task 4 needs 1-3; Task 5 needs nothing earlier; Task 6 needs Task 4 (the delivery dates); Task 7 last.
 
-**Run commands** (from the repository root): one file `cd services/api && uv run python -m pytest -p no:warnings -o addopts= tests/test_insights_fisher.py -q`; the whole suite `cd services/api && uv run python -m pytest -p no:warnings -o addopts=`. Baseline before this work: **1,130 passed**. This shell is zsh: an unquoted variable holding two paths is not split, so write file names out.
+**Run commands** (from the repository root): one file `cd services/api && uv run python -m pytest -p no:warnings -o addopts= tests/test_insights_fisher.py -q`; the whole suite `cd services/api && uv run python -m pytest -p no:warnings -o addopts=`. Baseline before this work: **1,264 passed** (after merging Ridanshi's branch). This shell is zsh: an unquoted variable holding two paths is not split, so write file names out.
 
 ---
 
@@ -317,7 +316,7 @@ def analyse(rolls: list[RollFacts], min_group: int = 5, alpha: Fraction = Fracti
   3. `if inside < min_group or rest == 0:` → `if rest == 0:`: `test_a_group_under_five_inspected_rolls_is_not_tested` fails.
   4. Delete the trailing `if Fraction(hit, inside) > Fraction(rest_hit, rest)` filter: `test_rows_are_sorted_by_p_value_and_only_groups_above_the_rest_are_listed` fails.
 
-- [ ] **Step 6: Full suite twice.** Expected both times: **1,149 passed** (1,130 + 19).
+- [ ] **Step 6: Full suite twice.** Expected both times: **1,283 passed** (1,264 + 19).
 
 - [ ] **Step 7: Sync and commit.** Append a `Task 1 done and verified (<live date and time>): ...` line to this plan's Status section (counts, mutations), edit the `Last updated` header, then:
 
@@ -682,7 +681,7 @@ def all_etas(orders: list[OpenOrder], stages: dict[str, StageCapacity], today: d
   6. Make `_harm` return an empty string: `test_moving_an_order_to_the_front_names_the_orders_it_harms` fails.
   7. Remove the cap `min(Fraction(1), ...)` in `observed_efficiency`, then the `hours < min_hours` default: `test_observed_efficiency` fails each time.
 
-- [ ] **Step 6: Full suite twice.** Expected both times: **1,162 passed** (1,149 + 13).
+- [ ] **Step 6: Full suite twice.** Expected both times: **1,296 passed** (1,283 + 13).
 
 - [ ] **Step 7: Sync and commit** (Status line, header, then):
 
@@ -840,7 +839,7 @@ def forecast(on_hand_kg: Fraction, reorder_level_kg: Fraction, demands: list[Dem
   3. Round down instead of up in `round_up`: the worked case and the contract example fail.
   4. In `forecast`, return `None` when `free >= reorder_level_kg` → when `free > reorder_level_kg`: the "exactly at the level is not below it" assertion in `test_a_type_that_never_falls_short_is_not_reported` fails.
 
-- [ ] **Step 6: Full suite twice.** Expected both times: **1,170 passed** (1,162 + 8).
+- [ ] **Step 6: Full suite twice.** Expected both times: **1,304 passed** (1,296 + 8).
 
 - [ ] **Step 7: Sync and commit** (Status line, header, then):
 
@@ -1613,7 +1612,7 @@ def yarn_check(order_code: str, db: Session = Depends(get_db)) -> s.YarnCheckOut
   9. `service.py` `order_eta`: skip the `NOT_SCHEDULED` check: `test_an_order_not_waiting_for_production_is_a_409` fails.
   10. `service.py` `shortages`: skip the `result is None` check: the "empty mill" test and the blocked-lot test fail.
 
-- [ ] **Step 10: Full suite twice.** Expected both times: about **1,200 passed** (1,170 + 30, less any example cases removed in Step 8).
+- [ ] **Step 10: Full suite twice.** Expected both times: about **1,334 passed** (1,304 + 30, less any example cases removed in Step 8).
 
 - [ ] **Step 11: Sync and commit** (Status line with the real counts, header, then):
 
@@ -1832,7 +1831,7 @@ def lot_recall(lot_code: str, db: Session = Depends(get_db)) -> s.RecallOut:
   2. Remove `"rejected"` from `ON_THE_FLOOR`: the grouping test fails (R6 is lost or the handler errors).
   3. Count a loading roll as dispatched in `buyers` (use `state in ("dispatched", "loading")`): `test_the_buyers_are_counted_with_only_confirmed_trucks_listed` fails.
 
-- [ ] **Step 7: Full suite twice.** Expected both times: about **1,208 passed**.
+- [ ] **Step 7: Full suite twice.** Expected both times: about **1,344 passed**.
 
 - [ ] **Step 8: Sync and commit** (Status line, header, then):
 
@@ -1843,249 +1842,110 @@ git commit -m "Serve the real recall chain for a yarn lot"
 
 ---
 
-### Task 6: The real buyer portal
+### Task 6: The buyer portal's real delivery date
+
+Ridanshi built the portal backend on her branch (merged into `main` on 2026-10-10): the routes, the timeline, the trucks, the 404 rules and seven tests (`tests/test_contract_portal.py`). It reads `delivery_date` from `orders.order_out`, the **service** function, which cannot see the schedule (the schedule lives in insights, which already reads the orders service, so the dates are filled one layer up, in the orders router). So the portal would keep showing `null`. This task gives her portal service the date, nothing else.
 
 **Files:**
-- Create: `services/api/app/modules/portal/service.py`
-- Modify: `services/api/app/modules/portal/router.py`
-- Delete: `services/api/app/modules/portal/examples.py` (after confirming nothing else imports it)
-- Test: create `services/api/tests/test_portal_api.py`; update older tests that read the example portal (`tests/test_contract_portal.py` and others found by `grep -rn "portal" services/api/tests`)
+- Modify: `services/api/app/modules/portal/service.py`
+- Delete: `services/api/app/modules/portal/examples.py` (nothing imports it after her change; confirm with `grep -rn "portal.examples\|portal import examples" services/api`)
+- Test: create `services/api/tests/test_portal_dates.py`
 
 **Interfaces:**
-- Consumes: `insights.service.delivery_dates`, `orders.service.{progress_row, stage}`, `portal.schemas.{PortalOrder, PortalOrderDetail, TimelineEvent, PortalDispatch}`, `core.validate.not_found`.
-- Produces: `portal.service.{my_orders(db, user) -> list[PortalOrder], my_order(db, user, order_code) -> PortalOrderDetail}`; the handlers `portal.router.{my_orders, my_order}` now take `db` and `user` (which is what the assistant's buyer tools pass).
+- Consumes (Task 4): `insights.service.delivery_dates(db) -> dict[code, (date, days_late)]`.
+- Produces: nothing new; `portal.service.{my_orders, my_order}` keep their signatures and the buyer now sees the real `delivery_date`.
 
 - [ ] **Step 1: Write the failing tests**
 
-`services/api/tests/test_portal_api.py`:
+`services/api/tests/test_portal_dates.py`:
 
 ```python
-"""B7: the buyer portal (spec 8.5) on a hand-worked order, and on the delivery-date mill."""
+"""B7: the buyer portal shows the real delivery date. The portal itself is Ridanshi's; everything else about it (the
+timeline, the trucks, the 404 rules, progress) is tested in tests/test_contract_portal.py."""
 import datetime as dt
 
 import pytest
 from app.core.auth import COOKIE_NAME, create_token
-from app.db.models import Invoice, YarnMovement
-from app.modules.llm.data import ToolContext
 from app.modules.llm import data as assistant_data
-from tests.factories import (
-    dye, make_buyer, make_dispatch, make_inspection, make_lot, make_machine, make_order, make_roll, make_run,
-    make_supplier, make_user, make_worker, put_on_dispatch,
-)
+from app.modules.llm.data import ToolContext
+from tests.factories import make_user
 from tests.insights_world import build_mill
 
-UTC = dt.UTC
 DAY = dt.timedelta(days=1)
 
 
-def at(day: int, hour: int) -> dt.datetime:
-    return dt.datetime(2026, 10, day, hour, tzinfo=UTC)
-
-
 @pytest.fixture
-def world(db, client):
-    """Order of 5,000 m for Sharma: confirmed 1 Oct 10:00; first spinning 2 Oct 09:00, weaving 4 Oct, dyeing 6 Oct; the
-    first roll passed 8 Oct 11:00; 330 m left on one truck on 9 Oct 12:00 (invoice INV-0007). Passed in all: 330 + 600 + 570
-    = 1,500 m of 5,000, so 30.0 per cent."""
-    buyer = make_buyer(db, name="Sharma Fabrics")
-    user = make_user(db, role="buyer", buyer_id=buyer.id)
-    order = make_order(db, buyer=buyer, qty_metres=5000, confirmed_at=at(1, 10))
-    lot = make_lot(db, supplier=make_supplier(db, name="Vardhman Yarns"))
-    spin = make_run(db, order, make_machine(db, stage="spinning", name="Ring frame 9"), make_worker(db, name="Suresh Patil"),
-                    started_at=at(2, 9), ended_at=at(3, 9))
-    db.add(YarnMovement(yarn_lot_id=lot.id, kind="issue", qty_kg=-100, production_run_id=spin.id, moved_by=make_user(db).id))
-    weave = make_run(db, order, make_machine(db, stage="weaving"), input_run_id=spin.id, started_at=at(4, 8), ended_at=at(5, 8))
-    dyeing = make_run(db, order, make_machine(db, stage="dyeing"), started_at=at(6, 8), ended_at=at(7, 8))
-    rolls = [make_roll(db, order, weave, m) for m in (330, 600, 570, 500)]
-    for roll in rolls:
-        dye(db, roll, dyeing)
-    for roll, day in zip(rolls[:3], (8, 8, 9)):
-        make_inspection(db, roll, "pass", inspected_at=at(day, 11))
-    truck = make_dispatch(db, buyer, state="dispatched", dispatched_at=at(9, 12))
-    put_on_dispatch(db, rolls[0], truck)
-    db.add(Invoice(invoice_no="INV-0007", dispatch_id=truck.id, buyer_id=buyer.id, issued_at=at(9, 12), total_amount=39600))
-    db.flush()
-    client.cookies.set(COOKIE_NAME, create_token(user.id))
-    return {"buyer": buyer, "user": user, "order": order, "truck": truck, "lot": lot}
+def mill(db):
+    return build_mill(db)
 
 
-def test_the_detail_has_the_timeline_the_trucks_and_the_progress(client, world):
-    body = client.get(f"/api/portal/orders/{world['order'].code}").json()
-    assert (body["progress_pct"], body["qty_metres"], body["stage"]) == (30.0, 5000.0, "partly_dispatched")
-    assert [t["label"] for t in body["timeline"]] == [
-        "Order confirmed", "Spinning started", "Weaving started", "Dyeing started", "First rolls passed quality check",
-        f"330 m dispatched ({world['truck'].code})"]
-    assert [dt.datetime.fromisoformat(t["at"]) for t in body["timeline"]] == [
-        at(1, 10), at(2, 9), at(4, 8), at(6, 8), at(8, 11), at(9, 12)]
-    assert [(d["code"], d["metres"], d["invoice_no"]) for d in body["dispatches"]] == [(world["truck"].code, 330.0, "INV-0007")]
-
-
-def test_a_buyer_never_reads_a_machine_an_operator_a_lot_a_supplier_or_a_cost(client, world):
-    raw = client.get(f"/api/portal/orders/{world['order'].code}").text + client.get("/api/portal/orders").text
-    for secret in ("Ring frame 9", "Suresh Patil", world["lot"].lot_code, "Vardhman Yarns", "cost", "wage", "price"):
-        assert secret not in raw, secret
-
-
-def test_a_foreign_a_missing_and_a_draft_order_all_give_the_identical_404(client, db, world):
-    other = make_order(db, buyer=make_buyer(db))
-    draft = make_order(db, buyer=world["buyer"], state="draft")
-    responses = [client.get(f"/api/portal/orders/{code}") for code in (other.code, "ORD-9999", draft.code)]
-    assert all(r.status_code == 404 for r in responses)
-    assert responses[0].json() == responses[1].json() == responses[2].json()
-
-
-def test_the_list_holds_only_my_confirmed_orders_newest_first(client, db, world):
-    newer = make_order(db, buyer=world["buyer"])
-    make_order(db, buyer=world["buyer"], state="draft")
-    make_order(db, buyer=world["buyer"], state="cancelled")
-    make_order(db, buyer=make_buyer(db))
-    assert [o["code"] for o in client.get("/api/portal/orders").json()] == [newer.code, world["order"].code]
-
-
-@pytest.mark.parametrize("role", ["owner", "accountant", "supervisor", "store", "qc", "dispatch"])
-def test_staff_do_not_use_the_portal(client, login_as, role):
-    login_as(role)
-    assert client.get("/api/portal/orders").status_code == 403
-
-
-def test_the_delivery_date_is_the_real_one(client, db):
-    mill = build_mill(db)
+def as_buyer(client, db, mill):
     user = make_user(db, role="buyer", buyer_id=mill.buyer.id)
     client.cookies.set(COOKIE_NAME, create_token(user.id))
+    return user
+
+
+def test_the_portal_shows_the_real_delivery_date(client, db, mill):
+    as_buyer(client, db, mill)
     rows = {o["code"]: o for o in client.get("/api/portal/orders").json()}
     assert rows[mill.order_a.code]["delivery_date"] == str(mill.today + 4 * DAY)
-    assert rows[mill.order_a.code]["deadline"] == str(mill.today + 3 * DAY)
+    assert rows[mill.order_a.code]["deadline"] == str(mill.today + 3 * DAY)               # promised the 3rd day, expected the 4th
     assert rows[mill.order_b.code]["delivery_date"] == str(mill.today + 6 * DAY)
-    assert (rows[mill.order_a.code]["progress_pct"], rows[mill.order_a.code]["stage"]) == (0.0, "waiting_to_start")
-    detail = client.get(f"/api/portal/orders/{mill.order_a.code}").json()
-    assert detail["delivery_date"] == str(mill.today + 4 * DAY) and [t["label"] for t in detail["timeline"]] == ["Order confirmed"]
+    assert client.get(f"/api/portal/orders/{mill.order_a.code}").json()["delivery_date"] == str(mill.today + 4 * DAY)
 
 
-def test_the_assistants_buyer_tools_read_the_real_portal(db, world):
-    ctx = ToolContext(db, world["user"])
-    assert [o["code"] for o in assistant_data.my_orders(ctx)] == [world["order"].code]
-    assert assistant_data.my_order(ctx, world["order"].code)["progress_pct"] == 30.0
+def test_the_buyer_and_the_staff_see_the_same_date(client, login_as, db, mill):
+    as_buyer(client, db, mill)
+    portal = {o["code"]: o["delivery_date"] for o in client.get("/api/portal/orders").json()}
+    login_as("owner")
+    staff = {o["code"]: o["delivery_date"] for o in client.get("/api/orders").json()}
+    assert portal and portal == {code: staff[code] for code in portal}
+
+
+def test_a_cancelled_order_is_listed_but_has_no_delivery_date(client, db, mill):
+    mill.order_b.state = "cancelled"
+    db.flush()
+    as_buyer(client, db, mill)
+    rows = {o["code"]: o for o in client.get("/api/portal/orders").json()}
+    assert rows[mill.order_b.code]["delivery_date"] is None
+    assert rows[mill.order_a.code]["delivery_date"] == str(mill.today + 4 * DAY)
+
+
+def test_the_assistants_buyer_tools_get_the_date(db, mill):
+    user = make_user(db, role="buyer", buyer_id=mill.buyer.id)
+    ctx = ToolContext(db, user)
+    assert {o["code"]: o["delivery_date"] for o in assistant_data.my_orders(ctx)}[mill.order_a.code] == str(mill.today + 4 * DAY)
+    assert assistant_data.my_order(ctx, mill.order_a.code)["delivery_date"] == str(mill.today + 4 * DAY)
 ```
 
-- [ ] **Step 2: Run and watch them fail.** `cd services/api && uv run python -m pytest -p no:warnings -o addopts= tests/test_portal_api.py -q` → failures on the example portal data.
+- [ ] **Step 2: Run and watch them fail.** `cd services/api && uv run python -m pytest -p no:warnings -o addopts= tests/test_portal_dates.py -q` → the date assertions fail with `None` (and the assistant test with `None`).
 
-- [ ] **Step 3: Write the portal service**
-
-`services/api/app/modules/portal/service.py`:
+- [ ] **Step 3: Give her portal service the date.** In `services/api/app/modules/portal/service.py`: add `from app.modules.insights import service as insights` to the imports; change `_summary` to take the dates and use them; and fetch the dates once per request in both public functions. Exactly:
 
 ```python
-"""The buyer portal (spec 8.5): a buyer's own confirmed orders, with a timeline and the trucks, in words a buyer may see.
-Never a machine, an operator, a lot, a supplier or a cost."""
-import datetime as dt
-from decimal import ROUND_HALF_UP, Decimal
-
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
-
-from app.core.money import to_float
-from app.core.validate import not_found
-from app.db.models import Dispatch, DispatchItem, Invoice, Order, ProductionRun, QcInspection, Roll, User
-from app.modules.insights import service as insights
-from app.modules.orders.service import progress_row, stage
-from app.modules.portal.schemas import PortalDispatch, PortalOrder, PortalOrderDetail, TimelineEvent
-
-STARTED = {"spinning": "Spinning started", "weaving": "Weaving started", "dyeing": "Dyeing started"}
-
-
-def _metres(value: Decimal) -> str:
-    text = f"{value:.3f}".rstrip("0").rstrip(".")
-    return text or "0"
-
-
-def _order(db: Session, order: Order, dates: dict[str, tuple[dt.date, int]]) -> PortalOrder:
-    row = progress_row(db, order)
-    done = min(Decimal(100), Decimal(row["passed_m"]) * 100 / order.qty_metres)
-    return PortalOrder(
-        code=order.code, fabric=order.fabric_type.name, colour=order.colour, qty_metres=to_float(order.qty_metres),
-        stage=stage(db, order, row), progress_pct=to_float(done.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)),
+def _summary(db: Session, order: Order, dates: dict[str, tuple[dt.date, int]]) -> s.PortalOrder:
+    out = orders.order_out(db, order)
+    return s.PortalOrder(
+        code=order.code, fabric=out.fabric_type.name, colour=order.colour, qty_metres=out.qty_metres, stage=out.stage,
+        progress_pct=100.0 if out.stage == "dispatched" else _share_done(order, out.progress),
         deadline=order.deadline, delivery_date=dates[order.code][0] if order.code in dates else None)
-
-
-def my_orders(db: Session, user: User) -> list[PortalOrder]:
-    dates = insights.delivery_dates(db)
-    orders = db.scalars(select(Order).where(Order.buyer_id == user.buyer_id, Order.state == "confirmed")
-                        .order_by(Order.id.desc()))
-    return [_order(db, order, dates) for order in orders]
-
-
-def my_order(db: Session, user: User, order_code: str) -> PortalOrderDetail:
-    """Another buyer's order, a missing one and your own draft or cancelled one all look the same: not found (R15)."""
-    order = db.scalar(select(Order).where(Order.code == order_code, Order.buyer_id == user.buyer_id,
-                                          Order.state == "confirmed"))
-    if order is None:
-        raise not_found("Order", "order_code")
-    base = _order(db, order, insights.delivery_dates(db))
-    events = [TimelineEvent(at=order.confirmed_at, label="Order confirmed")]
-    for run_stage, first in db.execute(select(ProductionRun.stage, func.min(ProductionRun.started_at))
-                                       .where(ProductionRun.order_id == order.id, ProductionRun.stage.in_(tuple(STARTED)))
-                                       .group_by(ProductionRun.stage)):
-        events.append(TimelineEvent(at=first, label=STARTED[run_stage]))
-    first_pass = db.scalar(select(func.min(QcInspection.inspected_at)).join(Roll, Roll.id == QcInspection.roll_id)
-                           .where(Roll.order_id == order.id, QcInspection.verdict == "pass"))
-    if first_pass is not None:
-        events.append(TimelineEvent(at=first_pass, label="First rolls passed quality check"))
-    dispatches = []
-    for code, when, metres, invoice_no in db.execute(
-            select(Dispatch.code, Dispatch.dispatched_at, func.sum(Roll.metres), Invoice.invoice_no)
-            .join(DispatchItem, DispatchItem.dispatch_id == Dispatch.id).join(Roll, Roll.id == DispatchItem.roll_id)
-            .outerjoin(Invoice, Invoice.dispatch_id == Dispatch.id)
-            .where(Roll.order_id == order.id, Dispatch.state == "dispatched")
-            .group_by(Dispatch.id, Invoice.invoice_no).order_by(Dispatch.dispatched_at)):
-        dispatches.append(PortalDispatch(code=code, dispatched_at=when, metres=to_float(metres), invoice_no=invoice_no))
-        events.append(TimelineEvent(at=when, label=f"{_metres(metres)} m dispatched ({code})"))
-    events.sort(key=lambda e: e.at)
-    return PortalOrderDetail(**base.model_dump(), timeline=events, dispatches=dispatches)
 ```
 
-- [ ] **Step 4: Serve the routes for real.** Replace `services/api/app/modules/portal/router.py` with:
+In `my_orders`, add `dates = insights.delivery_dates(db)` before the query and return `[_summary(db, order, dates) for order in db.scalars(query)]`. In `my_order`, add `dates = insights.delivery_dates(db)` after the `order is None` check and call `_summary(db, order, dates)` in the final `return`. Then `git rm services/api/app/modules/portal/examples.py`.
 
-```python
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+- [ ] **Step 4: Run and watch them pass.** Expected: `4 passed`; then `uv run python -m pytest -p no:warnings -o addopts= tests/test_contract_portal.py -q`: her 7 tests still pass.
 
-from app.core.auth import require_roles
-from app.db.models import User
-from app.db.session import get_db
-from app.modules.portal import schemas as s
-from app.modules.portal import service
+- [ ] **Step 5: Mutation-check** (`portal/service.py`; revert after each):
+  1. Pass `{}` instead of the dates: `test_the_portal_shows_the_real_delivery_date` and the assistant test fail.
+  2. Take the date of the wrong order (`next(iter(dates.values()))[0]`): the side-by-side test fails.
 
-router = APIRouter(prefix="/portal", tags=["portal"])
-buyer_only = require_roles("buyer")
+- [ ] **Step 6: Full suite twice.** Expected both times: about **1,348 passed** (1,344 + 4).
 
-
-@router.get("/orders", response_model=list[s.PortalOrder])
-def my_orders(db: Session = Depends(get_db), user: User = Depends(buyer_only)) -> list[s.PortalOrder]:
-    return service.my_orders(db, user)
-
-
-@router.get("/orders/{order_code}", response_model=s.PortalOrderDetail)
-def my_order(order_code: str, db: Session = Depends(get_db), user: User = Depends(buyer_only)) -> s.PortalOrderDetail:
-    return service.my_order(db, user, order_code)
-```
-
-Then `git rm services/api/app/modules/portal/examples.py` once nothing imports it, and fix older tests that read the example portal.
-
-- [ ] **Step 5: Run and watch them pass.** Expected: `6 + 6 = 12 passed` (two parametrised tests). The timeline order, `30.0`, the identical 404 bodies and the "no internal name" check are the ones to read closely if anything fails.
-
-- [ ] **Step 6: Mutation-check** (`portal/service.py`; revert after each):
-  1. Drop `Order.buyer_id == user.buyer_id` from `my_order`: `test_a_foreign_a_missing_and_a_draft_order_all_give_the_identical_404` fails.
-  2. Drop `Order.state == "confirmed"` from `my_order` or `my_orders`: the draft assertion and the list test fail.
-  3. Remove `events.sort(...)`: the timeline-order test fails.
-  4. Use `row["dispatched_m"]` instead of `row["passed_m"]` for progress: `30.0` becomes `6.6` and the test fails.
-  5. Put the machine code in a timeline label: `test_a_buyer_never_reads_a_machine...` fails.
-
-- [ ] **Step 7: Full suite twice.** Expected both times: about **1,220 passed**.
-
-- [ ] **Step 8: Sync and commit** (Status line, header, then):
+- [ ] **Step 7: Sync and commit** (Status line, header, then):
 
 ```bash
 git add services/api docs/plans/B7-intelligence.md
-git commit -m "Serve the real buyer portal: own orders, timeline, trucks and delivery date"
+git commit -m "Give the buyer portal the real delivery date"
 ```
 
 ---
@@ -2100,7 +1960,7 @@ git commit -m "Serve the real buyer portal: own orders, timeline, trucks and del
 
 - [ ] **Step 3: Shortage, root cause and recall.** Make the demo's low-yarn state real (the demo mill's order C is "short 230 kg") and read `/api/insights/shortages` against a hand calculation; seed a defect pattern through the real API (inspections with confirmed defects on rolls from one lot, enough rolls: at least ten) and read `/api/insights/root-causes`; block the demo's cotton lot (`POST /api/lots/{code}/block`) and read `/api/lots/{code}/recall`, checking every roll against the passport's lot list.
 
-- [ ] **Step 4: The portal as the buyer and the role matrix.** As `buyer` (Sharma Fabrics): `GET /api/portal/orders` and the detail of an own order (timeline in order, delivery date equals the staff view's), another buyer's order and a nonexistent one give the identical 404, the raw text contains no machine, operator, lot, supplier or cost; every staff role gets 403 on the portal; every insight route against its roles; no login gives 401.
+- [ ] **Step 4: The portal as the buyer and the role matrix.** As `buyer` (Sharma Fabrics): `GET /api/portal/orders` and the detail of an own order (delivery date equals the staff view's), another buyer's order and a nonexistent one give the identical 404, the raw text contains no machine, operator, lot, supplier or cost; every staff role gets 403 on the portal; every insight route against its roles; no login gives 401.
 
 - [ ] **Step 5: The assistant's data functions.** From a Python shell on the same database call the assistant's data functions (`app.modules.llm.data`: `late_orders`, `order_eta`, `shortages`, `root_causes`, `lot_recall`, `my_orders`, `my_order`) with a real `ToolContext` and confirm each returns the real figures; no model is needed.
 
@@ -2123,5 +1983,5 @@ git commit -m "Close B7: the intelligence live check passed on a real server"
 
 - The full suite is green twice; the pure engines pass without a database; every mutation listed in Tasks 1-6 makes a test fail (a surviving one led to a stronger test).
 - Delivery dates, the shortage forecast, the root causes and the recall agree with independent recalculations on a real server; the order list shows real dates; the exact test agrees with scipy (recorded in Status).
-- A buyer reads only their own confirmed orders, with a real delivery date, and nothing internal; the assistant's tools return real figures.
+- The buyer portal shows the real delivery date, the same as the staff screens; the assistant's tools return real figures.
 - `contracts/` is byte-identical; `docs/plans/README.md` marks B7 done; the plan's Status, the spec header, the team note and the memory are current; the speed figures are recorded.
