@@ -8,6 +8,7 @@ import { mockApi, renderPage } from '@/test/utils'
 import InvoicePage from './InvoicePage'
 import Payables from './Payables'
 import Receivables from './Receivables'
+import { todayIso } from '@/lib/dates'
 
 const BUYER = { id: 1, name: 'Sharma Fabrics' }
 const RECEIVABLES = [
@@ -28,7 +29,7 @@ const INVOICE = {
 
 const post = vi.mocked(api.POST)
 beforeEach(() => vi.clearAllMocks())
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => todayIso()
 
 describe('Receivables', () => {
   it('totals what was invoiced, received and is still owed', async () => {
