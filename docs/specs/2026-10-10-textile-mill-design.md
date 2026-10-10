@@ -52,7 +52,7 @@ laptop: npm run dev   (native processes — no containers; works on macOS and Wi
 phones / tablets → https://<laptop LAN address>
 ```
 
-- **Runs natively on both team laptops (macOS and Windows):** PostgreSQL 16 or newer installed locally (Homebrew on macOS, the official installer on Windows; developed and tested on 16, a hosted development database may run a newer version), `uv` for Python, npm for the web app. From the repo root, `npm run dev` starts the API and the web app together; Caddy runs separately when phones need HTTPS.
+- **Runs natively on both team laptops (macOS and Windows):** PostgreSQL 14 or newer installed locally (Homebrew on macOS, the official installer on Windows; the backend suite passes on 14, 16 and 18), `uv` for Python, npm for the web app. From the repo root, `npm run dev` starts the API and the web app together; Caddy runs separately when phones need HTTPS.
 - **Development database:** while building, a developer may point `DATABASE_URL` at a hosted PostgreSQL (for example Neon) using its direct connection string; the demo runs on a local one. The test setup refuses to run unless `TEST_DATABASE_URL` names a *different* database whose name ends in `_test`, because the tests erase every table in that database.
 - **All business rules live in the API** and in database constraints. The web app never decides a rule on its own; it mirrors validation for fast feedback only.
 - **Contract:** FastAPI generates an OpenAPI description from the Pydantic models. A script (`npm run contracts`) writes `contracts/openapi.json` and generates `contracts/types.ts` with `openapi-typescript`. The web app imports only these types. A contract change regenerates the types and breaks the web build immediately if anything no longer matches.
@@ -130,9 +130,9 @@ Total: 29 tables.
 | `v_lot_stock` | kg on hand per lot = sum of its movements |
 | `v_order_yarn_need` | per confirmed order and yarn type: `need_kg` = qty_metres × kg_per_metre × (1 + wastage_pct/100); `issued_kg` = issues − returns, from lots of that yarn type, to that order's runs; `outstanding_kg` = max(0, need − issued) |
 | `v_yarn_type_stock` | per yarn type: `on_hand_kg` (unblocked lots), `outstanding_kg` (all confirmed orders), `free_kg` = on_hand − outstanding, `below_reorder` = free_kg < reorder_level_kg |
-| `v_machine_status` | **down** if an open downtime exists; else **running** if an open run exists; else **idle** (active machines only) |
-| `v_roll_status` | see §5 |
-| `v_order_progress` | spun_kg vs need_kg; woven / dyed / passed / rejected / dispatched metres vs qty_metres; buyer-facing stage (§5) |
+| `v_machine_status` | **down** if an open downtime exists; else **running** if an open run exists; else **idle** (active machines only). Real SQL view since B3 |
+| `v_roll_status` | see §5. Real SQL view since B3 (all five rules); "a rework run linked after the inspection" is a rework run whose `started_at` is not before the inspection's `inspected_at` |
+| `v_order_progress` | spun_kg vs need_kg; woven / dyed / passed / rejected / dispatched metres vs qty_metres; buyer-facing stage (§5). **Implemented as functions** (`progress` and `stage` in `modules/orders/service.py`, recomputed on every read), not as a SQL view; the stock views (`v_lot_stock`, `v_order_yarn_need`, `v_yarn_type_stock`) are real SQL views |
 | `v_order_timeline` | union of dated events per order (confirmed, first spinning/weaving/dyeing run, rolls passed, dispatches) for the buyer portal |
 
 ---
@@ -143,12 +143,12 @@ Total: 29 tables.
 1. On a dispatch that is `dispatched` → **dispatched**; on a dispatch still `loading` → **loading**.
 2. Latest inspection verdict = reject → **rejected**.
 3. Latest inspection verdict = pass → **in_store**.
-4. Latest inspection verdict = rework → if a rework run linked after that inspection has ended → **awaiting_qc**; if one is open → **in_rework**; else → **awaiting_rework**.
-5. No inspection yet → if a dye run has ended → **awaiting_qc**; if a dye run is open → **dyeing**; else → **woven**.
+4. Latest inspection verdict = rework → look at the **latest** rework run linked after that inspection: if it has ended → **awaiting_qc**; if it is open → **in_rework**; if there is none → **awaiting_rework**.
+5. No inspection yet → look at the roll's **latest** dye run: if it has ended → **awaiting_qc**; if it is open → **dyeing**; if there is none → **woven**. (A hand-over of a dyeing run, or of a rework run on a machine, copies the loaded rolls to the new run, so a roll is not finished until its latest run is.)
 
 **Order buyer-facing stage** (furthest reached): cancelled → draft → *Waiting to start* (confirmed, no runs) → *Spinning* → *Weaving* → *Dyeing* → *Quality check* (any roll awaiting_qc / in rework) → *Ready to ship* (passed metres ≥ ordered) → *Partly dispatched* → *Dispatched* (dispatched metres ≥ ordered).
 
-**Machine "output today"**: spinning = sum of `output_kg` of runs ended today; weaving = metres of rolls produced today; dyeing = metres of rolls in dye runs ended today.
+**Machine "output today"**: spinning = sum of `output_kg` of runs ended today; weaving = metres of rolls produced today; dyeing = metres of rolls whose latest dye run ended today.
 
 ---
 
@@ -163,11 +163,11 @@ Every rule is enforced in the API inside one database transaction; the ones mark
 | R3 | **Orders:** draft → confirmed → (cancelled only while no runs exist) [`ORDER_HAS_RUNS`]. After confirmation only the deadline may change. |
 | R4 | **Start run:** machine active; not down [`MACHINE_DOWN`]; no open run [`MACHINE_BUSY`] **DB**; machine stage = run stage [`WRONG_STAGE`]; order confirmed; operator active. Weaving requires `input_run_id` = a spinning run of the same order [`INPUT_RUN_REQUIRED`]. |
 | R5 | **Breakdown:** opens a downtime and ends any open run on that machine at the same moment. **Repair:** ends the downtime. |
-| R6 | **Hand over (shift change / worker moves):** ends the current run and starts a new one on the same machine and order with the new operator (same `input_run_id`). Each run has exactly one operator. |
+| R6 | **Hand over (shift change / worker moves):** ends the current run and starts a new one on the same machine and order with the new operator (same `input_run_id`). Each run has exactly one operator. Ending a spinning run through `/runs/{id}/end` requires `output_kg` (0 allowed); hand-over and breakdown end a run without output, so a spinning run ended that way keeps a blank output (B3 decision, recorded in `docs/plans/B3-floor.md`). |
 | R7 | **Roll off:** only on an open weaving run; metres > 0; creates the roll (order = the run's order) and a `produce` link. |
 | R8 | **Load dyeing:** dye run open; every roll belongs to the run's order and has status `woven` [`ROLL_WRONG_STATUS`]; creates `dye` links. |
-| R9 | **QC:** roll status `awaiting_qc` [`ROLL_WRONG_STATUS`]; verdict required; at least one defect when verdict ≠ pass [`DEFECTS_REQUIRED`]; `overrode_ai` computed server-side. |
-| R10 | **Rework run:** roll's status `awaiting_rework`; machine is a dyeing machine (re-dye) or null (manual mending); creates a `rework` link. |
+| R9 | **QC:** roll status `awaiting_qc` [`ROLL_WRONG_STATUS`]; verdict required; at least one defect when verdict ≠ pass [`DEFECTS_REQUIRED`]; `overrode_ai` computed server-side. The inspector is the logged-in user's linked worker (a login without an active linked worker is refused [`INSPECTOR_REQUIRED`], which includes the owner unless linked); a pass with defects is allowed; each defect type appears once per inspection; `photo_path` must be an upload path; the roll's row is locked so two inspectors cannot both judge it (B4). |
+| R10 | **Rework run:** roll's status `awaiting_rework`; machine is a dyeing machine (re-dye) or null (manual mending); creates a `rework` link. One roll per run; it ends through the ordinary end-run (no output) and the roll returns to `awaiting_qc`; hand-over of a rework run on a machine carries the roll to the new run (B4). |
 | R11 | **Load dispatch:** dispatch is `loading`; roll's order belongs to the dispatch's buyer [`WRONG_BUYER`]; roll status `in_store` [`ROLL_NOT_PASSED`]; roll on no other dispatch [`ALREADY_DISPATCHED`] **DB**. Response includes per-order metres loaded vs remaining and an over-shipping warning. Removing a roll is allowed while loading. |
 | R12 | **Confirm dispatch:** ≥ 1 roll [`EMPTY_DISPATCH`]; sets `dispatched`, and creates the invoice and its lines (metres × that order's price) in the same transaction. Dispatches and invoices are immutable afterwards [`DISPATCH_LOCKED`]. |
 | R13 | **Payment limits:** buyer payment ≤ invoice balance; supplier payment ≤ bill balance; wage payment ≤ wages owed for that worker and period [`OVERPAYMENT`]. |

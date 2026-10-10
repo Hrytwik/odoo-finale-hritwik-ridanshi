@@ -7,11 +7,13 @@
     "dev:web": "npm --prefix apps/web run dev",
     "db:migrate": "uv run --directory services/api alembic upgrade head",
     "db:seed": "uv run --directory services/api python -m scripts.seed_dev",
+    "db:demo": "uv run --directory services/api python -m scripts.seed_demo",
     "test:api": "uv run --directory services/api pytest",
     "contracts": "uv run --directory services/api python -m scripts.export_openapi && openapi-typescript contracts/openapi.json -o contracts/types.ts"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",
-    "openapi-typescript": "^7.13.0"
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.9.3"
   }
 }

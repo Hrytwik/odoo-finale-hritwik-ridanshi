@@ -3,9 +3,11 @@ from itertools import count
 
 from sqlalchemy.orm import Session
 
+from app.core.codes import next_code
+
 from app.db.models import (
-    Buyer, Dispatch, FabricRecipeLine, FabricType, Machine, Order, ProductionRun, Roll, RollRun, Shift,
-    Supplier, SupplierBill, User, Worker, YarnLot, YarnMovement, YarnType,
+    Buyer, Dispatch, DispatchItem, FabricRecipeLine, FabricType, Machine, Order, ProductionRun, QcInspection, Roll,
+    RollRun, Shift, Supplier, SupplierBill, User, Worker, YarnLot, YarnMovement, YarnType,
 )
 
 _n = count(1)
@@ -65,7 +67,7 @@ def make_user(db: Session, role: str = "owner", **kw) -> User:
 def make_order(db: Session, buyer=None, fabric_type=None, state: str = "confirmed", **kw) -> Order:
     n = next(_n)
     fields = {
-        "code": f"ORD-{n:04d}", "buyer_id": (buyer or make_buyer(db)).id,
+        "code": next_code(db, "order"), "buyer_id": (buyer or make_buyer(db)).id,
         "fabric_type_id": (fabric_type or make_fabric_type(db)).id, "colour": "navy",
         "qty_metres": 1000, "price_per_metre": 120, "deadline": dt.date(2026, 10, 30), "state": state,
         "confirmed_at": dt.datetime(2026, 10, 1, tzinfo=dt.UTC) if state == "confirmed" else None,
@@ -86,7 +88,7 @@ def make_run(db: Session, order: Order, machine: Machine, operator: Worker | Non
 
 
 def make_roll(db: Session, order: Order, weaving_run: ProductionRun, metres: float = 100) -> Roll:
-    roll = _add(db, Roll(code=f"R-{next(_n):04d}", order_id=order.id, metres=metres))
+    roll = _add(db, Roll(code=next_code(db, "roll"), order_id=order.id, metres=metres))
     _add(db, RollRun(roll_id=roll.id, run_id=weaving_run.id, purpose="produce"))
     return roll
 
@@ -96,7 +98,7 @@ def make_lot(db: Session, yarn_type=None, supplier=None, qty_kg: float = 500, co
     supplier = supplier or make_supplier(db)
     receiver = kw.pop("received_by", None) or make_user(db, role="store").id
     lot = _add(db, YarnLot(**{
-        "lot_code": f"L-{n:04d}", "yarn_type_id": (yarn_type or make_yarn_type(db)).id,
+        "lot_code": next_code(db, "lot"), "yarn_type_id": (yarn_type or make_yarn_type(db)).id,
         "supplier_id": supplier.id, "cost_per_kg": cost_per_kg, "challan_no": f"CH-{n}",
         "received_by": receiver, **kw,
     }))
@@ -109,3 +111,16 @@ def make_lot(db: Session, yarn_type=None, supplier=None, qty_kg: float = 500, co
 
 def make_dispatch(db: Session, buyer: Buyer, **kw) -> Dispatch:
     return _add(db, Dispatch(**{"code": f"DSP-{next(_n):04d}", "buyer_id": buyer.id, "vehicle_no": "KA01AB1234", **kw}))
+
+
+def make_inspection(db: Session, roll: Roll, verdict: str = "pass", **kw) -> QcInspection:
+    inspector = kw.pop("inspector_worker_id", None) or make_worker(db, role="inspector").id
+    return _add(db, QcInspection(**{"roll_id": roll.id, "inspector_worker_id": inspector, "verdict": verdict, **kw}))
+
+
+def put_on_dispatch(db: Session, roll: Roll, dispatch: Dispatch) -> DispatchItem:
+    return _add(db, DispatchItem(dispatch_id=dispatch.id, roll_id=roll.id))
+
+
+def dye(db: Session, roll: Roll, run: ProductionRun) -> RollRun:
+    return _add(db, RollRun(roll_id=roll.id, run_id=run.id, purpose="dye"))

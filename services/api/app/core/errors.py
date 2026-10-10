@@ -57,6 +57,16 @@ def commit(db: Session) -> None:
         raise map_integrity_error(exc) from exc
 
 
+def flush(db: Session) -> None:
+    """Like commit(), for a flush in the middle of a transaction (to get an id): a database constraint that fires here is
+    mapped to the standard error shape and the whole transaction is rolled back."""
+    try:
+        db.flush()
+    except IntegrityError as exc:
+        db.rollback()
+        raise map_integrity_error(exc) from exc
+
+
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def _app_error(_: Request, exc: AppError) -> JSONResponse:
@@ -75,7 +85,7 @@ def install_error_handlers(app: FastAPI) -> None:
 
 KNOWN_CONSTRAINTS.update({
     "uq_open_run_per_machine": ("MACHINE_BUSY", "machine_code", "This machine already has a running job"),
-    "uq_open_downtime_per_machine": ("MACHINE_DOWN", "machine_code", "This machine is already marked as down"),
+    "uq_open_downtime_per_machine": ("MACHINE_ALREADY_DOWN", "machine_code", "This machine is already marked as down"),
 })
 
 KNOWN_CONSTRAINTS.update({

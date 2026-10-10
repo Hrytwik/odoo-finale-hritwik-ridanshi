@@ -2,8 +2,8 @@ import pytest
 
 
 @pytest.mark.parametrize("role,path", [
-    ("supervisor", "/api/floor"), ("supervisor", "/api/machines/LOOM-04"), ("qc", "/api/qc/queue"),
-    ("qc", "/api/qc/model-card"), ("owner", "/api/rolls/R-0142/passport"), ("buyer", "/api/rolls/R-0142/passport"),
+    ("supervisor", "/api/floor"), ("qc", "/api/qc/queue"),
+    ("qc", "/api/qc/model-card"),
 ])
 def test_example_data_served(client, login_as, role, path):
     login_as(role)
@@ -15,12 +15,6 @@ def test_floor_counts_match_cards(client, login_as):
     board = client.get("/api/floor").json()
     statuses = [m["status"] for m in board["machines"]]
     assert board["running"] == statuses.count("running") and board["down"] == statuses.count("down")
-
-
-def test_roll_off_needs_positive_metres(client, login_as):
-    login_as("supervisor")
-    assert client.post("/api/runs/45/rolls", json={"metres": 0}).status_code == 422
-    assert client.post("/api/runs/45/rolls", json={"metres": 110}).status_code == 201
 
 
 def test_load_rolls_needs_at_least_one(client, login_as):

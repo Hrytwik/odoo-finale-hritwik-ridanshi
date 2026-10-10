@@ -1074,6 +1074,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rolls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Rolls */
+        get: operations["list_rolls_api_rolls_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rolls/{roll_code}/passport": {
         parameters: {
             query?: never;
@@ -1098,7 +1115,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List Runs */
+        get: operations["list_runs_api_runs_get"];
         put?: never;
         /** Start Run */
         post: operations["start_run_api_runs_post"];
@@ -5401,6 +5419,38 @@ export interface operations {
             };
         };
     };
+    list_rolls_api_rolls_get: {
+        parameters: {
+            query?: {
+                status?: ("woven" | "dyeing" | "awaiting_qc" | "awaiting_rework" | "in_rework" | "in_store" | "rejected" | "loading" | "dispatched") | null;
+                order_code?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RollOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     roll_passport_api_rolls__roll_code__passport_get: {
         parameters: {
             query?: never;
@@ -5419,6 +5469,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Passport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_runs_api_runs_get: {
+        parameters: {
+            query?: {
+                stage?: ("spinning" | "weaving" | "dyeing" | "rework") | null;
+                order_code?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunOut"][];
                 };
             };
             /** @description Validation Error */

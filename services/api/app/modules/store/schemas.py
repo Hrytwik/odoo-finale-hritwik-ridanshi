@@ -4,7 +4,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field, field_validator
 
 from app.core.enums import MovementKind, RollStatus
-from app.core.schemas import Money, NonBlank, Out, PositiveQty, Ref
+from app.core.schemas import Money, NonBlank, NoBool, Out, PositiveQty, Ref
 
 
 class YarnTypeRef(Out):
@@ -73,7 +73,7 @@ class ReturnIn(IssueIn):
 
 class AdjustIn(BaseModel):
     lot_code: NonBlank
-    qty_kg: Annotated[float, Field(ge=-1_000_000, le=1_000_000)]
+    qty_kg: Annotated[float, Field(ge=-1_000_000, le=1_000_000), NoBool]
     note: NonBlank
 
     @field_validator("qty_kg")

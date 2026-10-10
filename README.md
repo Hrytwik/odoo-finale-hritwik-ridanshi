@@ -4,6 +4,8 @@ One platform for a textile mill: yarn store, production floor, quality checks, d
 
 ## Setup
 
+PostgreSQL 14 or newer works (the backend tests pass on 14, 16 and 18).
+
 **macOS:** `brew install postgresql@16 uv node` · `brew services start postgresql@16` · `createdb everest` · `createdb everest_test`
 
 **Windows:** install PostgreSQL 16 (official installer, remember the `postgres` password), Node.js LTS, Git, and uv:
@@ -17,7 +19,8 @@ cp .env.example .env        # then edit DATABASE_URL / TEST_DATABASE_URL for you
                             #   uv run --directory services/api python -c "import secrets; print(secrets.token_urlsafe(48))"
 npm install
 npm run db:migrate
-npm run db:seed
+npm run db:seed             # logins, workers, 3 shifts, 10 machines, yarn types, suppliers, buyers, fabrics (safe to run again)
+npm run db:demo             # optional: a mill in the middle of a working day (needs an empty database)
 npm run dev                 # API on :8000, web on :3000
 ```
 
@@ -43,3 +46,8 @@ Running the tests erases every table in `TEST_DATABASE_URL`, so the test setup r
 | `npm run dev` | API + web together |
 | `npm run test:api` | backend tests (real Postgres `everest_test`) |
 | `npm run contracts` | regenerate `contracts/openapi.json` and `contracts/types.ts` |
+
+## Credits
+
+- Defect-detection experiments use [Ultralytics YOLO](https://docs.ultralytics.com/) (AGPL-3.0).
+- Public training images: "Fabric Defect Detection Subset" by First Workspace Gan, Roboflow Universe, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): https://universe.roboflow.com/first-workspace-gan/fabric-defect-detection-subset

@@ -1,12 +1,181 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 12:55 IST
+> **Last updated:** 2026-10-10 19:12 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
 
 ---
 
+## 2026-10-10 19:12 IST — QC, rework and the Roll Passport are real (shapes unchanged; read the new error codes)
+
+**From:** Hritwik → Ridanshi
+
+Quality control now runs on real data and real rules. **No shape changed:** `contracts/` is byte-identical. Please `git pull`, then `npm run db:migrate` (one new migration, `roll status uses the latest run`).
+
+**What is real now:** `POST /qc/inspections`, `POST /rework-runs`, `GET /qc/queue` and `GET /rolls/{code}/passport`. **Still example data:** `POST /qc/analyze` and `GET /qc/model-card` (the vision model is connected in B8; both already say "not available", and QC works without it). The passport's `cost` is `null` until costing (B6) and `dispatch` is `null` until dispatch (B5), the shapes already allow both.
+
+**Behaviour you should know about**
+- **Inspecting a roll** needs the roll to be `awaiting_qc` (its dye run has ended): otherwise `ROLL_WRONG_STATUS` (409, the message names the current status). A **rework or reject needs at least one defect** (`DEFECTS_REQUIRED`, 422 on `defects`); a pass may carry defects; **each defect type once** per inspection (422). `photo_path` must be a path from `POST /uploads` (anything else is a 422 on `photo_path`). `overrode_ai` is worked out by the server (a suggestion was sent and its verdict differs), so the screen does not need to send it.
+- **Who can inspect:** the inspector is the logged-in user's linked worker. A QC login always has one. **The owner login has no linked worker, so the owner gets `INSPECTOR_REQUIRED` (409)** unless you link a worker to that user on the Users screen. If your QC screen is shown to the owner, either hide the inspect button or show that message.
+- **Rework:** `POST /rework-runs` takes a roll that is `awaiting_rework`, an operator, and optionally a machine. Without a machine it is manual mending; with one it must be a **dyeing** machine that is active, not down and not busy (`WRONG_STAGE`, `MACHINE_INACTIVE`, `MACHINE_DOWN`, `MACHINE_BUSY`). End it with the ordinary **End run** (no output): the roll goes back to `awaiting_qc` for a new inspection. A breakdown on that machine ends it too.
+- **QC queue:** `counts.passed` is every roll whose latest verdict is pass (in store, on a loading dispatch, or dispatched). `rolls` lists only rolls that need someone (awaiting QC, awaiting rework, in rework), oldest first.
+- **Roll Passport:** runs are listed oldest first and include the spinning run that fed the weaving; **a roll whose dyeing run was handed over shows two dyeing runs** (the old and the new one). Yarn lots are the lots with a net positive issue to that spinning run. A **buyer who asks for another buyer's roll gets exactly the same 404 as for a roll that does not exist**, and a buyer sees only status, order, quality checks (inspector shown as "Quality team", no photo or AI output) and dispatch.
+
+**A fix you will see on the floor screens:** handing over a **dyeing** run used to make its loaded rolls look finished (`awaiting_qc`) while dyeing carried on. Now the loaded rolls move to the new run and **stay `dyeing`** until the *latest* dye run ends; the order's dyed metres, its quality-check stage and the machine's output today count each roll once. The new run's `roll_codes` lists the same rolls.
+
+**To try it on your machine with the demo mill** (`npm run db:demo` on an empty database): rolls `R-0001` and `R-0002` are loaded in the running `DYE-01`: end that dyeing run (or hand it over first and end the new run), and both rolls appear in the QC queue as `awaiting_qc`. Log in as `qc` (password `everest123`) to inspect them.
+
+---
+
+## 2026-10-10 18:11 IST — Starter data and a demo mill are in; your branch is merged into main
+
+**From:** Hritwik → Ridanshi
+
+**Your branch is merged.** `a/web-textile` (the web app, your `people` and `llm` modules) is in `main` and pushed, including your three UI commits from this evening. After the merge: backend **828 tests** pass, your **421 web tests** pass, `tsc -b` has no errors against the merged contract (82 paths). Conflicts were only `app/main.py` (kept all three routers: rolls, people, llm) and `uv.lock` (regenerated). One of your tests (`test_a_data_source_that_fails_only_removes_its_own_questions`) assumed the stock example data; stock is real now, so it creates a lot first. Your code was right. **Please `git pull` before you start anything new.**
+
+**Your seed ask is done** (`npm run db:seed`, safe to run again, it only creates what is missing and never overwrites something you edited): 3 shifts (A 06:00–14:00, B 14:00–22:00, C 22:00–06:00), 10 machines (`SPIN-01`/`02`, `LOOM-01`…`06`, `DYE-01`/`02`), yarn types (30s cotton, 40s poly-cotton), two suppliers, two buyers (Sharma Fabrics, Kavya Garments), two fabric types with recipes (Poplin 58in, Twill 58in), and 12 workers (7 operators, 2 inspectors). `typescript` is now in the root `devDependencies`, so `npm run contracts` should work for you after `npm install` at the root.
+
+**A demo mill for your screens** (`npm run db:demo`, needs an empty database; built through the real rules, not raw inserts, and it refuses to run twice): order **A** (Poplin 5,000 m, Sharma) spun, woven on `LOOM-04` (3 rolls, 2,310 m) and two rolls loaded into the running `DYE-01`; order **B** (Twill 3,000 m, Kavya) spinning on `SPIN-02`; order **C** (Poplin, Kavya) left as a **draft** so confirming it live shows "short 230 kg"; `LOOM-06` is down ("belt snapped"). The board reads 3 running, 1 down, 6 idle; cotton is below its reorder level (free 170 kg).
+
+**How to run it on your machine**
+```
+git pull
+npm install                 # root and apps/web (typescript, new dependencies)
+npm run db:migrate          # three new migrations since the last note
+npm run db:seed
+npm run db:demo             # only on an empty database; otherwise it says so and stops
+npm run dev                 # API :8000, web :3000
+```
+If your database already has orders from testing, drop and recreate it (`dropdb everest && createdb everest`), then run the lines from `db:migrate` down.
+
+**Still example data on the backend** (your screens for these show fixed numbers, so they will not match the real rolls above yet): QC and roll passport (next, B4), dispatch and money (B5), costing (B6), insights, ETA and recall trace (B7), buyer portal. The chain from yarn to dyed rolls (store, orders, floor, rolls) is real end to end.
+
+---
+
+## 2026-10-10 17:31 IST — The floor is now real (shapes unchanged; read the new error codes)
+
+**From:** Hritwik → Ridanshi
+
+Runs, machines and rolls now run on real data and real rules. **No shape changed:** `contracts/` is byte-identical, so your screens compile as before. This will be on `main` after I push; then `git pull` and run `npm run db:migrate` (two new migrations: roll codes + roll status, machine status).
+
+**What is real now:** `GET /floor`, `GET /machines/{code}`, `GET /runs`, `POST /runs` (start), `/runs/{id}/end`, `/runs/{id}/handover`, `/runs/{id}/rolls` (roll off), `/runs/{id}/load-rolls`, `POST /machines/{code}/breakdown` and `/repair`, and `GET /rolls` (your tick list for dyeing now lists real woven rolls). Yarn issue from the last note now works: it needs a real open spinning run, which you can start. A whole chain was run on a live server: receive yarn, order, spin (issue and end with kg), weave across a shift change, dye, quality check; the order's progress and stage, the stock and the floor board agree at every step.
+
+**Things that behave differently from the example data**
+- **Ending a spinning run needs `output_kg`** (0 is fine, blank is refused with `OUTPUT_REQUIRED`, 422). Weaving and dyeing runs must **not** send one (`OUTPUT_NOT_ALLOWED`, 422).
+- **Hand-over and breakdown end a run without asking for output.** A spinning run ended that way keeps a blank output, so the "spun" total can be short. If a shift change on a spinning machine matters for the numbers, let the supervisor press **End run** (with the kg) and then **Start run** for the next person instead of Hand over.
+- **Hand-over to the same operator is refused** (422 on `operator_worker_id`). The new run starts with no rolls; rolls already made stay with the old run.
+- **Breakdown ends the running job at once; repair does not restart it.** After repair the machine is idle and someone starts a new run.
+- **The board lists active machines only**; an inactive machine's page is a 404. Machine `status` is `down` (open downtime), `running` (open run) or `idle`. `output_today` uses the India-time day: kg for spinning, metres for weaving and dyeing; `order_progress_pct` is the progress of that run's own stage for its order (capped at 100, one decimal).
+- **Starting a weaving run needs `input_run_id`** (a spinning run of the same order, open or ended): `GET /runs?stage=spinning&order_code=...` lists them.
+- Rolls get codes like `R-0142`, are `woven` when made, `dyeing` once loaded, and `awaiting_qc` when the dye run ends (the QC, dispatch and rework statuses come with the next plans; the status rules are already in place).
+
+**Error codes you can show** (standard `{code, message, field}`): start run: `ORDER_NOT_CONFIRMED`, `MACHINE_INACTIVE`, `OPERATOR_INACTIVE`, `INPUT_RUN_REQUIRED` (422 when missing, 409 when it is the wrong run), `MACHINE_DOWN`, `MACHINE_BUSY`; any run action: `RUN_NOT_OPEN` (run already ended), `WRONG_STAGE` (e.g. roll off on a dyeing run); breakdown/repair: `MACHINE_ALREADY_DOWN`, `MACHINE_NOT_DOWN`, `MACHINE_INACTIVE`; load rolls: `ROLL_WRONG_STATUS` (the message names the roll and its status), `ROLL_WRONG_ORDER`, 404 on `roll_codes` for an unknown roll, 422 for a repeated roll. Loading is all or nothing: if one roll is refused, none are loaded.
+
+**Test data tip:** `npm run db:seed` creates users, workers and one buyer only. To exercise the floor, create as `owner` a yarn type, supplier, fabric type with a recipe, at least one machine per stage and a couple of workers (`/yarn-types`, `/suppliers`, `/fabric-types`, `/machines`, `/workers`).
+## 2026-10-10 17:31 IST — People module added (attendance, wages, wage payments); I touched two of your files
+
+**From:** Ridanshi → Hritwik
+
+**What is new (on my local branch `a/web-textile`, not pushed)**
+- `services/api/app/modules/people` (my module, as in the spec's team split): `GET /attendance?date=&shift_id=`, `POST /attendance`, `GET /wages?month=YYYY-MM`, `POST /payments/wages`. It uses your existing `attendance` and `wage_payments` tables, so **no migration**. 45 new tests (`tests/test_people.py`); the whole suite is 258 passed on PostgreSQL 14.
+- Attendance and wage payments are real (they read and write the database); the rules are in the plan record `docs/plans/A6-people.md` on that branch.
+
+**Two of your files were touched** (please say if you want it done differently)
+1. `services/api/app/main.py`: two lines to mount `people_router`.
+2. `contracts/openapi.json` and `contracts/types.ts` regenerated (additions only: three paths and their schemas). My copy of `main` is older than your 15:18 regeneration, so when my branch is merged these two files will conflict. **The fix is simple: take your side, then run the contract export again** (it picks my router up from `main.py`).
+- Tip: `npm run contracts` fails at the repo root on my machine (`openapi-typescript` cannot find `typescript`; the root has no `typescript` dependency). I worked around it with a temporary link; adding `typescript` to the root `devDependencies` would fix it for both of us.
+
+**Two things in the wage rules worth matching in your costing (B6)**
+- **Earned wages** are worked out per attendance record: daily wage × 1 (present) or × 0.5 (half day), summed, to the paisa. A worker marked present in two shifts on one day is paid for both, as spec §7.2 says. `modules/people/service.py` has the functions (`wage_rows`) if you want to reuse them. Your month report's `wages_earned` should equal the `total_earned` of `GET /wages` for the same month.
+- **Wage payment limit (R13):** a payment cannot exceed *earned minus the payments whose whole period lies inside that period*. So a payment for the first half of a month reduces what is owed for the month. Over the limit gives `OVERPAYMENT` (409, field `amount`).
+
+**One ask for the seed (B9):** the dev database has **no shifts and no machines**, so the attendance screen cannot be used and the master-data lists are empty. Please add three shifts (for example A 06:00 to 14:00, B 14:00 to 22:00, C 22:00 to 06:00) and the machines to the seed.
+
+**Also built (A5, A6, A7, no backend change needed):** invoice, receivables and payables with payment recording; owner month-end dashboard and insights; master-data screens for suppliers, buyers, yarn types, fabric types, machines, shifts, users and workers (these use your real master-data endpoints and work end to end); attendance and wages screens. 421 web tests pass.
+
+**What I will do next:** the language-model module (`modules/llm`) and the AI screens (A8), then the buyer portal and the demo script (A9). I will merge your `main` (B2) into my branch before the demo run so the screens meet your real store and orders logic. Thank you for the buyer-safe passport and the two list endpoints.
+
+---
+
+## 2026-10-10 16:05 IST — Store and orders are now real (shapes unchanged; one thing will break on your side)
+
+**From:** Hritwik → Ridanshi
+
+The yarn store and the orders now run on real data and real rules. **No shape changed:** `contracts/openapi.json` and `types.ts` are byte-identical, so your screens compile as before. This is on branch `b/store-orders` until I merge and push `main`; I will tell you when it is on `main`. After you pull, run `npm run db:migrate` (two new migrations: code sequences and stock views).
+
+**What is real now**
+- `POST/GET /lots`, `GET /lots/{code}`, `POST /lots/{code}/block`, `GET /stock`, `POST /movements/issue|return|adjust`, and all of `/orders` (create, list, read, confirm, cancel, deadline, yarn check). `GET /lots/{code}/recall` is still example data until B7.
+- The stock numbers and the yarn check now agree because they come from the same database views. Example from a live run: lot 800 kg; order A needs 630, order B needs 400 → stock says outstanding 1,030, free −230, below reorder; B's yarn check says available 170, short 230.
+- Order `progress` and `stage` are computed from real runs, rolls, inspections and dispatches (they stay at zero / "waiting to start" until the floor and QC plans write that data). `delivery_date` and `days_late` stay `null` until B7.
+- Dates are India time. A deadline of today is fine; yesterday is `DEADLINE_IN_PAST` (422).
+
+**One thing that will break for you:** issuing yarn (`POST /movements/issue`) needs a **real open spinning run of a confirmed order**. Until plan B3 (floor) is done there are no real runs, so the run ids you take from the example `/api/floor` data will get `404 NOT_FOUND` on `run_id`. Receive, stock, orders, adjust and block all work now. Test your issue screen against the error shapes below until B3 lands.
+
+**Error codes you can show (all in the standard `{code, message, field}` shape)**
+- Receive: `DUPLICATE_CHALLAN` (409, `challan_no`), 404 on `yarn_type_id` / `supplier_id` / `intended_order_code`, 422 on `challan_photo_path` (must be a path the upload endpoint returned).
+- Issue / return / adjust: `LOT_BLOCKED`, `RUN_NOT_OPEN`, `YARN_NOT_IN_RECIPE`, `INSUFFICIENT_STOCK` (the message says how many kg are available), `RETURN_EXCEEDS_ISSUED`; block: `LOT_ALREADY_BLOCKED`.
+- Orders: `ORDER_NOT_DRAFT`, `ORDER_HAS_RUNS`, `ORDER_ALREADY_CANCELLED`, `ORDER_CANCELLED`, `DEADLINE_IN_PAST`.
+- A quantity or price that rounds to zero (`0.0004` kg) is `VALIDATION_ERROR` on that field. Numbers are rounded half up to 3 decimals for kg and metres, 2 for money.
+- **A JSON `true` or `false` is now refused for every quantity, price and rate field** (it used to be read as 1 or 0). If any form sends a checkbox value in one of those fields, that will show up as a 422.
+
+**Test data tip:** `npm run db:seed` only creates the dev users, workers and one buyer. To receive a lot you first need a yarn type, a supplier and a fabric type with a recipe (create them as `owner` through `/yarn-types`, `/suppliers`, `/fabric-types`), and orders need a real `buyer_id` and `fabric_type_id`.
+
+---
+
+## 2026-10-10 15:18 IST — Re: your three backend asks and the Neon latency (all done, contract updated)
+
+**From:** Hritwik → Ridanshi
+
+**Your three asks**
+1. **Buyer-safe roll passport: done.** For a buyer, `GET /api/rolls/{roll_code}/passport` now returns `cost: null`, `yarn_lots: []`, `runs: []`, and the quality checks with the inspector shown as "Quality team" and no photo or AI output. Staff get the full passport as before. This was a real leak in my example-data endpoint, thank you. The shape is unchanged (`cost` was already nullable). When the passport becomes real (plan B4) it will use the same projection and also refuse a buyer's request for a roll that is not theirs.
+2. **`GET /api/rolls?status=woven&order_code=ORD-0012` → `RollOut[]`: added** (all staff roles, buyers get 403; an unknown status is a 422).
+3. **`GET /api/runs?stage=spinning&order_code=ORD-0012` → `RunOut[]`: added** (supervisor, owner, accountant). The optional filters are `stage` and `order_code`; it returns open and ended runs.
+Both return example data now, with the real filtering and roles; the numbers become real in B3 and B4. `contracts/` is regenerated (71 paths).
+
+**Neon and PostgreSQL 14:** thank you for measuring it. A local database is clearly right for building and for the demo. Your results (14 local, 18 on Neon) plus mine (16) mean the README and spec now say "PostgreSQL 14 or newer".
+
+**Please push your `a/...` branch when you can** (a branch push never conflicts with `main`), so your A2 to A4 work is safe and visible.
+
+---
+
+## 2026-10-10 14:52 IST — Three backend asks from building the QC, passport and floor screens
+
+**From:** Ridanshi → Hritwik
+
+**1. Please leave cost out of the roll passport for buyers (privacy).** GET /api/rolls/{roll_code}/passport currently returns the internal per-metre cost to every role, including a buyer. My screen hides it from buyers, but a buyer can still read it from the network response, and cost per metre is exactly what a mill does not show customers. Same idea for the yarn lots, supplier names, machines and operator names in that response: a buyer's view only needs status, quality checks and dispatch. Spec section 11 says buyers see "own rolls only"; this goes one step further.
+
+**2. A way to list woven rolls (small endpoint, nice to have).** To load rolls into a dyeing machine the supervisor types roll codes today, because nothing lists the rolls with status woven for an order. Something like GET /api/rolls?status=woven&order_code=ORD-0012 returning RollOut[] (staff roles) would let me show a tick list instead.
+
+**3. A way to list open spinning runs (small endpoint, nice to have).** Starting a weaving run needs input_run_id. Today I offer the open spinning runs seen on /api/floor, plus a manual run number. GET /api/runs?stage=spinning&order_code=ORD-0012 (open and ended) would remove the manual field.
+
+**Built so far on my side** (local branch, 252 web tests passing, still not pushed): login and role menus; Receive yarn; Yarn stock; Yarn lot with block and recall; Orders list, New order, Order detail (delivery what-ifs, yarn check, cost and profit, confirm / cancel / deadline); Floor board and Machine page (start, hand over, roll off, load rolls, issue yarn, breakdown, repair); QC queue, inspection with AI suggestion and override logging, vision model card; Roll Passport with QR tag and scanner. Plan records are in docs/plans/A2 to A4 on that branch.
+
+**Next on my side:** dispatch and money screens (A5), then owner dashboard and master data (A7).
+
+---
+## 2026-10-10 14:24 IST — Neon from India is too slow; I moved my dev database to local PostgreSQL 14 (213 backend tests pass)
+
+**From:** Ridanshi → Hritwik
+
+**What I measured** (supersedes the "all green on Neon" entry of 12:54, which was about correctness, not speed)
+- With my dev database on Neon (AWS us-east-2, free plan) every API call took **4 to 7 seconds** from my laptop in India, and the first login took about 25 seconds. A bare `psql` connect plus `select 1` took **5.8 s, then 21.5 s, then 57.6 s**, getting worse. The 68 backend tests took 95 s.
+- So Neon is fine for correctness but unusable for building and demoing a UI that has to feel fast. Your plan to demo on a local PostgreSQL is right.
+
+**What I did**
+- My dev and test databases are now local: `everest` and `everest_test` on the PostgreSQL 14 that was already on my laptop (via `DATABASE_URL` and `TEST_DATABASE_URL` in my `.env`; the Neon settings are saved in a git-ignored `.env.neon`).
+- **PostgreSQL 14 works.** The spec says 16, so this is a data point for you: all four migrations (`b4052240ca17`, `65be43458fea`, `3a6545d5245d`, `ae46451bab35`) apply on a fresh database, `npm run db:seed` works, and `npm run test:api` gives **213 passed, 1 warning, in 8.1 s**.
+- With the local database a login takes 0.33 s and other calls 15 to 40 ms.
+
+**For you**
+- Nothing needed. If you ever want the minimum Postgres version stated in the README, "14 or newer" is now tested.
+- Same warning as before: `StarletteDeprecationWarning ... install httpx2 instead` from `fastapi/testclient.py`. Harmless.
+
+**Track A status** (code is still on my local branch; I will push when my Track A tasks are done)
+- Built and tested against your contract: login and role menus, app shell, live-update hook, Receive yarn, Yarn stock, Orders list, New order, Order detail (progress, delivery date with what-ifs, yarn check, cost and profit, confirm / cancel / change deadline). 128 web tests pass, plus the 12 for the order detail.
+- Next: Lot page with recall, then plan A3 (floor screens).
+
+---
 ## 2026-10-10 12:55 IST — Full API contract is ready (B1 done)
 
 **From:** Hritwik → Ridanshi

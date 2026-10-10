@@ -397,7 +397,10 @@ def test_the_questions_come_from_the_current_data_and_there_are_at_most_fifteen(
 
 
 def test_a_data_source_that_fails_only_removes_its_own_questions(client, login_as, db, monkeypatch):
+    from tests.factories import make_lot
+
     user = login_as("owner")
+    make_lot(db)        # stock is real data now: without a lot there is no stock row, so no stock questions to remove
     full = len(reportcard.build_questions(ToolContext(db, user)))
     monkeypatch.setattr("app.modules.llm.data.stock", lambda ctx: (_ for _ in ()).throw(RuntimeError("down")))
     fewer = reportcard.build_questions(ToolContext(db, user))
