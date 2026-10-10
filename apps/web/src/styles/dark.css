@@ -72,6 +72,7 @@
 }
 :root[data-theme='dark'] .machine-down .machine-thread {
   background: repeating-linear-gradient(135deg, #14291f 0 5px, #f0e491 5px 10px);
+  background-size: 14.142px 14.142px;
   border-color: #f0e491;
 }
 :root[data-theme='dark'] .stage-segments i {

@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Alert } from '@/components/common/Alert'
-import { BarLineChart } from '@/components/common/BarLineChart'
 import { EmptyState } from '@/components/common/EmptyState'
 import { KpiCard } from '@/components/common/KpiCard'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
+import { RevenueCostChart } from '@/components/common/RevenueCostChart'
 import { AnimatedGroup } from '@/components/motion/AnimatedGroup'
 import { Reveal } from '@/components/motion/Reveal'
 import { Table } from '@/components/ui/Table'
@@ -67,19 +67,17 @@ function Report({ report: r }: { report: Report }) {
       </AnimatedGroup>
 
       <Reveal>
-        <section className="card" aria-label="Revenue and profit by order">
+        <section className="card" aria-label="Revenue, cost and profit by order">
           <div className="card-header">
-            <h2 className="card-title">Revenue and net profit by order</h2>
+            <h2 className="card-title">Revenue and cost by order</h2>
           </div>
           <div className="card-body">
             {r.orders.length === 0 ? (
               <EmptyState title="No orders this month" description="Orders that were invoiced or worked on in this month appear here." />
             ) : (
-              <BarLineChart
-                data={r.orders.map((o) => ({ label: o.order_code, bar: o.revenue, line: o.profit }))}
-                barLabel="Revenue"
-                lineLabel="Net profit"
-                caption={`Revenue and net profit for ${r.orders.length} order${r.orders.length === 1 ? '' : 's'}`}
+              <RevenueCostChart
+                data={r.orders.map((o) => ({ label: o.order_code, revenue: o.revenue, cost: o.cost, profit: o.profit }))}
+                caption={`Revenue and cost for ${r.orders.length} order${r.orders.length === 1 ? '' : 's'}, with the profit or loss of each`}
               />
             )}
           </div>

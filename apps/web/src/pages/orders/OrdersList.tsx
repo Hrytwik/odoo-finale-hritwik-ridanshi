@@ -71,8 +71,8 @@ export default function OrdersList() {
                 <AnimatedBackground defaultValue="All" onValueChange={(id) => id && setFilter(id as Filter)} className="pill-highlight">
                   {FILTERS.map((f) => (
                     <button key={f} type="button" data-id={f} className="pill-tab">
-                      {f}
-                      <span className="pill-count"> {all.filter(MATCH[f]).length}</span>
+                      {f}{' '}
+                      <span className="pill-count">{all.filter(MATCH[f]).length}</span>
                     </button>
                   ))}
                 </AnimatedBackground>

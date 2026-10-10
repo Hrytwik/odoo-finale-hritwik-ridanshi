@@ -1,0 +1,93 @@
+import { niceScale, yFor } from '@/lib/chart'
+import { formatLakh, formatMoney } from '@/lib/format'
+
+export type OrderPoint = { label: string; revenue: number; cost: number; profit: number }
+
+const W = 640
+const H = 300
+const PAD = { top: 44, right: 16, bottom: 34, left: 64 }
+
+/**
+ * Revenue and cost side by side for each order, with the profit (or loss) written above it.
+ * Plain SVG: it follows the light and dark colours and has a table for screen readers.
+ */
+export function RevenueCostChart({ data, caption }: { data: OrderPoint[]; caption: string }) {
+  const scale = niceScale(data.flatMap((d) => [d.revenue, d.cost]))
+  const plotW = W - PAD.left - PAD.right
+  const plotH = H - PAD.top - PAD.bottom
+  const band = plotW / Math.max(data.length, 1)
+  const group = Math.min(band * 0.7, 130)
+  const barW = (group - 6) / 2
+  const cx = (i: number) => PAD.left + band * i + band / 2
+  const y = (v: number) => PAD.top + yFor(v, scale, plotH)
+  const base = y(0)
+
+  return (
+    <figure className="chart">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={caption} className="chart-svg">
+        {scale.ticks.map((t) => (
+          <g key={t}>
+            <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} className={t === 0 ? 'chart-axis' : 'chart-grid'} />
+            <text x={PAD.left - 8} y={y(t) + 4} textAnchor="end" className="chart-tick">
+              {formatLakh(t)}
+            </text>
+          </g>
+        ))}
+        {data.map((d, i) => (
+          <g key={d.label}>
+            <g>
+              <title>{`${d.label}: revenue ${formatMoney(d.revenue)}`}</title>
+              <rect x={cx(i) - group / 2} y={y(d.revenue)} width={barW} height={Math.max(base - y(d.revenue), 0)} rx={4} className="chart-bar is-revenue" />
+              <text x={cx(i) - group / 2 + barW / 2} y={y(d.revenue) - 6} textAnchor="middle" className="chart-value">
+                {formatLakh(d.revenue)}
+              </text>
+            </g>
+            <g>
+              <title>{`${d.label}: cost ${formatMoney(d.cost)}`}</title>
+              <rect x={cx(i) + 3} y={y(d.cost)} width={barW} height={Math.max(base - y(d.cost), 0)} rx={4} className="chart-bar is-cost" />
+              <text x={cx(i) + 3 + barW / 2} y={y(d.cost) - 6} textAnchor="middle" className="chart-value">
+                {formatLakh(d.cost)}
+              </text>
+            </g>
+            <text x={cx(i)} y={20} textAnchor="middle" className={d.profit < 0 ? 'chart-profit is-loss' : 'chart-profit'}>
+              {d.profit < 0 ? `Loss ${formatLakh(-d.profit)}` : `Profit ${formatLakh(d.profit)}`}
+            </text>
+            <text x={cx(i)} y={H - 10} textAnchor="middle" className="chart-tick">
+              {d.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+      <figcaption className="chart-legend">
+        <span>
+          <i className="chart-key is-revenue" aria-hidden /> Revenue
+        </span>
+        <span>
+          <i className="chart-key is-cost" aria-hidden /> Cost
+        </span>
+        <span className="muted">Profit or loss is written above each order</span>
+      </figcaption>
+      <table className="sr-only">
+        <caption>{caption}</caption>
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Revenue</th>
+            <th>Cost</th>
+            <th>Profit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((d) => (
+            <tr key={d.label}>
+              <td>{d.label}</td>
+              <td>{d.revenue}</td>
+              <td>{d.cost}</td>
+              <td>{d.profit}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </figure>
+  )
+}
