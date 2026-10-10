@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
+    "https": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/https.ps1",
     "dev:api": "uv run --directory services/api uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
     "dev:web": "npm --prefix apps/web run dev",
     "db:migrate": "uv run --directory services/api alembic upgrade head",
