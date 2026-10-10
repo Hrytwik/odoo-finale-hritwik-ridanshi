@@ -13,6 +13,8 @@ Then: `psql -U postgres -c "CREATE DATABASE everest"` and `psql -U postgres -c "
 **Both:**
 ```bash
 cp .env.example .env        # then edit DATABASE_URL / TEST_DATABASE_URL for your machine
+                            # also set JWT_SECRET to a random value (the repo is public, so never keep the default):
+                            #   uv run --directory services/api python -c "import secrets; print(secrets.token_urlsafe(48))"
 npm install
 npm run db:migrate
 npm run db:seed

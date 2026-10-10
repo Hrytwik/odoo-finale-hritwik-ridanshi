@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.core.errors import install_error_handlers
+from app.modules.auth.router import router as auth_router
 
 
 class Health(BaseModel):
@@ -19,6 +20,7 @@ def create_app() -> FastAPI:
     def health() -> Health:
         return Health(status="ok", demo_data=settings.demo_data)
 
+    api.include_router(auth_router)
     application.include_router(api)
     return application
 

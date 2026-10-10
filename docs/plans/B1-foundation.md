@@ -144,7 +144,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://localhost:5432/everest"
     test_database_url: str = "postgresql+psycopg://localhost:5432/everest_test"
-    jwt_secret: str = "dev-only-change-me"
+    jwt_secret: str = "dev-only-secret-set-JWT_SECRET-in-env-file"
     jwt_ttl_hours: int = 12
     cookie_secure: bool = False
     upload_dir: str = "../../data/uploads"
@@ -249,6 +249,8 @@ Then: `psql -U postgres -c "CREATE DATABASE everest"` and `psql -U postgres -c "
 **Both:**
 ```bash
 cp .env.example .env        # then edit DATABASE_URL / TEST_DATABASE_URL for your machine
+                            # also set JWT_SECRET to a random value (the repo is public, so never keep the default):
+                            #   uv run --directory services/api python -c "import secrets; print(secrets.token_urlsafe(48))"
 npm install
 npm run db:migrate
 npm run db:seed
@@ -1128,6 +1130,12 @@ def test_password_over_72_bytes_is_422(client):
     assert r.status_code == 422
 
 
+def test_multibyte_password_over_72_bytes_is_422(client):
+    # 40 characters but 80 bytes: bcrypt cannot hash it, so it must be rejected up front
+    r = client.post("/api/auth/login", json={"username": "x", "password": "é" * 40})
+    assert r.status_code == 422 and r.json()["field"] == "password"
+
+
 def test_no_cookie_is_401(client):
     r = client.get("/api/auth/me")
     assert r.status_code == 401
@@ -1151,7 +1159,7 @@ def test_expired_cookie_is_401(client, db):
 
 def test_token_signed_with_other_secret_is_401(client, db):
     user = make_user(db)
-    forged = jwt.encode({"sub": str(user.id)}, "some-other-secret", algorithm="HS256")
+    forged = jwt.encode({"sub": str(user.id)}, "a-different-secret-of-sufficient-length", algorithm="HS256")
     client.cookies.set(COOKIE_NAME, forged)
     assert client.get("/api/auth/me").status_code == 401
 
@@ -1166,12 +1174,88 @@ def test_logout_clears_cookie(client, login_as):
 def test_display_name_prefers_worker_then_buyer(client, login_as):
     user = login_as("buyer")
     assert client.get("/api/auth/me").json()["display_name"] == user.buyer.name
+
+
+def _role_client(db):
+    from fastapi import Depends, FastAPI
+    from fastapi.testclient import TestClient
+
+    from app.core.auth import STAFF, require_roles
+    from app.core.errors import install_error_handlers
+    from app.db.session import get_db
+
+    app = FastAPI()
+    install_error_handlers(app)
+    app.dependency_overrides[get_db] = lambda: db
+
+    @app.get("/owner-only", dependencies=[Depends(require_roles("owner"))])
+    def owner_only():
+        return {"ok": True}
+
+    @app.get("/staff", dependencies=[Depends(require_roles(*STAFF))])
+    def staff():
+        return {"ok": True}
+
+    return TestClient(app)
+
+
+def test_staff_roles_exclude_buyer():
+    from app.core.auth import ALL_ROLES, STAFF
+
+    assert "buyer" not in STAFF and set(STAFF) | {"buyer"} == set(ALL_ROLES)
+
+
+def test_wrong_role_is_403(db):
+    from app.core.auth import COOKIE_NAME, create_token
+
+    c = _role_client(db)
+    c.cookies.set(COOKIE_NAME, create_token(make_user(db, role="store").id))
+    r = c.get("/owner-only")
+    assert r.status_code == 403 and r.json()["code"] == "FORBIDDEN"
+
+
+def test_buyer_is_refused_on_staff_endpoints(db):
+    from app.core.auth import COOKIE_NAME, create_token
+
+    c = _role_client(db)
+    c.cookies.set(COOKIE_NAME, create_token(make_user(db, role="buyer").id))
+    assert c.get("/staff").status_code == 403
+
+
+def test_right_role_is_allowed_and_no_cookie_is_401(db):
+    from app.core.auth import COOKIE_NAME, create_token
+
+    c = _role_client(db)
+    assert c.get("/owner-only").status_code == 401
+    c.cookies.set(COOKIE_NAME, create_token(make_user(db, role="owner").id))
+    assert c.get("/owner-only").status_code == 200
+
+
+def test_valid_token_for_deleted_user_is_401(client):
+    from app.core.auth import COOKIE_NAME, create_token
+
+    client.cookies.set(COOKIE_NAME, create_token(999_999))
+    assert client.get("/api/auth/me").status_code == 401
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
 
 Run: `cd services/api && uv run pytest tests/test_auth.py`
 Expected: FAIL — `ModuleNotFoundError: No module named 'app.core.auth'`
+
+- [ ] **Step 3a: Add the bcrypt byte-length check to `services/api/app/core/schemas.py`**
+
+bcrypt rejects passwords longer than 72 *bytes* (not characters; a 40-character accented password is 80 bytes). Without this check, creating such a user would be an unhandled 500. Change the pydantic import line to include `AfterValidator`, and add above `class Out`:
+```python
+def _fits_bcrypt(value: str) -> str:
+    # bcrypt rejects passwords longer than 72 BYTES (not characters); catch it before it becomes a 500
+    if len(value.encode()) > 72:
+        raise ValueError("Password is too long")
+    return value
+
+
+BcryptSafe = AfterValidator(_fits_bcrypt)
+```
 
 - [ ] **Step 3: Write `services/api/app/core/auth.py`**
 
@@ -1260,6 +1344,7 @@ from app.config import settings
 from app.core.auth import COOKIE_NAME, create_token, current_user, verify_password
 from app.core.enums import Role
 from app.core.errors import AppError
+from app.core.schemas import BcryptSafe
 from app.db.models import User
 from app.db.session import get_db
 
@@ -1268,7 +1353,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 class LoginIn(BaseModel):
     username: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
-    password: Annotated[str, StringConstraints(min_length=1, max_length=72)]
+    password: Annotated[str, StringConstraints(min_length=1, max_length=72), BcryptSafe]
 
 
 class Me(BaseModel):
@@ -1339,7 +1424,7 @@ def login_as(client, db):
 - [ ] **Step 7: Run the tests**
 
 Run: `cd services/api && uv run pytest`
-Expected: PASS (10 new auth tests)
+Expected: PASS (16 auth tests; the full suite is 32 passing). Also confirm no new warnings beyond the known `httpx2` deprecation notice.
 
 - [ ] **Step 8: Commit**
 
@@ -2540,6 +2625,12 @@ def test_user_create_hashes_password_and_validates_links(client, login_as):
     assert bad.status_code == 422
 
 
+def test_user_password_over_72_bytes_is_422_not_500(client, login_as):
+    login_as("owner")
+    r = client.post("/api/users", json={"username": "longpw", "password": "é" * 40, "role": "owner"})
+    assert r.status_code == 422 and r.json()["field"] == "password"
+
+
 def test_shift_start_equals_end_rejected(client, login_as):
     login_as("owner")
     r = client.post("/api/shifts", json={"name": "Z", "start_time": "06:00", "end_time": "06:00"})
@@ -2560,7 +2651,7 @@ from typing import Annotated, Self
 from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 from app.core.enums import Role, Stage, WorkerRole
-from app.core.schemas import Money, NonBlank, Out
+from app.core.schemas import BcryptSafe, Money, NonBlank, Out
 
 Code = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=40)]
 Phone = Annotated[str, StringConstraints(strip_whitespace=True, max_length=30)] | None
@@ -2754,7 +2845,7 @@ class ShiftOut(Out):
     end_time: dt.time
 
 
-Password = Annotated[str, StringConstraints(min_length=6, max_length=72)]
+Password = Annotated[str, StringConstraints(min_length=6, max_length=72), BcryptSafe]
 
 
 class UserIn(BaseModel):

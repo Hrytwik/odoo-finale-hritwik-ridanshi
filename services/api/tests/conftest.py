@@ -46,3 +46,17 @@ def client(db):
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+from app.core.auth import COOKIE_NAME, create_token  # noqa: E402
+from tests.factories import make_user  # noqa: E402
+
+
+@pytest.fixture
+def login_as(client, db):
+    def _login(role: str, **kw):
+        user = make_user(db, role=role, **kw)
+        client.cookies.set(COOKIE_NAME, create_token(user.id))
+        return user
+
+    return _login
