@@ -1,7 +1,7 @@
 # B8 — Vision Endpoint and Model Card Implementation Plan
 
 > **Summary:** Makes `POST /qc/analyze` run the fine-tuned YOLO detector on an uploaded photo (boxes with confidence, a suggested verdict, always labelled unvalidated) and `GET /qc/model-card` serve the measured held-out results with a confusion matrix; adds the committed weights and card file, makes the model-card screen show an unmeasured false-alarm rate honestly, and ends with a live check on a real server.
-> **Last updated:** 2026-10-11 02:02 IST (Tasks 1-2 done)
+> **Last updated:** 2026-10-11 02:06 IST (Tasks 1-3 done)
 
 > **How this plan is executed:** inline, one task at a time (atomic-workflow): test first, the full suite twice at each boundary, the important behaviours mutation-checked. Steps use checkbox (`- [ ]`) syntax.
 
@@ -18,6 +18,8 @@
 Task 1 done and verified (2026-10-11 01:55 IST): `qc/vision.py` (box conversion, verdict rule) and 16 tests; all six planned mutations (swap x/y, width from the right edge, area check `<`, no corner sort, `reject`, no cap) make a test fail; full backend suite 1,368 passed (1,352 before), twice.
 
 Task 2 done and verified (2026-10-11 02:02 IST): `qc/vision.py` (photo reading, lazy loader with lock, `analyze_photo`), the real `/qc/analyze` route, the example `ANALYZE` removed, 37 tests (`test_qc_photo_reading.py`, `test_qc_analyze.py`); full backend suite 1,405 passed (1,368 before), twice; contract byte-identical. **A real bug found by the tests' ordering and fixed:** once Ultralytics is loaded it replaces `PIL.Image.open` with a wrapper that, on ANY failure, runs `pip install pi-heif` (a network call mid-request, retried) and then raises `ModuleNotFoundError`; a corrupt photo would have stalled and come back as "model failed" instead of a 422. The reader now calls PIL's own original (`_pil_open`); the new regression test `test_a_bad_photo_never_makes_ultralytics_try_to_install_a_package` failed against the old code first (and the photo tests now import Ultralytics up front, so they run in production's state in any order). One planned mutation (cache a failed load) first survived because the test only checked `available`; the test now checks the fixed detector's box comes back, and the mutation dies. No server was listening on :8000, so nothing to re-check.
+
+Task 3 done and verified (2026-10-11 02:06 IST): `ml/metrics.py` gains `ImageMatch`, `match_image` (the old matching, shared) and `confusion_matrix`; `evaluate` now uses the shared matching and every existing metric test stayed green; 11 new tests (cells, wrong-name = miss + false alarm, one defect found once, unknown class is an error, and rows/columns equal the per-class scores on 300 random photos, checked non-empty); four mutations all die; full backend suite 1,416 passed (1,405 before), twice.
 
 ## Global Constraints
 
@@ -667,7 +669,7 @@ git commit -m "Make the photo analysis real: run the detector, with an honest un
 **Interfaces:**
 - Produces: `ImageMatch(found, false_alarms, missed, kept_predictions)` dataclass; `match_image(img: ImageResult, iou_thr=0.3, conf_thr=0.25) -> ImageMatch`; `confusion_matrix(images: list[ImageResult], classes: list[str], iou_thr=0.3, conf_thr=0.25) -> list[list[int]]` of size `len(classes)+1` square; the last row and column mean "clean" (no defect). `evaluate` keeps its signature and results.
 
-- [ ] **Step 1: Write the failing tests.** `services/api/tests/test_ml_confusion.py`:
+- [x] **Step 1: Write the failing tests.** `services/api/tests/test_ml_confusion.py`:
 
 ```python
 """B8 Task 3: the confusion matrix uses the very matching the per-class scores use, so the two always agree."""
@@ -762,9 +764,9 @@ def test_rows_and_columns_add_up_to_the_per_class_scores_on_random_photos():
     assert m[CLEAN][CLEAN] + ev.clean_alarm_images == ev.clean_images
 ```
 
-- [ ] **Step 2: Run to verify it fails.** `uv run python -m pytest -p no:warnings -o addopts= tests/test_ml_confusion.py` — Expected: `ImportError: cannot import name 'confusion_matrix'`.
+- [x] **Step 2: Run to verify it fails.** `uv run python -m pytest -p no:warnings -o addopts= tests/test_ml_confusion.py` — Expected: `ImportError: cannot import name 'confusion_matrix'`.
 
-- [ ] **Step 3: Implement.** In `services/api/ml/metrics.py`, replace the body of `evaluate` by a shared helper (keep everything else in the file):
+- [x] **Step 3: Implement.** In `services/api/ml/metrics.py`, replace the body of `evaluate` by a shared helper (keep everything else in the file):
 
 ```python
 @dataclass
@@ -841,10 +843,10 @@ def confusion_matrix(images: list[ImageResult], classes: list[str], iou_thr: flo
     return matrix
 ```
 
-- [ ] **Step 4: Run** the new file and `tests/test_ml_metrics.py tests/test_ml_evaluate.py tests/test_ml_show_examples.py` — Expected: all pass (the refactor changed no result).
-- [ ] **Step 5: Mutation checks:** count a wrong-class guess as found; send misses to the row instead of the column; drop the `m.kept_predictions` test from the clean-clean cell; each must fail a test.
-- [ ] **Step 6: Full suite twice;** green.
-- [ ] **Step 7: Commit.**
+- [x] **Step 4: Run** the new file and `tests/test_ml_metrics.py tests/test_ml_evaluate.py tests/test_ml_show_examples.py` — Expected: all pass (the refactor changed no result).
+- [x] **Step 5: Mutation checks:** count a wrong-class guess as found; send misses to the row instead of the column; drop the `m.kept_predictions` test from the clean-clean cell; each must fail a test.
+- [x] **Step 6: Full suite twice;** green.
+- [x] **Step 7: Commit.**
 
 ```bash
 git add services/api/ml/metrics.py services/api/tests/test_ml_confusion.py

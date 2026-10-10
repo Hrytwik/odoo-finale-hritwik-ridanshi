@@ -60,32 +60,78 @@ class Evaluation:
         return self.clean_alarm_images / self.clean_images if self.clean_images else None
 
 
+@dataclass
+class ImageMatch:
+    found: list[str]            # the class of each real defect a guess found
+    false_alarms: list[str]     # the class of each guess that found nothing
+    missed: list[str]           # the class of each real defect no guess found
+    kept_predictions: int       # guesses at or above the confidence line
+
+
+def match_image(img: ImageResult, iou_thr: float = 0.3, conf_thr: float = 0.25) -> ImageMatch:
+    """Greedy matching, highest confidence first; each real defect can be found once, and only by a guess of its own class."""
+    preds = sorted((p for p in img.preds if p[2] >= conf_thr), key=lambda p: p[2], reverse=True)
+    unmatched = list(img.truths)
+    found: list[str] = []
+    false_alarms: list[str] = []
+    for cls, pbox, _ in preds:
+        best, best_iou = None, 0.0
+        for t in unmatched:
+            score = iou(pbox, t[1]) if t[0] == cls else 0.0
+            if score >= iou_thr and score > best_iou:
+                best, best_iou = t, score
+        if best is None:
+            false_alarms.append(cls)
+        else:
+            unmatched.remove(best)
+            found.append(cls)
+    return ImageMatch(found, false_alarms, [cls for cls, _ in unmatched], len(preds))
+
+
 def evaluate(images: list[ImageResult], iou_thr: float = 0.3, conf_thr: float = 0.25) -> Evaluation:
-    """Greedy matching per image, highest confidence first; each real defect can be found once."""
     out = Evaluation()
     for img in images:
-        preds = sorted((p for p in img.preds if p[2] >= conf_thr), key=lambda p: p[2], reverse=True)
-        unmatched = list(img.truths)
-        for cls, pbox, _ in preds:
-            best, best_iou = None, 0.0
-            for t in unmatched:
-                score = iou(pbox, t[1]) if t[0] == cls else 0.0
-                if score >= iou_thr and score > best_iou:
-                    best, best_iou = t, score
-            if best is None:
-                out.per_class.setdefault(cls, ClassResult()).false_alarms += 1
-            else:
-                unmatched.remove(best)
-                out.per_class.setdefault(cls, ClassResult()).found += 1
-        for cls, _ in unmatched:
+        m = match_image(img, iou_thr, conf_thr)
+        for cls in m.found:
+            out.per_class.setdefault(cls, ClassResult()).found += 1
+        for cls in m.false_alarms:
+            out.per_class.setdefault(cls, ClassResult()).false_alarms += 1
+        for cls in m.missed:
             out.per_class.setdefault(cls, ClassResult()).missed += 1
         if img.truths:
             out.defective_images += 1
         else:
             out.clean_images += 1
-            if preds:
+            if m.kept_predictions:
                 out.clean_alarm_images += 1
     return out
+
+
+def confusion_matrix(images: list[ImageResult], classes: list[str], iou_thr: float = 0.3, conf_thr: float = 0.25) -> list[list[int]]:
+    """Rows: what was really there (each class, then 'clean' = nothing). Columns: what the model said (each class, then
+    'clean' = nothing). Built from the same matching as `evaluate`, so a class's row adds up to its found + missed and its
+    column to found + false alarms. A real defect that was missed sits in the 'clean' column of its row; a false alarm sits in
+    the 'clean' row of its column; the clean-clean cell counts clean photos on which the model said nothing."""
+    index = {name: i for i, name in enumerate(classes)}
+    clean = len(classes)
+    matrix = [[0] * (clean + 1) for _ in range(clean + 1)]
+
+    def at(name: str) -> int:
+        if name not in index:
+            raise ValueError(f"class {name!r} is not one of {classes}")
+        return index[name]
+
+    for img in images:
+        m = match_image(img, iou_thr, conf_thr)
+        for cls in m.found:
+            matrix[at(cls)][at(cls)] += 1
+        for cls in m.missed:
+            matrix[at(cls)][clean] += 1
+        for cls in m.false_alarms:
+            matrix[clean][at(cls)] += 1
+        if not img.truths and not m.kept_predictions:
+            matrix[clean][clean] += 1
+    return matrix
 
 
 @dataclass
