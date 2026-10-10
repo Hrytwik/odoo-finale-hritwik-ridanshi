@@ -5101,7 +5101,7 @@ git add services/api contracts
 git commit -m "Add buyer portal API contract and full contract check"
 ```
 
-Then add a dated entry at the top of `docs/TEAM_NOTES.md` saying the full contract is on `main`, commit it (`git commit -m "Note that the full API contract is available"`), and Hritwik pushes `main`.
+Then add a dated entry (heading `## YYYY-MM-DD HH:MM IST — title`) at the top of `docs/HRITWIK_TEAM_NOTES.md` saying the full contract is on `main`, commit it (`git commit -m "Note that the full API contract is available"`), and Hritwik pushes `main`.
 
 ---
 

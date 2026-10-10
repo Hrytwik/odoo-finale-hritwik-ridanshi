@@ -21,7 +21,7 @@
 - TanStack Query keys start with the area name: `["orders"]`, `["orders", code]`, `["floor"]`, `["stock"]`, `["me"]` — the live-update hook relies on this.
 - Every submit button uses `useSubmitLock` + `<SubmitButton>`; no form can send twice.
 - Phone-first: every screen must work at 360 px wide with no horizontal scrolling.
-- Track A edits only `apps/web/`, `Caddyfile`, `docs/TEAM_NOTES.md`, and (in later plans) `services/api/app/modules/people` and `services/api/app/modules/llm`. Never edit `contracts/` by hand.
+- Track A edits only `apps/web/`, `Caddyfile`, `docs/HRITWIK_TEAM_NOTES.md`, and (in later plans) `services/api/app/modules/people` and `services/api/app/modules/llm`. Never edit `contracts/` by hand.
 - Commit messages: plain imperative subject line, optional body, no trailers.
 
 ## Review Focus
@@ -1520,7 +1520,7 @@ Run: `npm --prefix apps/web test` → PASS
 - [ ] **Step 5: Check the stream reaches the browser through the Next.js proxy**
 
 `npm run dev`, log in as `owner` in Chrome, open DevTools → Network → filter `events`. The `/api/events` request should stay open (type `eventsource`), and its **EventStream** tab should show nothing for up to 15 s and then a keep-alive arrives roughly every 15 s (the ping lines are comments and may not be listed; the request must stay "pending" without erroring).
-If the request fails or closes repeatedly, the dev proxy is buffering: write it in `docs/TEAM_NOTES.md` and use the Caddy address from Task 7 for live testing (Caddy streams Server-Sent Events correctly).
+If the request fails or closes repeatedly, the dev proxy is buffering: write it in `docs/HRITWIK_TEAM_NOTES.md` and use the Caddy address from Task 7 for live testing (Caddy streams Server-Sent Events correctly).
 
 - [ ] **Step 6: Commit**
 
@@ -1537,7 +1537,7 @@ No dependencies — this can be done first.
 
 **Files:**
 - Create: `Caddyfile` (repo root), `apps/web/src/app/dev/camera/page.tsx`
-- Modify: `docs/TEAM_NOTES.md` (record the result)
+- Modify: `docs/HRITWIK_TEAM_NOTES.md` (record the result)
 
 **Interfaces:**
 - Produces: `https://<LAN_IP>:8443` serving the web app and `/api` on one origin; a written answer to "does live camera work on our phones over this HTTPS?".
@@ -1621,10 +1621,10 @@ Allow Caddy through Windows Firewall on **private** networks when prompted. On t
 
 - [ ] **Step 5: Record the result and commit**
 
-Add a dated entry at the top of `docs/TEAM_NOTES.md` with: phone model + browser, "Secure context" value, whether live camera worked, whether the photo fallback worked, and whether `/api/health` loaded through `https://<LAN_IP>:8443/api/health`.
+Add a dated entry at the top of `docs/HRITWIK_TEAM_NOTES.md` with: phone model + browser, "Secure context" value, whether live camera worked, whether the photo fallback worked, and whether `/api/health` loaded through `https://<LAN_IP>:8443/api/health`.
 
 ```powershell
-git add Caddyfile apps/web/src/app/dev/camera/page.tsx docs/TEAM_NOTES.md
+git add Caddyfile apps/web/src/app/dev/camera/page.tsx docs/HRITWIK_TEAM_NOTES.md
 git commit -m "Add local HTTPS setup and phone camera check"
 ```
 
@@ -1635,5 +1635,5 @@ git commit -m "Add local HTTPS setup and phone camera check"
 - `npm --prefix apps/web test` and `npm --prefix apps/web run build` pass.
 - Logging in as each dev user lands on that role's home with the right menu; a buyer sees only "My orders".
 - Every route in spec §11 opens (placeholder content until plans A2–A9 fill it in).
-- The phone camera result is recorded in `docs/TEAM_NOTES.md`.
+- The phone camera result is recorded in `docs/HRITWIK_TEAM_NOTES.md`.
 - `docs/plans/README.md` marks A1 as done.
