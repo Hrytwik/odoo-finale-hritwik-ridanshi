@@ -1,11 +1,11 @@
 # B2 — Store and Orders (real logic) Implementation Plan
 
 > **Summary:** Replaces the example-data stubs for the yarn store and the order lifecycle with real, tested logic: lot receiving (lot + ledger entry + supplier bill in one transaction), stock from the ledger, yarn issue/return/adjust with row locking, free-stock and "enough yarn?" calculation, order create/confirm/cancel/deadline, order progress and stage, block lot, and live events. API shapes do not change.
-> **Last updated:** 2026-10-10 (Tasks 1-3 done)
+> **Last updated:** 2026-10-10 (Tasks 1-4 done)
 
 ## Status
 
-Tasks 1, 2 and 3 are done and verified (full suite 395 passed, twice; `contracts/` unchanged). Next: Task 4. Decisions taken while building Task 3 (not in the original plan):
+Tasks 1 to 4 are done and verified (full suite 407 passed, twice; `contracts/` unchanged). Next: Task 5. Decisions taken while building Task 3 (not in the original plan):
 
 - **Boolean guard on every numeric request field.** pydantic reads JSON `true`/`false` as 1.0/0.0 for a float, so `{"qty_kg": true}` was accepted as 1 kg. `NoBool` (in `app/core/schemas.py`) is now part of every numeric input type, written **after** `Field(...)` (`Annotated[float, Field(gt=0), NoBool]`); in the other order pydantic writes `gt`/`le` into the OpenAPI schema and changes the contract. `tests/test_input_numbers.py` scans every `*In`/`*Patch` model, so new numeric fields are covered automatically. Not covered: `true` for integer id fields (reads as 1).
 - **Contract guard:** `tests/test_contract.py::test_committed_contract_matches_the_code` fails if `contracts/openapi.json` differs from what the code produces (after an intended API change run `npm run contracts`).

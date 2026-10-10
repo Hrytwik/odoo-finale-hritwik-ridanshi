@@ -56,5 +56,5 @@ def adjust_stock(body: s.AdjustIn) -> s.MovementOut:
 
 
 @router.get("/stock", response_model=list[s.StockRow], dependencies=[Depends(stock_readers)])
-def stock() -> list[s.StockRow]:
-    return ex.STOCK
+def stock(db: Session = Depends(get_db)) -> list[s.StockRow]:
+    return service.stock_rows(db)

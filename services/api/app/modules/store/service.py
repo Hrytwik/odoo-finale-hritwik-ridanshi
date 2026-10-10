@@ -149,3 +149,17 @@ def movements_out(db: Session, lot: YarnLot) -> list[s.MovementOut]:
 
 def lot_detail(db: Session, lot: YarnLot) -> s.LotDetail:
     return s.LotDetail(**lot_out(db, lot).model_dump(), movements=movements_out(db, lot))
+
+
+def stock_rows(db: Session) -> list[s.StockRow]:
+    """One row per yarn type from v_yarn_type_stock (on hand of unblocked lots, minus what confirmed orders still need)."""
+    numbers = {row["yarn_type_id"]: row for row in db.execute(text("SELECT * FROM v_yarn_type_stock")).mappings()}
+    return [
+        s.StockRow(
+            yarn_type=s.YarnTypeRef.model_validate(yt), on_hand_kg=to_float(n["on_hand_kg"]),
+            outstanding_kg=to_float(n["outstanding_kg"]), free_kg=to_float(n["free_kg"]),
+            reorder_level_kg=to_float(n["reorder_level_kg"]), below_reorder=n["below_reorder"],
+        )
+        for yt in db.scalars(select(YarnType).order_by(YarnType.code))
+        for n in [numbers[yt.id]]
+    ]
