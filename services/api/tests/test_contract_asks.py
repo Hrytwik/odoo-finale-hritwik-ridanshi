@@ -96,7 +96,13 @@ def test_other_roles_cannot_list_runs(client, login_as, role):
     assert client.get("/api/runs").status_code == 403
 
 
-def test_posting_a_run_still_works_next_to_the_new_get(client, login_as):
+def test_posting_a_run_still_works_next_to_the_new_get(client, db, login_as):
+    from tests.factories import make_machine, make_order, make_worker
+
     login_as("supervisor")
-    r = client.post("/api/runs", json={"order_code": "ORD-0012", "machine_code": "SPIN-01", "operator_worker_id": 1})
+    order, machine, worker = make_order(db), make_machine(db, stage="spinning"), make_worker(db)
+    r = client.post("/api/runs", json={"order_code": order.code, "machine_code": machine.code,
+                                       "operator_worker_id": worker.id})
     assert r.status_code == 201
+    listed = client.get("/api/runs", params={"order_code": order.code}).json()
+    assert [x["id"] for x in listed] == [r.json()["id"]]

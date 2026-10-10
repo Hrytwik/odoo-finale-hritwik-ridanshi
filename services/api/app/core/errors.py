@@ -75,7 +75,7 @@ def install_error_handlers(app: FastAPI) -> None:
 
 KNOWN_CONSTRAINTS.update({
     "uq_open_run_per_machine": ("MACHINE_BUSY", "machine_code", "This machine already has a running job"),
-    "uq_open_downtime_per_machine": ("MACHINE_DOWN", "machine_code", "This machine is already marked as down"),
+    "uq_open_downtime_per_machine": ("MACHINE_ALREADY_DOWN", "machine_code", "This machine is already marked as down"),
 })
 
 KNOWN_CONSTRAINTS.update({

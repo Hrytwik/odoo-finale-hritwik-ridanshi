@@ -6,6 +6,7 @@ from app.core.enums import RunStage
 from app.db.session import get_db
 from app.modules.floor import board
 from app.modules.floor import examples as ex
+from app.modules.floor import service
 from app.modules.floor import schemas as s
 from app.modules.rolls.schemas import RollOut
 
@@ -31,8 +32,8 @@ def list_runs(stage: RunStage | None = None, order_code: str | None = None,
 
 
 @router.post("/runs", response_model=s.RunOut, status_code=201, dependencies=[Depends(operators)])
-def start_run(body: s.RunStartIn) -> s.RunOut:
-    return ex.RUN
+def start_run(body: s.RunStartIn, db: Session = Depends(get_db)) -> s.RunOut:
+    return board.run_out(db, service.start_run(db, body))
 
 
 @router.post("/runs/{run_id}/end", response_model=s.RunOut, dependencies=[Depends(operators)])
