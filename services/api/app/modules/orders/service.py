@@ -155,12 +155,12 @@ ORDER BY yt.code
 """)
 
 
-def _progress_row(db: Session, order: Order) -> dict[str, Decimal]:
+def progress_row(db: Session, order: Order) -> dict[str, Decimal]:
     return dict(db.execute(_PROGRESS_SQL, {"oid": order.id}).mappings().one())
 
 
 def progress(db: Session, order: Order) -> s.Progress:
-    return _progress_out(_progress_row(db, order))
+    return _progress_out(progress_row(db, order))
 
 
 def _progress_out(row: dict[str, Decimal]) -> s.Progress:
@@ -169,7 +169,7 @@ def _progress_out(row: dict[str, Decimal]) -> s.Progress:
 
 def stage(db: Session, order: Order, row: dict[str, Decimal]) -> str:
     """Spec §5: the furthest stage reached. Draft and cancelled come first, then dispatch, then the shop floor.
-    `row` is the exact (Decimal) progress from _progress_row, so metres are compared without float rounding."""
+    `row` is the exact (Decimal) progress from progress_row, so metres are compared without float rounding."""
     if order.state in ("draft", "cancelled"):
         return order.state
     if row["dispatched_m"] >= order.qty_metres:
@@ -211,7 +211,7 @@ def yarn_check(db: Session, order: Order) -> s.YarnCheckOut:
 
 
 def order_out(db: Session, order: Order) -> s.OrderOut:
-    row = _progress_row(db, order)
+    row = progress_row(db, order)
     lines = _yarn_lines(db, order)
     short = sum((line["short_kg"] for line in lines), ZERO)
     if order.state == "cancelled" or all(line["outstanding_kg"] == 0 for line in lines):

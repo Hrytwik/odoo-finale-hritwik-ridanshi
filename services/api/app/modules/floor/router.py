@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
 from app.core.enums import RunStage
+from app.db.session import get_db
+from app.modules.floor import board
 from app.modules.floor import examples as ex
 from app.modules.floor import schemas as s
 from app.modules.rolls.schemas import RollOut
@@ -12,19 +15,19 @@ operators = require_roles("supervisor", "owner")
 
 
 @router.get("/floor", response_model=s.FloorBoard, dependencies=[Depends(viewers)])
-def floor_board() -> s.FloorBoard:
-    return ex.BOARD
+def floor_board(db: Session = Depends(get_db)) -> s.FloorBoard:
+    return board.floor_board(db)
 
 
 @router.get("/machines/{machine_code}", response_model=s.MachineDetail, dependencies=[Depends(viewers)])
-def machine_detail(machine_code: str) -> s.MachineDetail:
-    return ex.DETAIL
+def machine_detail(machine_code: str, db: Session = Depends(get_db)) -> s.MachineDetail:
+    return board.machine_detail(db, machine_code)
 
 
 @router.get("/runs", response_model=list[s.RunOut], dependencies=[Depends(viewers)])
-def list_runs(stage: RunStage | None = None, order_code: str | None = None) -> list[s.RunOut]:
-    return [r for r in (ex.SPIN_RUN, ex.RUN)
-            if (stage is None or r.stage == stage) and (order_code is None or r.order_code == order_code)]
+def list_runs(stage: RunStage | None = None, order_code: str | None = None,
+              db: Session = Depends(get_db)) -> list[s.RunOut]:
+    return board.list_runs(db, stage, order_code)
 
 
 @router.post("/runs", response_model=s.RunOut, status_code=201, dependencies=[Depends(operators)])

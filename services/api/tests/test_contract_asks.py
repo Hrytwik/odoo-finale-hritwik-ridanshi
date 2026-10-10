@@ -72,10 +72,16 @@ def test_staff_who_see_the_floor_can_list_runs(client, login_as, role):
     assert client.get("/api/runs").status_code == 200
 
 
-def test_runs_filter_by_stage_and_order(client, login_as):
+def test_runs_filter_by_stage_and_order(client, db, login_as):
+    from tests.factories import make_machine, make_order, make_run
+
     login_as("supervisor")
-    spinning = client.get("/api/runs", params={"stage": "spinning", "order_code": "ORD-0012"}).json()
-    assert spinning and all(x["stage"] == "spinning" and x["order_code"] == "ORD-0012" for x in spinning)
+    order = make_order(db)
+    spin = make_run(db, order, make_machine(db, stage="spinning"))
+    make_run(db, order, make_machine(db, stage="weaving"), input_run_id=spin.id)
+    spinning = client.get("/api/runs", params={"stage": "spinning", "order_code": order.code}).json()
+    assert len(spinning) == 1 and spinning[0]["stage"] == "spinning" and spinning[0]["order_code"] == order.code
+    assert client.get("/api/runs", params={"stage": "dyeing", "order_code": order.code}).json() == []
     assert client.get("/api/runs", params={"stage": "dyeing", "order_code": "ORD-9999"}).json() == []
 
 

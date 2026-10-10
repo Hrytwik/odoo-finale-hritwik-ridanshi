@@ -1,7 +1,7 @@
 # B3 — Floor (real logic) Implementation Plan
 
 > **Summary:** Replaces the example-data stubs for the shop floor with real, tested logic: start/end/hand-over of production runs, breakdown and repair, roll off and loading rolls into dyeing, the roll-status view (spec §5, all five rules), machine status and "output today", the floor board, machine page, `GET /runs` and `GET /rolls`. Every write locks the machine row (start also locks the order row). API shapes do not change.
-> **Last updated:** 2026-10-10 17:12 IST (Task 1 done)
+> **Last updated:** 2026-10-10 17:16 IST (Tasks 1-2 done)
 
 **Goal:** every endpoint under `/api/floor`, `/api/machines/{code}` (read, breakdown, repair), `/api/runs` (list, start, end, hand-over, roll off, load rolls) and `/api/rolls` (list) runs on real data with the rules R4–R8 from spec §6, and the generated `contracts/openapi.json` stays **byte-identical**.
 
@@ -11,7 +11,10 @@
 
 ## Status
 
-Task 1 done and verified (2026-10-10 17:12 IST): migration `b0eaa59f8a3b` (roll_code_seq + `v_roll_status`, identical to the SQL in Task 1, downgrade/upgrade round trip checked on a scratch database), `next_code(db, "roll")`, `make_roll` uses it; 17 new tests (one per status rule, mutation-proven: oldest-verdict-wins, ignoring the "started after the inspection" condition, verdict-before-dispatch and swapped dyeing/awaiting_qc each make a test fail). Full suite 521 passed, twice; contract unchanged. Next: Task 2.
+Task 1 done and verified (2026-10-10 17:12 IST): migration `b0eaa59f8a3b` (roll_code_seq + `v_roll_status`, identical to the SQL in Task 1, downgrade/upgrade round trip checked on a scratch database), `next_code(db, "roll")`, `make_roll` uses it; 17 new tests (one per status rule, mutation-proven: oldest-verdict-wins, ignoring the "started after the inspection" condition, verdict-before-dispatch and swapped dyeing/awaiting_qc each make a test fail). Full suite 521 passed, twice; contract unchanged. 
+Task 2 done and verified (2026-10-10 17:16 IST): migration `70a0b5bd9a55` (`v_machine_status`, round trip checked), `floor/board.py` (`run_out`, `list_runs`, `machine_card`, `floor_board`, `machine_detail`, `output_today`), `orders.service.progress_row` made public, real `GET /floor`, `GET /machines/{code}`, `GET /runs`; 26 new tests (worked numbers 640 / 300 / 500, India-day boundary, progress 50.0 / 46.2 / 30.8 / 100.0 cap, ordering, roles, statement count independent of machine count); mutation-proven (UTC day, running-beats-down, open dye runs counted, no cap, oldest-first, weaving counting every day). Old example-data tests for these endpoints replaced (`test_contract_asks.py`, `test_contract_floor_qc.py`). Full suite 546 passed, twice; contract unchanged. Next: Task 3.
+
+**Amendment found while building Task 2:** `machine_card` (and the board) cover **active** machines only, because `v_machine_status` lists active machines only. So Task 5's `breakdown` and `repair` refuse an inactive machine with `MACHINE_INACTIVE` (409, field `machine_code`), the same code start-run uses; an inactive machine must be reactivated first (master data) before a downtime can be opened or closed on it.
 
 ## Global Constraints
 
@@ -180,9 +183,9 @@ SELECT pr.machine_id, SUM(r.metres) AS qty FROM roll_runs rr
 
 **Produces** (`floor/service.py`): `breakdown(db, machine_code, body: BreakdownIn) -> Machine`; `repair(db, machine_code) -> Machine`; both routes return `machine_card(db, machine)` from Task 2.
 
-**Rules:** `breakdown`: machine exists (404 `machine_code`), row locked; opens a downtime (`reason` trimmed) at `db_now(db)`; ends any open run on the machine at the same instant (spinning output stays blank); a second breakdown while down → `MACHINE_ALREADY_DOWN` (409, unique index via `commit`, field `machine_code`). `repair`: locked; no open downtime → `MACHINE_NOT_DOWN` (409); else `ended_at = db_now(db)`; the ended run is **not** reopened. Publishes `machine.changed`, plus `run.changed` for a run that was ended.
+**Rules:** `breakdown`: machine exists (404 `machine_code`), row locked, `active` else `MACHINE_INACTIVE` (409, so `machine_card` always gets an active machine); opens a downtime (`reason` trimmed) at `db_now(db)`; ends any open run on the machine at the same instant (spinning output stays blank); a second breakdown while down → `MACHINE_ALREADY_DOWN` (409, unique index via `commit`, field `machine_code`). `repair`: locked, `active` else `MACHINE_INACTIVE`; no open downtime → `MACHINE_NOT_DOWN` (409); else `ended_at = db_now(db)`; the ended run is **not** reopened. Publishes `machine.changed`, plus `run.changed` for a run that was ended.
 
-**Tests (write first, `tests/test_floor_breakdown.py`):** breakdown with a running job → card `down`, run ended at the downtime's start, downtime reason shown; breakdown on an idle machine; second breakdown → `MACHINE_ALREADY_DOWN` (and no extra downtime row); blank reason 422; repair → card `idle`, no run reopened, a new start works afterwards; repair when not down → `MACHINE_NOT_DOWN`; unknown machine 404; events; roles; **Review Focus 3**: a session holds the machine lock and runs a breakdown while a start waits and then gets `MACHINE_DOWN`; and **the clock hazard**: session Y starts a transaction (`select 1`), session X starts a run and commits, then Y runs `breakdown` on that machine and must succeed (the run's `ended_at >= started_at`).
+**Tests (write first, `tests/test_floor_breakdown.py`):** breakdown with a running job → card `down`, run ended at the downtime's start, downtime reason shown; breakdown on an idle machine; second breakdown → `MACHINE_ALREADY_DOWN` (and no extra downtime row); blank reason 422; repair → card `idle`, no run reopened, a new start works afterwards; repair when not down → `MACHINE_NOT_DOWN`; unknown machine 404; inactive machine → `MACHINE_INACTIVE` on both; events; roles; **Review Focus 3**: a session holds the machine lock and runs a breakdown while a start waits and then gets `MACHINE_DOWN`; and **the clock hazard**: session Y starts a transaction (`select 1`), session X starts a run and commits, then Y runs `breakdown` on that machine and must succeed (the run's `ended_at >= started_at`).
 
 ### Task 6: Roll off and load rolls (R7, R8), real `GET /rolls`
 
