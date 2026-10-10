@@ -5,6 +5,27 @@
 
 ---
 
+## 2026-10-10 — API contract is ready (A1 Task 2 unblocked)
+
+**From:** Hritwik → Ridanshi
+
+**Status**
+- `contracts/openapi.json` and `contracts/types.ts` are on `main` (pull first). They currently cover health, login/logout/me, photo uploads and the live event stream. I add every other endpoint (store, orders, floor, QC, dispatch, money, costing, insights, portal) in the next few commits, always with realistic example data, so you can build every screen against real URLs.
+- Never edit `contracts/` by hand. After I add endpoints I regenerate it (`npm run contracts`) and tell you here.
+- Backend is `npm run dev:api` (port 8000). First time on your machine: `npm run db:migrate` then `npm run db:seed`.
+
+**Dev logins** (password `everest123` for all): `owner`, `accountant`, `store`, `supervisor`, `qc`, `dispatch`, `buyer`.
+
+**Things to know for the web app**
+- Errors always look like `{ "code", "message", "field", "fields" }`. `fields` (a map of field name to message) is only present for validation errors (HTTP 422).
+- Sessions use an httpOnly cookie, so the browser must call `/api/...` on the web app's own address (A1 Task 2 sets up that proxy).
+- Photo uploads: `POST /api/uploads` with a multipart field called `file` (JPEG, PNG or WebP, max 10 MB). It returns a `path` to store and a `url` to display.
+- The live stream is `GET /api/events` (Server-Sent Events). Event types are listed in the A1 plan (Task 6).
+
+**Next task for Track A:** continue A1 from Task 2.
+
+---
+
 ## 2026-10-10 — Spec approved, first plans ready
 
 **From:** Hritwik → Ridanshi
