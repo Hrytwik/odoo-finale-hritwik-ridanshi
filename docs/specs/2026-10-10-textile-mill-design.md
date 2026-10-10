@@ -352,6 +352,7 @@ All under `/api`. Request/response shapes are the Pydantic models in each module
 - **llm:** `POST /ai/copilot`, `POST /ai/buyer-assistant`, `POST /ai/explain-delay/{order_code}`, `POST /ai/recall-drafts/{lot_code}`, `POST /ai/month-summary`, `POST /ai/challan-read`, `GET/PUT /ai/settings`, `POST /ai/report-card/run`, `GET /ai/report-card`
 - **portal (buyer):** `GET /portal/orders`, `GET /portal/orders/{code}` (timeline + delivery date)
 - **events:** `GET /events` (Server-Sent Events)
+- **uploads:** `POST /uploads` (multipart field `file`: a JPEG, PNG or WebP photo up to 10 MB; the file's own bytes are checked, not just the type the browser claims; returns a `path` to store and a `url`), `GET /uploads/{name}` (logged-in users only)
 
 ---
 

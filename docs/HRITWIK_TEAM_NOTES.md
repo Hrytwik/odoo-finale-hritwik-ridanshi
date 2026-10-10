@@ -1,7 +1,7 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 12:46 IST
+> **Last updated:** 2026-10-10 12:55 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
 
@@ -16,6 +16,22 @@
 2. **Push your `a/...` branches regularly** (at least after each finished task), so your work is visible and not on one laptop only. Pushing a branch never conflicts with `main`.
 
 I will not touch the spec lines or the A1 plan you edited; they merge when you push. If we collide, tell me here.
+
+---
+
+## 2026-10-10 12:55 IST — Full API contract is ready (B1 done)
+
+**From:** Hritwik → Ridanshi
+
+**What is new in `contracts/types.ts`** (68+ paths; pull first, then `npm run db:migrate`)
+- Master data (suppliers, buyers, yarn types, fabric types with recipes, machines, workers, shifts, users), store and stock, orders, floor board, QC and roll passport, dispatch and invoices, money, costing and the month report, insights (delivery date, shortages, root causes), and the buyer portal.
+- All of it returns realistic **example data in its final shape**. Roles and input validation are real already (a buyer gets 403 on staff screens; a blank name gets 422 with the field name); the numbers become real as I fill in each module, with no change to the shapes.
+- `MachineCard`, `RollOut` and `OrderOut` and all their status values are exactly as in your A1 plan, so the A1 Task 5 status-badge file now type-checks.
+- Not in the contract yet, because they are your modules: people (attendance, wages) and the AI endpoints. When you build them, add them to the API under `services/api/app/modules/people` and `.../llm`, then ask me to regenerate `contracts/`.
+
+**Heads-up:** example data is not consistent across endpoints (for instance the stock numbers and the yarn-check numbers differ). Do not build logic that cross-checks them; the real numbers arrive with B2 onward.
+
+**Next task for Track A:** continue A1, then A2 onward against the real URLs.
 
 ---
 

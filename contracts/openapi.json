@@ -2964,6 +2964,196 @@
         "title": "PayableRow",
         "type": "object"
       },
+      "PortalDispatch": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "dispatched_at": {
+            "format": "date-time",
+            "title": "Dispatched At",
+            "type": "string"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "metres": {
+            "title": "Metres",
+            "type": "number"
+          }
+        },
+        "required": [
+          "code",
+          "dispatched_at",
+          "metres",
+          "invoice_no"
+        ],
+        "title": "PortalDispatch",
+        "type": "object"
+      },
+      "PortalOrder": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "colour": {
+            "title": "Colour",
+            "type": "string"
+          },
+          "deadline": {
+            "format": "date",
+            "title": "Deadline",
+            "type": "string"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date"
+          },
+          "fabric": {
+            "title": "Fabric",
+            "type": "string"
+          },
+          "progress_pct": {
+            "title": "Progress Pct",
+            "type": "number"
+          },
+          "qty_metres": {
+            "title": "Qty Metres",
+            "type": "number"
+          },
+          "stage": {
+            "enum": [
+              "draft",
+              "cancelled",
+              "waiting_to_start",
+              "spinning",
+              "weaving",
+              "dyeing",
+              "quality_check",
+              "ready_to_ship",
+              "partly_dispatched",
+              "dispatched"
+            ],
+            "title": "Stage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "fabric",
+          "colour",
+          "qty_metres",
+          "stage",
+          "progress_pct",
+          "deadline",
+          "delivery_date"
+        ],
+        "title": "PortalOrder",
+        "type": "object"
+      },
+      "PortalOrderDetail": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "colour": {
+            "title": "Colour",
+            "type": "string"
+          },
+          "deadline": {
+            "format": "date",
+            "title": "Deadline",
+            "type": "string"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date"
+          },
+          "dispatches": {
+            "items": {
+              "$ref": "#/components/schemas/PortalDispatch"
+            },
+            "title": "Dispatches",
+            "type": "array"
+          },
+          "fabric": {
+            "title": "Fabric",
+            "type": "string"
+          },
+          "progress_pct": {
+            "title": "Progress Pct",
+            "type": "number"
+          },
+          "qty_metres": {
+            "title": "Qty Metres",
+            "type": "number"
+          },
+          "stage": {
+            "enum": [
+              "draft",
+              "cancelled",
+              "waiting_to_start",
+              "spinning",
+              "weaving",
+              "dyeing",
+              "quality_check",
+              "ready_to_ship",
+              "partly_dispatched",
+              "dispatched"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEvent"
+            },
+            "title": "Timeline",
+            "type": "array"
+          }
+        },
+        "required": [
+          "code",
+          "fabric",
+          "colour",
+          "qty_metres",
+          "stage",
+          "progress_pct",
+          "deadline",
+          "delivery_date",
+          "timeline",
+          "dispatches"
+        ],
+        "title": "PortalOrderDetail",
+        "type": "object"
+      },
       "ProfitPanel": {
         "properties": {
           "idle_labour": {
@@ -4168,6 +4358,25 @@
           "paid_on"
         ],
         "title": "SupplierPaymentIn",
+        "type": "object"
+      },
+      "TimelineEvent": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "label"
+        ],
+        "title": "TimelineEvent",
         "type": "object"
       },
       "UploadOut": {
@@ -6746,6 +6955,73 @@
         "summary": "Record Supplier Payment",
         "tags": [
           "money"
+        ]
+      }
+    },
+    "/api/portal/orders": {
+      "get": {
+        "operationId": "my_orders_api_portal_orders_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PortalOrder"
+                  },
+                  "title": "Response My Orders Api Portal Orders Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Orders",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/orders/{order_code}": {
+      "get": {
+        "operationId": "my_order_api_portal_orders__order_code__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_code",
+            "required": true,
+            "schema": {
+              "title": "Order Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalOrderDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "My Order",
+        "tags": [
+          "portal"
         ]
       }
     },

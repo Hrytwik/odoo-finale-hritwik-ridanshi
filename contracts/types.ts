@@ -742,6 +742,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Orders */
+        get: operations["my_orders_api_portal_orders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/orders/{order_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Order */
+        get: operations["my_order_api_portal_orders__order_code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/qc/analyze": {
         parameters: {
             query?: never;
@@ -2157,6 +2191,74 @@ export interface components {
             paid: number;
             supplier: components["schemas"]["Ref"];
         };
+        /** PortalDispatch */
+        PortalDispatch: {
+            /** Code */
+            code: string;
+            /**
+             * Dispatched At
+             * Format: date-time
+             */
+            dispatched_at: string;
+            /** Invoice No */
+            invoice_no: string | null;
+            /** Metres */
+            metres: number;
+        };
+        /** PortalOrder */
+        PortalOrder: {
+            /** Code */
+            code: string;
+            /** Colour */
+            colour: string;
+            /**
+             * Deadline
+             * Format: date
+             */
+            deadline: string;
+            /** Delivery Date */
+            delivery_date: string | null;
+            /** Fabric */
+            fabric: string;
+            /** Progress Pct */
+            progress_pct: number;
+            /** Qty Metres */
+            qty_metres: number;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "draft" | "cancelled" | "waiting_to_start" | "spinning" | "weaving" | "dyeing" | "quality_check" | "ready_to_ship" | "partly_dispatched" | "dispatched";
+        };
+        /** PortalOrderDetail */
+        PortalOrderDetail: {
+            /** Code */
+            code: string;
+            /** Colour */
+            colour: string;
+            /**
+             * Deadline
+             * Format: date
+             */
+            deadline: string;
+            /** Delivery Date */
+            delivery_date: string | null;
+            /** Dispatches */
+            dispatches: components["schemas"]["PortalDispatch"][];
+            /** Fabric */
+            fabric: string;
+            /** Progress Pct */
+            progress_pct: number;
+            /** Qty Metres */
+            qty_metres: number;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "draft" | "cancelled" | "waiting_to_start" | "spinning" | "weaving" | "dyeing" | "quality_check" | "ready_to_ship" | "partly_dispatched" | "dispatched";
+            /** Timeline */
+            timeline: components["schemas"]["TimelineEvent"][];
+        };
         /** ProfitPanel */
         ProfitPanel: {
             /** Idle Labour */
@@ -2583,6 +2685,16 @@ export interface components {
             paid_on: string;
             /** Reference */
             reference?: string | null;
+        };
+        /** TimelineEvent */
+        TimelineEvent: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Label */
+            label: string;
         };
         /** UploadOut */
         UploadOut: {
@@ -4234,6 +4346,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PayableRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_orders_api_portal_orders_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalOrder"][];
+                };
+            };
+        };
+    };
+    my_order_api_portal_orders__order_code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalOrderDetail"];
                 };
             };
             /** @description Validation Error */
