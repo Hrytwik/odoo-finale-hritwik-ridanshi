@@ -1,13 +1,17 @@
 # B3 — Floor (real logic) Implementation Plan
 
 > **Summary:** Replaces the example-data stubs for the shop floor with real, tested logic: start/end/hand-over of production runs, breakdown and repair, roll off and loading rolls into dyeing, the roll-status view (spec §5, all five rules), machine status and "output today", the floor board, machine page, `GET /runs` and `GET /rolls`. Every write locks the machine row (start also locks the order row). API shapes do not change.
-> **Last updated:** 2026-10-10 16:15 IST (written and self-reviewed, not started)
+> **Last updated:** 2026-10-10 17:12 IST (Task 1 done)
 
 **Goal:** every endpoint under `/api/floor`, `/api/machines/{code}` (read, breakdown, repair), `/api/runs` (list, start, end, hand-over, roll off, load rolls) and `/api/rolls` (list) runs on real data with the rules R4–R8 from spec §6, and the generated `contracts/openapi.json` stays **byte-identical**.
 
 **Spec:** `docs/specs/2026-10-10-textile-mill-design.md` §4.2, §4.5, §5, §6 (R4–R8). **Depends on:** B1 (tables, auth, error format) and B2 (money/codes/clock/validate helpers, order locking, stock, order progress).
 
 **How this plan is executed:** inline, one task at a time (atomic-workflow), test first, the full suite twice at each boundary, the important tests mutation-checked (break the code, see the test fail, restore), race tests proven by removing the lock. The final code is copied into this plan after each task is verified, so the plan never contains code that was not run. Design approved section by section on 2026-10-10 (scope, start run, end/hand-over/breakdown/repair, rolls and roll status, reads and task order).
+
+## Status
+
+Task 1 done and verified (2026-10-10 17:12 IST): migration `b0eaa59f8a3b` (roll_code_seq + `v_roll_status`, identical to the SQL in Task 1, downgrade/upgrade round trip checked on a scratch database), `next_code(db, "roll")`, `make_roll` uses it; 17 new tests (one per status rule, mutation-proven: oldest-verdict-wins, ignoring the "started after the inspection" condition, verdict-before-dispatch and swapped dyeing/awaiting_qc each make a test fail). Full suite 521 passed, twice; contract unchanged. Next: Task 2.
 
 ## Global Constraints
 

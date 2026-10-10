@@ -26,3 +26,8 @@ def test_simultaneous_callers_never_get_the_same_number(engine):
     with ThreadPoolExecutor(max_workers=2) as pool:
         codes = [c for batch in pool.map(grab, range(2)) for c in batch]
     assert len(codes) == 40 and len(set(codes)) == 40
+
+
+def test_roll_codes_have_the_expected_shape_and_are_unique(db):
+    a, b = next_code(db, "roll"), next_code(db, "roll")
+    assert re.fullmatch(r"R-\d{4,}", a) and re.fullmatch(r"R-\d{4,}", b) and a != b

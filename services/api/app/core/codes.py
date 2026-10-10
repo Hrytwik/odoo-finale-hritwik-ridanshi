@@ -3,9 +3,11 @@ from typing import Literal
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-Kind = Literal["lot", "order"]
+Kind = Literal["lot", "order", "roll"]
 # (sequence, prefix): fixed here, never built from user input
-_SEQUENCES: dict[str, tuple[str, str]] = {"lot": ("lot_code_seq", "L"), "order": ("order_code_seq", "ORD")}
+_SEQUENCES: dict[str, tuple[str, str]] = {
+    "lot": ("lot_code_seq", "L"), "order": ("order_code_seq", "ORD"), "roll": ("roll_code_seq", "R"),
+}
 
 
 def next_code(db: Session, kind: Kind) -> str:

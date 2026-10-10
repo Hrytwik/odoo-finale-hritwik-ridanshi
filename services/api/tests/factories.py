@@ -88,7 +88,7 @@ def make_run(db: Session, order: Order, machine: Machine, operator: Worker | Non
 
 
 def make_roll(db: Session, order: Order, weaving_run: ProductionRun, metres: float = 100) -> Roll:
-    roll = _add(db, Roll(code=f"R-{next(_n):04d}", order_id=order.id, metres=metres))
+    roll = _add(db, Roll(code=next_code(db, "roll"), order_id=order.id, metres=metres))
     _add(db, RollRun(roll_id=roll.id, run_id=weaving_run.id, purpose="produce"))
     return roll
 
