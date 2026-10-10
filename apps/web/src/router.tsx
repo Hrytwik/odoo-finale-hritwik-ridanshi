@@ -30,6 +30,8 @@ const SCREENS: Record<string, ComponentType> = {
   'admin/shifts': lazy(() => import('@/pages/admin/screens').then((m) => ({ default: m.Shifts }))),
   'admin/users': lazy(() => import('@/pages/admin/screens').then((m) => ({ default: m.Users }))),
   'people/workers': lazy(() => import('@/pages/admin/screens').then((m) => ({ default: m.Workers }))),
+  owner: lazy(() => import('@/pages/owner/OwnerDashboard')),
+  'owner/insights': lazy(() => import('@/pages/owner/Insights')),
   dispatch: lazy(() => import('@/pages/dispatch/DispatchList')),
   'dispatch/:code': lazy(() => import('@/pages/dispatch/DispatchDetail')),
   qc: lazy(() => import('@/pages/qc/QcQueue')),

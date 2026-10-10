@@ -16,3 +16,16 @@ export const formatQty = (n: number, unit: 'kg' | 'm') => (unit === 'kg' ? forma
 export const formatMoney = (n: number) => money.format(n)
 export const formatDate = (iso: string) => day.format(new Date(iso))
 export const formatDateTime = (iso: string) => dayTime.format(new Date(iso))
+
+/** Money in the way a mill owner says it: ₹42.8 L for lakhs, ₹1.2 Cr for crores, whole rupees below a lakh. */
+export function formatLakh(n: number): string {
+  const sign = n < 0 ? '-' : ''
+  const abs = Math.abs(n)
+  const trim = (x: number) => String(Math.round(x * 10) / 10)
+  if (abs >= 1e7) return `${sign}₹${trim(abs / 1e7)} Cr`
+  if (abs >= 1e5) return `${sign}₹${trim(abs / 1e5)} L`
+  return formatMoney(n)
+}
+
+/** 0.456 becomes "46%". */
+export const formatPercent = (fraction: number) => `${Math.round(fraction * 100)}%`

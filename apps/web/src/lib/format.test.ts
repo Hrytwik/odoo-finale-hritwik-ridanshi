@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatDateTime, formatKg, formatMetres, formatMoney, formatQty } from './format'
+import { formatDate, formatDateTime, formatKg, formatLakh, formatMetres, formatMoney, formatPercent, formatQty } from './format'
 
 describe('format', () => {
   it('formats rupees with Indian grouping and no decimals', () => {
@@ -20,5 +20,20 @@ describe('format', () => {
     expect(formatDate('2026-10-10T20:00:00Z')).toContain('Oct')
     expect(formatDate('2026-10-20')).toContain('20')
     expect(formatDateTime('2026-10-10T20:00:00Z')).toMatch(/1:30/)
+  })
+
+  it('says big amounts in lakhs and crores, as an owner would', () => {
+    expect(formatLakh(4280000)).toBe('₹42.8 L')
+    expect(formatLakh(53500)).toBe('₹53,500')
+    expect(formatLakh(10000000)).toBe('₹1 Cr')
+    expect(formatLakh(12500000)).toBe('₹1.3 Cr')
+    expect(formatLakh(-250000)).toBe('-₹2.5 L')
+    expect(formatLakh(0)).toBe('₹0')
+  })
+
+  it('shows a fraction as a whole percent', () => {
+    expect(formatPercent(0.456)).toBe('46%')
+    expect(formatPercent(1)).toBe('100%')
+    expect(formatPercent(0)).toBe('0%')
   })
 })

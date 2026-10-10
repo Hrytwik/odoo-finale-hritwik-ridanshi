@@ -683,3 +683,148 @@ h1 {
   gap: var(--space-2);
   align-items: center;
 }
+
+/* ---------- Owner dashboard ---------- */
+.month-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.grid-two {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+}
+.ledger {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+.ledger-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.ledger-row dt {
+  margin: 0;
+}
+.ledger-row dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ledger-row.is-total {
+  padding-top: var(--space-2);
+  border-bottom: 0;
+  border-top: 2px solid var(--color-primary);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+.ledger-row.is-muted {
+  color: var(--color-text-muted);
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* ---------- Chart ---------- */
+.chart {
+  margin: 0;
+}
+.chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.chart-grid {
+  stroke: var(--color-border-strong);
+  stroke-dasharray: 2 4;
+}
+.chart-axis {
+  stroke: var(--color-border-strong);
+}
+.chart-tick {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+  font-family: var(--font-sans);
+}
+.chart-bar {
+  fill: var(--color-primary-soft);
+  stroke: #658c58;
+  stroke-width: 1.5;
+}
+.chart-line {
+  stroke: var(--color-text);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+.chart-dot {
+  fill: var(--color-surface);
+  stroke: var(--color-text);
+  stroke-width: 2;
+}
+.chart-dot.is-last {
+  stroke-width: 3;
+}
+.chart-fill-top {
+  stop-color: #658c58;
+  stop-opacity: 0.35;
+}
+.chart-fill-bottom {
+  stop-color: #658c58;
+  stop-opacity: 0;
+}
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+}
+.chart-legend i {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.chart-key-bar {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid #658c58;
+  border-radius: 3px;
+  background: var(--color-primary-soft);
+}
+.chart-key-line {
+  width: 16px;
+  height: 0;
+  border-top: 2.5px solid var(--color-text);
+}
+
+/* ---------- Insights ---------- */
+.finish-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.finish-steps li {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.finish-steps li.is-bottleneck {
+  border-color: var(--color-danger);
+  background: var(--tone-red-bg);
+}
+
+/* ---------- Notices use the palette, not blue ---------- */
+.alert-info {
+  background: color-mix(in srgb, var(--color-accent-soft) 45%, var(--color-surface));
+  border: 1px solid var(--color-accent);
+  color: var(--color-text);
+}
