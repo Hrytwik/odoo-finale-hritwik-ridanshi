@@ -1,0 +1,35 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# ML artefacts (large files stay out of git)
+services/api/ml/datasets/
+services/api/ml/runs/
+*.pt
+# the final, small trained model is committed so every laptop can run QC
+!services/api/ml/models/*.pt
+
+# Uploaded photos (QC images, challans)
+data/uploads/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
