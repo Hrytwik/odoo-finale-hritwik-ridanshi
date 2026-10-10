@@ -1,9 +1,39 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 21:00 IST
+> **Last updated:** 2026-10-10 21:32 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 21:32 IST — Buyer portal is real (a small edit in your folder, please review), one new endpoint, and what I need next
+
+**From:** Ridanshi → Hritwik
+
+**Thank you for the merge and the live check.** I merged your `main` (up to `8d74932`) back into my branch with no conflicts and ran `db:migrate` on my local PostgreSQL 14. After the merge: backend all green, web 519 passed, `tsc -b` and `oxlint` clean.
+
+**1. The buyer portal backend is real now (this is in your area, so please look at it).** `GET /portal/orders` and `GET /portal/orders/{code}` returned one fixed example order. I replaced that, because the buyer screens (done: `/portal` and `/portal/orders/:code`, with the assistant on both) need real, buyer-only data. **Shapes are unchanged, there is no migration, and `contracts/` did not change for this.**
+- New file `services/api/app/modules/portal/service.py` holds all the logic; `portal/router.py` now only calls it. `portal/examples.py` is no longer used (delete it if you like).
+- A buyer sees only their own orders whose state is `confirmed` or `cancelled` (never drafts). Another buyer's order, a draft and a missing order all give the same 404.
+- Stage, size and dates come from `orders.service.order_out`, so they match your order screens. `progress_pct` is a rough share of work done (half weaving, a quarter dyeing, a quarter passed quality check; 100 once dispatched); it is explained on the screen as "a rough share".
+- The timeline is: order confirmed, first spinning / weaving / dyeing run, first roll passed quality check, and each dispatched truck ("330 m dispatched (DSP-0007)"), in time order. The dispatches list has code, time, metres of this order on that truck, and the invoice number. Only trucks in state `dispatched` count.
+- **`delivery_date` is `null`** (the same as `OrderOut.delivery_date`) until the real delivery estimate (B7) exists. The screens then say "Promised for <deadline>", and the buyer assistant says the mill has not estimated a date yet, instead of inventing one. When B7 gives a real estimate, it is one line in `portal/service.py::_summary` (`delivery_date=out.delivery_date` already reads your order field, so filling `OrderOut.delivery_date` is enough).
+- I rewrote `tests/test_contract_portal.py` for real data (7 tests: only own orders, 404 sameness, no money or machine words in the reply, timeline, loading truck not shown, progress) and changed one line of `tests/test_llm_api.py` (the buyer test now creates an order first).
+
+**2. One new endpoint, mine (`modules/llm`):** `GET /ai/models` (owner only) asks the saved provider which models the saved key can use, so the owner picks a name that exists. **`contracts/` changed, additions only** (this one path and its response type), regenerated with `npm run contracts`.
+
+**3. A test that guards you and me:** `services/api/tests/test_auth_sweep.py` walks every path in the API's own list and checks that, without a login, each answers 401, except `GET /health`, `POST /auth/login` and `POST /auth/logout`. **Any new endpoint you add needs a login dependency (`require_roles` or `current_user`), or this test fails and tells you which one.** Right now 95 of 98 endpoints answer 401 and the three public ones are those. Also: the developer pages `/dev/camera` and `/dev/components` on the web are owner-only now.
+
+**4. What I need next from you, in this order, because the demo shows them:**
+- **B7 first:** the recall trace (`GET /lots/{code}/recall`, still example data; block a lot and see which rolls and buyers it touched is the strongest moment of the demo), then late orders and the delivery estimate (`/insights/late-orders`, `/insights/eta/...`), shortages and defect causes.
+- **B6:** costing and the month report (`/reports/month`). The owner's Month-end screen and the Copilot's "how did we do this month" both read it, and today they show example numbers (₹4,12,000 invoiced). When you build it, please make `wages_earned` equal my `GET /wages` total for the same month.
+- B8 (vision endpoints) stays parked as you decided.
+
+**5. Things I changed on my side that you may notice:** the language-model module now tells the model today's date (India time), tries a refused request once more, sends a plain User-Agent (Groq's Cloudflare turns away Python's default one with a 403), and treats a hosted address with no key as "not set up". None of this touches your files.
+
+**Not done yet on my side, for your information:** the end-to-end demo script (Playwright) and a real-phone camera and QR test through Caddy.
+
 
 ---
 
