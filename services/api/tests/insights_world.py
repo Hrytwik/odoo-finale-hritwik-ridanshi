@@ -91,3 +91,47 @@ def build_defect_mill(db) -> DefectMill:
                 dye(db, roll, dye_run)
     db.flush()
     return DefectMill(lots[0], lots[1], looms[0], looms[1], operators[0], dyer)
+
+
+@dataclass
+class RecallMill:
+    lot: object
+    rolls: dict
+    sharma: object
+    kavya: object
+    loading_truck: object
+    sent_truck: object
+
+
+def build_recall_mill(db) -> RecallMill:
+    """Lot L: 120 kg issued to spinning run S1; 50 kg issued to S2 and fully returned (net 0). S1 fed one weaving run that
+    made six rolls: R1 dyeing, R2 and R3 in store, R4 dispatched (Sharma), R5 on a loading truck (Kavya), R6 rejected.
+    S2 fed another weaving run whose roll R7 must NOT appear."""
+    sharma, kavya = make_buyer(db, name="Sharma Fabrics"), make_buyer(db, name="Kavya Garments")
+    order_s, order_k = make_order(db, buyer=sharma), make_order(db, buyer=kavya)
+    lot = make_lot(db, qty_kg=500)
+    mover = make_user(db, role="store").id
+    s1 = make_run(db, order_s, make_machine(db, stage="spinning"), started_at=LONG_AGO, ended_at=LONG_AGO)
+    s2 = make_run(db, order_s, make_machine(db, stage="spinning"), started_at=LONG_AGO, ended_at=LONG_AGO)
+    for run, kg in ((s1, -120), (s2, -50), (s2, 50)):
+        db.add(YarnMovement(yarn_lot_id=lot.id, kind="issue" if kg < 0 else "return", qty_kg=kg, production_run_id=run.id,
+                            moved_by=mover))
+    w1 = make_run(db, order_s, make_machine(db, stage="weaving"), input_run_id=s1.id, started_at=LONG_AGO)
+    w2 = make_run(db, order_s, make_machine(db, stage="weaving"), input_run_id=s2.id, started_at=LONG_AGO)
+    dyer = make_machine(db, stage="dyeing")
+    open_dye = make_run(db, order_s, dyer, started_at=LONG_AGO)                      # still running: R1 is 'dyeing'
+    done_dye = make_run(db, order_s, make_machine(db, stage="dyeing"), started_at=LONG_AGO, ended_at=LONG_AGO)
+    rolls = {"R1": make_roll(db, order_s, w1, 100), "R2": make_roll(db, order_s, w1, 100),
+             "R3": make_roll(db, order_s, w1, 100), "R4": make_roll(db, order_s, w1, 100),
+             "R5": make_roll(db, order_k, w1, 100), "R6": make_roll(db, order_s, w1, 100),
+             "R7": make_roll(db, order_s, w2, 100)}
+    dye(db, rolls["R1"], open_dye)
+    for key in ("R2", "R3", "R4", "R5", "R6", "R7"):
+        dye(db, rolls[key], done_dye)
+        make_inspection(db, rolls[key], "reject" if key == "R6" else "pass")
+    sent = make_dispatch(db, sharma, state="dispatched", dispatched_at=dt.datetime(2026, 10, 9, tzinfo=dt.UTC))
+    loading = make_dispatch(db, kavya)
+    put_on_dispatch(db, rolls["R4"], sent)
+    put_on_dispatch(db, rolls["R5"], loading)
+    db.flush()
+    return RecallMill(lot, rolls, sharma, kavya, loading, sent)
