@@ -72,13 +72,15 @@ def _own_split(pairs):
 
 def build_dataset(out: Path, public: Path | None, own: Path | None) -> dict:
     out = Path(out)
-    for sub in ("train", "val"):                      # only what this tool creates; never the whole folder
+    for sub in ("train", "val", "test_public"):                      # only what this tool creates; never the whole folder
         shutil.rmtree(out / sub, ignore_errors=True)
     out.mkdir(parents=True, exist_ok=True)
-    stats = {"train_images": 0, "val_images": 0}
+    stats = {"train_images": 0, "val_images": 0, "test_public_images": 0}
     if public is not None:
         stats["train_images"] += _copy(_items(Path(public) / "train"), out, "train", "public", ROBOFLOW_TO_OURS)
         stats["val_images"] += _copy(_items(Path(public) / "valid"), out, "val", "public", ROBOFLOW_TO_OURS)
+        if (Path(public) / "test").is_dir():                # the dataset's own test split, kept apart, class ids remapped
+            stats["test_public_images"] += _copy(_items(Path(public) / "test"), out, "test_public", "public", ROBOFLOW_TO_OURS)
     if own is not None:
         train, val = _own_split(_items(Path(own) / "train"))
         stats["train_images"] += _copy(train, out, "train", "own", None)

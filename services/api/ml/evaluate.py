@@ -68,7 +68,8 @@ def load_names(data_yaml: Path) -> dict[int, str]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--weights", required=True)
-    ap.add_argument("--data", required=True, help="the dataset YAML; its folder must contain test/images and test/labels")
+    ap.add_argument("--data", required=True, help="the dataset YAML (used for the class names)")
+    ap.add_argument("--test-dir", help="folder with images/ and labels/ to score; default: <data folder>/test")
     ap.add_argument("--imgsz", type=int, default=640)
     ap.add_argument("--conf", type=float, default=0.25, help="detections below this confidence are ignored")
     ap.add_argument("--device", default="mps")
@@ -85,8 +86,9 @@ def main(argv: list[str] | None = None) -> int:
         r = model.predict(str(path), imgsz=args.imgsz, conf=0.05, device=args.device, verbose=False)[0]
         return [(names[int(c)], tuple(map(float, b)), float(s)) for c, b, s in zip(r.boxes.cls, r.boxes.xyxyn, r.boxes.conf)]
 
+    test_dir = Path(args.test_dir).resolve() if args.test_dir else data.parent / "test"
     try:
-        ev, _ = score_directory(data.parent / "test" / "images", data.parent / "test" / "labels", names, predict, conf_thr=args.conf)
+        ev, _ = score_directory(test_dir / "images", test_dir / "labels", names, predict, conf_thr=args.conf)
     except EvaluationError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2

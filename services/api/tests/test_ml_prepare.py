@@ -103,3 +103,22 @@ def test_a_tiny_own_set_without_public_data_is_refused_clearly(tmp_path):
     make_source(own, "train", {"A_hole_001": "0 0.5 0.5 0.1 0.1\n"})
     with pytest.raises(PrepareError, match="validation"):
         build_dataset(tmp_path / "out", public=None, own=own)
+
+
+def test_the_public_test_split_is_exported_remapped_and_kept_apart(tmp_path):
+    pub, out = tmp_path / "pub", tmp_path / "out"
+    make_source(pub, "train", {"a": "1 0.5 0.5 0.1 0.1\n"})
+    make_source(pub, "valid", {"v": "0 0.5 0.5 0.1 0.1\n"})
+    make_source(pub, "test", {"t": "2 0.5 0.5 0.1 0.1\n", "u": "0 0.2 0.2 0.1 0.1\n"})
+    stats = build_dataset(out, public=pub, own=None)
+    assert stats["test_public_images"] == 2
+    assert (out / "test_public" / "labels" / "public_t.txt").read_text() == "2 0.5 0.5 0.1 0.1\n"
+    assert (out / "test_public" / "labels" / "public_u.txt").read_text() == "1 0.2 0.2 0.1 0.1\n"
+    assert not any("_t.jpg" in p.name or "_u.jpg" in p.name for s in ("train", "val") for p in (out / s / "images").iterdir())
+
+
+def test_a_public_folder_without_a_test_split_is_fine(tmp_path):
+    pub = tmp_path / "pub"
+    make_source(pub, "train", {"a": "1 0.5 0.5 0.1 0.1\n"})
+    make_source(pub, "valid", {"v": "0 0.5 0.5 0.1 0.1\n"})
+    assert build_dataset(tmp_path / "out", public=pub, own=None)["test_public_images"] == 0
