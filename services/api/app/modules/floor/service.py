@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, commit
 from app.core.events import broadcaster
+from app.core.money import dec, q_kg
 from app.core.validate import invalid, not_found
 from app.db.models import Machine, MachineDowntime, ProductionRun, Worker
 from app.modules.floor import schemas as s
@@ -92,3 +93,47 @@ def start_run(db: Session, body: s.RunStartIn) -> ProductionRun:
     db.refresh(run)
     _announce(run)
     return run
+
+
+def end_run(db: Session, run_id: int, body: s.RunEndIn) -> ProductionRun:
+    run = locked_open_run(db, run_id)
+    output = None
+    if run.stage == "spinning":
+        if body.output_kg is None:
+            raise AppError("OUTPUT_REQUIRED", "Enter the kg spun when ending a spinning run", field="output_kg",
+                           status=422)
+        output = q_kg(dec(body.output_kg))
+    elif body.output_kg is not None:
+        raise AppError("OUTPUT_NOT_ALLOWED", "Only a spinning run has an output in kg", field="output_kg", status=422)
+    run.ended_at, run.output_kg = db_now(db), output
+    commit(db)
+    db.refresh(run)
+    _announce(run)
+    return run
+
+
+def handover(db: Session, run_id: int, body: s.HandoverIn) -> ProductionRun:
+    """Shift change: end this run and start the next one on the same machine and order with the new operator, both at
+    the same instant. Returns the NEW run."""
+    old = locked_open_run(db, run_id)
+    if old.machine_id is None:
+        raise AppError("WRONG_STAGE", "A run without a machine cannot be handed over", field="run_id")
+    operator = db.get(Worker, body.operator_worker_id)
+    if operator is None:
+        raise not_found("Worker", "operator_worker_id")
+    if not operator.active:
+        raise AppError("OPERATOR_INACTIVE", "This worker is not active", field="operator_worker_id")
+    if operator.id == old.operator_worker_id:
+        raise invalid("The new operator must be someone else", "operator_worker_id")
+    now = db_now(db)
+    old.ended_at = now
+    db.flush()      # the old run must be closed before the new one is inserted: one open run per machine
+    new = ProductionRun(order_id=old.order_id, machine_id=old.machine_id, stage=old.stage,
+                        operator_worker_id=operator.id, input_run_id=old.input_run_id, started_at=now)
+    db.add(new)
+    commit(db)
+    db.refresh(new)
+    broadcaster.publish("run.changed", old.id)
+    broadcaster.publish("run.changed", new.id)
+    broadcaster.publish("machine.changed", new.machine_id)
+    return new

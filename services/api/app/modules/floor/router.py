@@ -37,13 +37,13 @@ def start_run(body: s.RunStartIn, db: Session = Depends(get_db)) -> s.RunOut:
 
 
 @router.post("/runs/{run_id}/end", response_model=s.RunOut, dependencies=[Depends(operators)])
-def end_run(run_id: int, body: s.RunEndIn) -> s.RunOut:
-    return ex.RUN.model_copy(update={"ended_at": ex.NOW})
+def end_run(run_id: int, body: s.RunEndIn, db: Session = Depends(get_db)) -> s.RunOut:
+    return board.run_out(db, service.end_run(db, run_id, body))
 
 
 @router.post("/runs/{run_id}/handover", response_model=s.RunOut, status_code=201, dependencies=[Depends(operators)])
-def handover(run_id: int, body: s.HandoverIn) -> s.RunOut:
-    return ex.RUN.model_copy(update={"id": run_id + 1, "started_at": ex.NOW, "roll_codes": [], "metres": 0})
+def handover(run_id: int, body: s.HandoverIn, db: Session = Depends(get_db)) -> s.RunOut:
+    return board.run_out(db, service.handover(db, run_id, body))
 
 
 @router.post("/runs/{run_id}/rolls", response_model=RollOut, status_code=201, dependencies=[Depends(operators)])
