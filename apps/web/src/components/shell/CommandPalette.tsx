@@ -2,6 +2,8 @@ import { CornerDownLeft, Search } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Dialog } from '@/components/ui/Dialog'
+import type { Key } from '@/i18n/en'
+import { useI18n } from '@/i18n/I18nContext'
 import { jumpTargets, pageResults } from '@/lib/palette'
 import type { Role } from '@/lib/nav'
 
@@ -9,14 +11,16 @@ type Result = { key: string; label: string; href: string; hint: string; Icon?: R
 
 /** Ctrl+K: jump to any page in your menu, or straight to a roll, order, lot, dispatch or invoice by typing its code. */
 export function CommandPalette({ open, onClose, role }: { open: boolean; onClose: () => void; role: Role }) {
+  const { t } = useI18n()
   return (
-    <Dialog open={open} onClose={onClose} title="Jump to">
+    <Dialog open={open} onClose={onClose} title={t('palette.title')}>
       <Palette onClose={onClose} role={role} />
     </Dialog>
   )
 }
 
 function Palette({ onClose, role }: { onClose: () => void; role: Role }) {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const input = useRef<HTMLInputElement>(null)
   const listId = useId()
@@ -31,10 +35,10 @@ function Palette({ onClose, role }: { onClose: () => void; role: Role }) {
 
   const results = useMemo<Result[]>(
     () => [
-      ...jumpTargets(query, role).map((j) => ({ key: `jump:${j.href}`, label: j.label, href: j.href, hint: 'Go' })),
-      ...pageResults(query, role).map((p) => ({ key: p.href, label: p.label, href: p.href, hint: p.group, Icon: p.icon })),
+      ...jumpTargets(query, role).map((j) => ({ key: `jump:${j.href}`, label: t(`palette.open.${j.kind}` as Key, { code: j.code }), href: j.href, hint: t('palette.go') })),
+      ...pageResults(query, role, { label: (i) => t(i.labelKey), group: (i) => t(`nav.group.${i.group}` as Key) }).map((p) => ({ key: p.href, label: t(p.labelKey), href: p.href, hint: t(`nav.group.${p.group}` as Key), Icon: p.icon })),
     ],
-    [query, role],
+    [query, role, t],
   )
   const clamped = Math.min(active, Math.max(0, results.length - 1))
 
@@ -67,8 +71,8 @@ function Palette({ onClose, role }: { onClose: () => void; role: Role }) {
           aria-expanded="true"
           aria-controls={listId}
           aria-activedescendant={results[clamped] ? `${listId}-${clamped}` : undefined}
-          aria-label="Search pages, or type a code like R-0142"
-          placeholder="Search pages, or type a code like R-0142"
+          aria-label={t('palette.placeholder')}
+          placeholder={t('palette.placeholder')}
           autoComplete="off"
           value={query}
           onChange={(e) => {
@@ -95,7 +99,7 @@ function Palette({ onClose, role }: { onClose: () => void; role: Role }) {
           </li>
         ))}
       </ul>
-      {results.length === 0 && <p className="muted text-sm palette-empty">Nothing matches. Try a page name, or a code like R-0142 or ORD-0012.</p>}
+      {results.length === 0 && <p className="muted text-sm palette-empty">{t('palette.empty')}</p>}
     </div>
   )
 }

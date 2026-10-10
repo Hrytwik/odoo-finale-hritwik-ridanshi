@@ -10,7 +10,7 @@ import { PasswordInput } from '@/components/ui/PasswordInput'
 import { useI18n } from '@/i18n/I18nContext'
 import { api, call, type components } from '@/lib/api'
 import { applyServerErrors, useSubmitLock } from '@/lib/forms'
-import { passwordProblem } from '@/lib/passwordRules'
+import { passwordIssue } from '@/lib/passwordRules'
 
 type Me = components['schemas']['Me']
 
@@ -24,8 +24,8 @@ const makeSchema = (t: T) =>
       again: z.string().min(1, t('signup.againEnter')),
     })
     .superRefine((v, ctx) => {
-      const problem = v.password ? passwordProblem(v.password, v.email.split('@')[0] ?? '') : null
-      if (problem) ctx.addIssue({ code: 'custom', path: ['password'], message: problem })
+      const problem = v.password ? passwordIssue(v.password, v.email.split('@')[0] ?? '') : null
+      if (problem) ctx.addIssue({ code: 'custom', path: ['password'], message: t(problem.key, problem.vars) })
       if (v.again && v.password !== v.again) ctx.addIssue({ code: 'custom', path: ['again'], message: t('signup.mismatch') })
     })
 type Values = z.infer<ReturnType<typeof makeSchema>>

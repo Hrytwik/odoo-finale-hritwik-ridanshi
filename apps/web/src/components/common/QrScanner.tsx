@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Field, Input } from '@/components/ui/Field'
+import { useI18n } from '@/i18n/I18nContext'
 import { parseRollCode } from '@/lib/rollCode'
 
 type Props = { open: boolean; onClose: () => void; onCode: (code: string) => void }
@@ -12,6 +13,7 @@ type Props = { open: boolean; onClose: () => void; onCode: (code: string) => voi
  * when it is not available, or a tag is torn, the roll code can be typed instead. Nothing here sends anything to the server.
  */
 export function QrScanner({ open, onClose, onCode }: Props) {
+  const { t } = useI18n()
   const video = useRef<HTMLVideoElement>(null)
   const [cameraNote, setCameraNote] = useState<string | null>(null)
   const [typed, setTyped] = useState('')
@@ -25,7 +27,7 @@ export function QrScanner({ open, onClose, onCode }: Props) {
 
     async function start() {
       if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-        setCameraNote('The camera is not available on this connection. Type the roll code instead.')
+        setCameraNote(t('scan.noCamera'))
         return
       }
       try {
@@ -48,7 +50,7 @@ export function QrScanner({ open, onClose, onCode }: Props) {
           if (code) onCode(code)
         }, 250)
       } catch {
-        setCameraNote('The camera could not be opened. Allow camera access, or type the roll code instead.')
+        setCameraNote(t('scan.cameraFailed'))
       }
     }
     void start()
@@ -58,17 +60,17 @@ export function QrScanner({ open, onClose, onCode }: Props) {
       if (timer) window.clearInterval(timer)
       stream?.getTracks().forEach((t) => t.stop())
     }
-  }, [open, onCode])
+  }, [open, onCode, t])
 
   function submitTyped() {
     const code = parseRollCode(typed)
-    if (!code) return setError('That is not a roll code. It looks like R-0142.')
+    if (!code) return setError(t('dispatch.notRollCode'))
     setError(null)
     onCode(code)
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title="Scan a roll">
+    <Dialog open={open} onClose={onClose} title={t('qc.scan')}>
       <div className="stack">
         {cameraNote ? <p className="muted text-sm">{cameraNote}</p> : <video ref={video} muted playsInline className="scanner-video" />}
         <form
@@ -79,13 +81,13 @@ export function QrScanner({ open, onClose, onCode }: Props) {
             submitTyped()
           }}
         >
-          <Field label="Roll code" error={error ?? undefined} hint="Or the address printed on the tag">
+          <Field label={t('dispatch.rollCode')} error={error ?? undefined} hint={t('scan.hint')}>
             {(c) => <Input {...c} value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoCapitalize="characters" />}
           </Field>
           <div className="row">
-            <Button type="submit">Open roll</Button>
+            <Button type="submit">{t('scan.open')}</Button>
             <Button variant="secondary" onClick={onClose}>
-              Cancel
+              {t('dispatch.cancel')}
             </Button>
           </div>
         </form>
