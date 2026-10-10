@@ -30,6 +30,91 @@
         "title": "AdjustIn",
         "type": "object"
       },
+      "AiSuggestion": {
+        "properties": {
+          "boxes": {
+            "items": {
+              "$ref": "#/components/schemas/Box"
+            },
+            "maxItems": 100,
+            "title": "Boxes",
+            "type": "array"
+          },
+          "model_version": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model Version",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "pass",
+              "rework",
+              "reject"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_version",
+          "verdict",
+          "boxes"
+        ],
+        "title": "AiSuggestion",
+        "type": "object"
+      },
+      "AnalyzeIn": {
+        "properties": {
+          "photo_path": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Photo Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "photo_path"
+        ],
+        "title": "AnalyzeIn",
+        "type": "object"
+      },
+      "AnalyzeOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "suggestion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AiSuggestion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "available",
+          "message",
+          "suggestion"
+        ],
+        "title": "AnalyzeOut",
+        "type": "object"
+      },
       "BlockIn": {
         "properties": {
           "reason": {
@@ -57,6 +142,76 @@
           "file"
         ],
         "title": "Body_upload_api_uploads_post",
+        "type": "object"
+      },
+      "Box": {
+        "properties": {
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "defect_type": {
+            "enum": [
+              "hole",
+              "stain",
+              "thread_fault",
+              "colour_mismatch",
+              "other"
+            ],
+            "title": "Defect Type",
+            "type": "string"
+          },
+          "h": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "H",
+            "type": "number"
+          },
+          "w": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "W",
+            "type": "number"
+          },
+          "x": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "w",
+          "h",
+          "defect_type",
+          "confidence"
+        ],
+        "title": "Box",
+        "type": "object"
+      },
+      "BreakdownIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "BreakdownIn",
         "type": "object"
       },
       "BuyerIn": {
@@ -219,6 +374,116 @@
         "title": "BuyerPatch",
         "type": "object"
       },
+      "ClassResult": {
+        "properties": {
+          "defect_type": {
+            "enum": [
+              "hole",
+              "stain",
+              "thread_fault",
+              "colour_mismatch",
+              "other"
+            ],
+            "title": "Defect Type",
+            "type": "string"
+          },
+          "false_alarms": {
+            "title": "False Alarms",
+            "type": "integer"
+          },
+          "found": {
+            "title": "Found",
+            "type": "integer"
+          },
+          "missed": {
+            "title": "Missed",
+            "type": "integer"
+          },
+          "precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Precision"
+          },
+          "recall": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recall"
+          }
+        },
+        "required": [
+          "defect_type",
+          "found",
+          "missed",
+          "false_alarms",
+          "precision",
+          "recall"
+        ],
+        "title": "ClassResult",
+        "type": "object"
+      },
+      "CostParts": {
+        "properties": {
+          "labour": {
+            "title": "Labour",
+            "type": "number"
+          },
+          "machine": {
+            "title": "Machine",
+            "type": "number"
+          },
+          "rework": {
+            "title": "Rework",
+            "type": "number"
+          },
+          "yarn": {
+            "title": "Yarn",
+            "type": "number"
+          }
+        },
+        "required": [
+          "yarn",
+          "machine",
+          "labour",
+          "rework"
+        ],
+        "title": "CostParts",
+        "type": "object"
+      },
+      "DatasetRef": {
+        "properties": {
+          "licence": {
+            "title": "Licence",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "url",
+          "licence"
+        ],
+        "title": "DatasetRef",
+        "type": "object"
+      },
       "DeadlineIn": {
         "properties": {
           "deadline": {
@@ -231,6 +496,87 @@
           "deadline"
         ],
         "title": "DeadlineIn",
+        "type": "object"
+      },
+      "DefectIn": {
+        "properties": {
+          "ai_detected": {
+            "default": false,
+            "title": "Ai Detected",
+            "type": "boolean"
+          },
+          "count": {
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "defect_type": {
+            "enum": [
+              "hole",
+              "stain",
+              "thread_fault",
+              "colour_mismatch",
+              "other"
+            ],
+            "title": "Defect Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "defect_type",
+          "count"
+        ],
+        "title": "DefectIn",
+        "type": "object"
+      },
+      "DefectOut": {
+        "properties": {
+          "ai_detected": {
+            "title": "Ai Detected",
+            "type": "boolean"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "defect_type": {
+            "enum": [
+              "hole",
+              "stain",
+              "thread_fault",
+              "colour_mismatch",
+              "other"
+            ],
+            "title": "Defect Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "defect_type",
+          "count",
+          "ai_detected"
+        ],
+        "title": "DefectOut",
+        "type": "object"
+      },
+      "DowntimeOut": {
+        "properties": {
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "started_at"
+        ],
+        "title": "DowntimeOut",
         "type": "object"
       },
       "FabricTypeIn": {
@@ -369,6 +715,43 @@
         "title": "FabricTypePatch",
         "type": "object"
       },
+      "FloorBoard": {
+        "properties": {
+          "down": {
+            "title": "Down",
+            "type": "integer"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "idle": {
+            "title": "Idle",
+            "type": "integer"
+          },
+          "machines": {
+            "items": {
+              "$ref": "#/components/schemas/MachineCard"
+            },
+            "title": "Machines",
+            "type": "array"
+          },
+          "running": {
+            "title": "Running",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "machines",
+          "running",
+          "idle",
+          "down",
+          "generated_at"
+        ],
+        "title": "FloorBoard",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -380,6 +763,19 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HandoverIn": {
+        "properties": {
+          "operator_worker_id": {
+            "title": "Operator Worker Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "operator_worker_id"
+        ],
+        "title": "HandoverIn",
         "type": "object"
       },
       "Health": {
@@ -398,6 +794,161 @@
           "demo_data"
         ],
         "title": "Health",
+        "type": "object"
+      },
+      "InspectionIn": {
+        "properties": {
+          "ai_suggestion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AiSuggestion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "defects": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DefectIn"
+            },
+            "maxItems": 20,
+            "title": "Defects",
+            "type": "array"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "photo_path": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Path"
+          },
+          "roll_code": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Roll Code",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "pass",
+              "rework",
+              "reject"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "roll_code",
+          "verdict"
+        ],
+        "title": "InspectionIn",
+        "type": "object"
+      },
+      "InspectionOut": {
+        "properties": {
+          "ai_suggestion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AiSuggestion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "defects": {
+            "items": {
+              "$ref": "#/components/schemas/DefectOut"
+            },
+            "title": "Defects",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "inspected_at": {
+            "format": "date-time",
+            "title": "Inspected At",
+            "type": "string"
+          },
+          "inspector": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "overrode_ai": {
+            "title": "Overrode Ai",
+            "type": "boolean"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
+          "roll_code": {
+            "title": "Roll Code",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "pass",
+              "rework",
+              "reject"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "roll_code",
+          "inspector",
+          "inspected_at",
+          "verdict",
+          "overrode_ai",
+          "defects",
+          "photo_url",
+          "ai_suggestion",
+          "notes"
+        ],
+        "title": "InspectionOut",
         "type": "object"
       },
       "IssueIn": {
@@ -425,6 +976,26 @@
           "qty_kg"
         ],
         "title": "IssueIn",
+        "type": "object"
+      },
+      "LoadRollsIn": {
+        "properties": {
+          "roll_codes": {
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Roll Codes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "roll_codes"
+        ],
+        "title": "LoadRollsIn",
         "type": "object"
       },
       "LoginIn": {
@@ -708,6 +1279,162 @@
         "title": "LotReceiveIn",
         "type": "object"
       },
+      "MachineCard": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "current_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "downtime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DowntimeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "output_today": {
+            "title": "Output Today",
+            "type": "number"
+          },
+          "output_unit": {
+            "enum": [
+              "kg",
+              "m"
+            ],
+            "title": "Output Unit",
+            "type": "string"
+          },
+          "stage": {
+            "enum": [
+              "spinning",
+              "weaving",
+              "dyeing"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "down"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "stage",
+          "status",
+          "current_run",
+          "downtime",
+          "output_today",
+          "output_unit"
+        ],
+        "title": "MachineCard",
+        "type": "object"
+      },
+      "MachineDetail": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "current_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "downtime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DowntimeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "output_today": {
+            "title": "Output Today",
+            "type": "number"
+          },
+          "output_unit": {
+            "enum": [
+              "kg",
+              "m"
+            ],
+            "title": "Output Unit",
+            "type": "string"
+          },
+          "recent_runs": {
+            "items": {
+              "$ref": "#/components/schemas/RunOut"
+            },
+            "title": "Recent Runs",
+            "type": "array"
+          },
+          "stage": {
+            "enum": [
+              "spinning",
+              "weaving",
+              "dyeing"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "down"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "stage",
+          "status",
+          "current_run",
+          "downtime",
+          "output_today",
+          "output_unit",
+          "recent_runs"
+        ],
+        "title": "MachineDetail",
+        "type": "object"
+      },
       "MachineIn": {
         "properties": {
           "active": {
@@ -935,6 +1662,101 @@
           "buyer_id"
         ],
         "title": "Me",
+        "type": "object"
+      },
+      "ModelCard": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "clean_false_alarm_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clean False Alarm Rate"
+          },
+          "confusion_labels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Confusion Labels",
+            "type": "array"
+          },
+          "confusion_matrix": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "title": "Confusion Matrix",
+            "type": "array"
+          },
+          "datasets": {
+            "items": {
+              "$ref": "#/components/schemas/DatasetRef"
+            },
+            "title": "Datasets",
+            "type": "array"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          },
+          "per_class": {
+            "items": {
+              "$ref": "#/components/schemas/ClassResult"
+            },
+            "title": "Per Class",
+            "type": "array"
+          },
+          "test_clean": {
+            "title": "Test Clean",
+            "type": "integer"
+          },
+          "test_defective": {
+            "title": "Test Defective",
+            "type": "integer"
+          },
+          "trained_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trained At"
+          }
+        },
+        "required": [
+          "available",
+          "model_version",
+          "trained_at",
+          "datasets",
+          "test_defective",
+          "test_clean",
+          "clean_false_alarm_rate",
+          "per_class",
+          "confusion_labels",
+          "confusion_matrix"
+        ],
+        "title": "ModelCard",
         "type": "object"
       },
       "MovementOut": {
@@ -1212,6 +2034,223 @@
         "title": "OrderOut",
         "type": "object"
       },
+      "Passport": {
+        "properties": {
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RollCost"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deadline": {
+            "format": "date",
+            "title": "Deadline",
+            "type": "string"
+          },
+          "dispatch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PassportDispatch"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "inspections": {
+            "items": {
+              "$ref": "#/components/schemas/InspectionOut"
+            },
+            "title": "Inspections",
+            "type": "array"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "roll": {
+            "$ref": "#/components/schemas/RollOut"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/PassportRun"
+            },
+            "title": "Runs",
+            "type": "array"
+          },
+          "yarn_lots": {
+            "items": {
+              "$ref": "#/components/schemas/PassportLot"
+            },
+            "title": "Yarn Lots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "roll",
+          "order_code",
+          "buyer_name",
+          "deadline",
+          "yarn_lots",
+          "runs",
+          "inspections",
+          "cost",
+          "dispatch"
+        ],
+        "title": "Passport",
+        "type": "object"
+      },
+      "PassportDispatch": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "dispatched_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dispatched At"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "vehicle_no": {
+            "title": "Vehicle No",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "dispatched_at",
+          "vehicle_no",
+          "invoice_no"
+        ],
+        "title": "PassportDispatch",
+        "type": "object"
+      },
+      "PassportLot": {
+        "properties": {
+          "is_blocked": {
+            "title": "Is Blocked",
+            "type": "boolean"
+          },
+          "lot_code": {
+            "title": "Lot Code",
+            "type": "string"
+          },
+          "supplier": {
+            "title": "Supplier",
+            "type": "string"
+          },
+          "yarn_type": {
+            "title": "Yarn Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lot_code",
+          "yarn_type",
+          "supplier",
+          "is_blocked"
+        ],
+        "title": "PassportLot",
+        "type": "object"
+      },
+      "PassportRun": {
+        "properties": {
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "machine_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Machine Code"
+          },
+          "machine_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Machine Name"
+          },
+          "operator": {
+            "title": "Operator",
+            "type": "string"
+          },
+          "stage": {
+            "enum": [
+              "spinning",
+              "weaving",
+              "dyeing",
+              "rework"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "stage",
+          "machine_code",
+          "machine_name",
+          "operator",
+          "started_at",
+          "ended_at"
+        ],
+        "title": "PassportRun",
+        "type": "object"
+      },
       "Progress": {
         "properties": {
           "dispatched_m": {
@@ -1253,6 +2292,59 @@
           "dispatched_m"
         ],
         "title": "Progress",
+        "type": "object"
+      },
+      "QcCounts": {
+        "properties": {
+          "awaiting_qc": {
+            "title": "Awaiting Qc",
+            "type": "integer"
+          },
+          "awaiting_rework": {
+            "title": "Awaiting Rework",
+            "type": "integer"
+          },
+          "in_rework": {
+            "title": "In Rework",
+            "type": "integer"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "rejected": {
+            "title": "Rejected",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "awaiting_qc",
+          "awaiting_rework",
+          "in_rework",
+          "passed",
+          "rejected"
+        ],
+        "title": "QcCounts",
+        "type": "object"
+      },
+      "QcQueue": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/QcCounts"
+          },
+          "rolls": {
+            "items": {
+              "$ref": "#/components/schemas/RollOut"
+            },
+            "title": "Rolls",
+            "type": "array"
+          }
+        },
+        "required": [
+          "counts",
+          "rolls"
+        ],
+        "title": "QcQueue",
         "type": "object"
       },
       "RecallBuyer": {
@@ -1491,6 +2583,358 @@
           "qty_kg"
         ],
         "title": "ReturnIn",
+        "type": "object"
+      },
+      "ReworkIn": {
+        "properties": {
+          "machine_code": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Machine Code"
+          },
+          "operator_worker_id": {
+            "title": "Operator Worker Id",
+            "type": "integer"
+          },
+          "roll_code": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Roll Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "roll_code",
+          "operator_worker_id"
+        ],
+        "title": "ReworkIn",
+        "type": "object"
+      },
+      "RollCost": {
+        "properties": {
+          "parts": {
+            "$ref": "#/components/schemas/CostParts"
+          },
+          "per_metre": {
+            "title": "Per Metre",
+            "type": "number"
+          },
+          "provisional": {
+            "title": "Provisional",
+            "type": "boolean"
+          },
+          "reject_share": {
+            "title": "Reject Share",
+            "type": "number"
+          },
+          "roll_code": {
+            "title": "Roll Code",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "number"
+          }
+        },
+        "required": [
+          "roll_code",
+          "parts",
+          "reject_share",
+          "total",
+          "per_metre",
+          "provisional"
+        ],
+        "title": "RollCost",
+        "type": "object"
+      },
+      "RollOffIn": {
+        "properties": {
+          "metres": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1000000.0,
+            "title": "Metres",
+            "type": "number"
+          }
+        },
+        "required": [
+          "metres"
+        ],
+        "title": "RollOffIn",
+        "type": "object"
+      },
+      "RollOut": {
+        "properties": {
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "colour": {
+            "title": "Colour",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "fabric": {
+            "title": "Fabric",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "metres": {
+            "title": "Metres",
+            "type": "number"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "woven",
+              "dyeing",
+              "awaiting_qc",
+              "awaiting_rework",
+              "in_rework",
+              "in_store",
+              "rejected",
+              "loading",
+              "dispatched"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "order_code",
+          "buyer_name",
+          "fabric",
+          "colour",
+          "metres",
+          "status",
+          "created_at"
+        ],
+        "title": "RollOut",
+        "type": "object"
+      },
+      "RunBrief": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "order_progress_pct": {
+            "title": "Order Progress Pct",
+            "type": "number"
+          },
+          "stage": {
+            "enum": [
+              "spinning",
+              "weaving",
+              "dyeing",
+              "rework"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "order_code",
+          "stage",
+          "operator",
+          "started_at",
+          "order_progress_pct"
+        ],
+        "title": "RunBrief",
+        "type": "object"
+      },
+      "RunEndIn": {
+        "properties": {
+          "output_kg": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kg"
+          }
+        },
+        "title": "RunEndIn",
+        "type": "object"
+      },
+      "RunOut": {
+        "properties": {
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "input_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Run Id"
+          },
+          "machine_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Machine Code"
+          },
+          "metres": {
+            "title": "Metres",
+            "type": "number"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "output_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kg"
+          },
+          "roll_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Roll Codes",
+            "type": "array"
+          },
+          "stage": {
+            "enum": [
+              "spinning",
+              "weaving",
+              "dyeing",
+              "rework"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "order_code",
+          "machine_code",
+          "stage",
+          "operator",
+          "started_at",
+          "ended_at",
+          "output_kg",
+          "input_run_id",
+          "roll_codes",
+          "metres"
+        ],
+        "title": "RunOut",
+        "type": "object"
+      },
+      "RunStartIn": {
+        "properties": {
+          "input_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Run Id"
+          },
+          "machine_code": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Machine Code",
+            "type": "string"
+          },
+          "operator_worker_id": {
+            "title": "Operator Worker Id",
+            "type": "integer"
+          },
+          "order_code": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Order Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_code",
+          "machine_code",
+          "operator_worker_id"
+        ],
+        "title": "RunStartIn",
         "type": "object"
       },
       "ShiftIn": {
@@ -2635,6 +4079,27 @@
         ]
       }
     },
+    "/api/floor": {
+      "get": {
+        "operationId": "floor_board_api_floor_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FloorBoard"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Floor Board",
+        "tags": [
+          "floor"
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "operationId": "health_api_health_get",
@@ -3013,6 +4478,142 @@
         "summary": "Update/Machines",
         "tags": [
           "master data"
+        ]
+      }
+    },
+    "/api/machines/{machine_code}": {
+      "get": {
+        "operationId": "machine_detail_api_machines__machine_code__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "machine_code",
+            "required": true,
+            "schema": {
+              "title": "Machine Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Machine Detail",
+        "tags": [
+          "floor"
+        ]
+      }
+    },
+    "/api/machines/{machine_code}/breakdown": {
+      "post": {
+        "operationId": "breakdown_api_machines__machine_code__breakdown_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "machine_code",
+            "required": true,
+            "schema": {
+              "title": "Machine Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BreakdownIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineCard"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Breakdown",
+        "tags": [
+          "floor"
+        ]
+      }
+    },
+    "/api/machines/{machine_code}/repair": {
+      "post": {
+        "operationId": "repair_api_machines__machine_code__repair_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "machine_code",
+            "required": true,
+            "schema": {
+              "title": "Machine Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineCard"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Repair",
+        "tags": [
+          "floor"
         ]
       }
     },
@@ -3462,6 +5063,462 @@
         "summary": "Yarn Check",
         "tags": [
           "orders"
+        ]
+      }
+    },
+    "/api/qc/analyze": {
+      "post": {
+        "operationId": "analyze_api_qc_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Analyze",
+        "tags": [
+          "qc"
+        ]
+      }
+    },
+    "/api/qc/inspections": {
+      "post": {
+        "operationId": "record_inspection_api_qc_inspections_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InspectionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Inspection",
+        "tags": [
+          "qc"
+        ]
+      }
+    },
+    "/api/qc/model-card": {
+      "get": {
+        "operationId": "model_card_api_qc_model_card_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelCard"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Model Card",
+        "tags": [
+          "qc"
+        ]
+      }
+    },
+    "/api/qc/queue": {
+      "get": {
+        "operationId": "qc_queue_api_qc_queue_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QcQueue"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Qc Queue",
+        "tags": [
+          "qc"
+        ]
+      }
+    },
+    "/api/rework-runs": {
+      "post": {
+        "operationId": "start_rework_api_rework_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReworkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Rework",
+        "tags": [
+          "qc"
+        ]
+      }
+    },
+    "/api/rolls/{roll_code}/passport": {
+      "get": {
+        "operationId": "roll_passport_api_rolls__roll_code__passport_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "roll_code",
+            "required": true,
+            "schema": {
+              "title": "Roll Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Passport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Roll Passport",
+        "tags": [
+          "rolls"
+        ]
+      }
+    },
+    "/api/runs": {
+      "post": {
+        "operationId": "start_run_api_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStartIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Run",
+        "tags": [
+          "floor"
+        ]
+      }
+    },
+    "/api/runs/{run_id}/end": {
+      "post": {
+        "operationId": "end_run_api_runs__run_id__end_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunEndIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "End Run",
+        "tags": [
+          "floor"
+        ]
+      }
+    },
+    "/api/runs/{run_id}/handover": {
+      "post": {
+        "operationId": "handover_api_runs__run_id__handover_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandoverIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Handover",
+        "tags": [
+          "floor"
+        ]
+      }
+    },
+    "/api/runs/{run_id}/load-rolls": {
+      "post": {
+        "operationId": "load_rolls_api_runs__run_id__load_rolls_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoadRollsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Load Rolls",
+        "tags": [
+          "floor"
+        ]
+      }
+    },
+    "/api/runs/{run_id}/rolls": {
+      "post": {
+        "operationId": "roll_off_api_runs__run_id__rolls_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollOffIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RollOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Roll Off",
+        "tags": [
+          "floor"
         ]
       }
     },

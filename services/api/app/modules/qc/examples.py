@@ -1,0 +1,25 @@
+import datetime as dt
+
+from app.core.schemas import Ref
+from app.modules.floor.examples import NOW, ROLL
+from app.modules.qc.schemas import (
+    AiSuggestion, AnalyzeOut, Box, DefectOut, InspectionOut, ModelCard, QcCounts, QcQueue,
+)
+
+SUGGESTION = AiSuggestion(model_version="example", verdict="rework", boxes=[
+    Box(x=0.42, y=0.31, w=0.08, h=0.07, defect_type="hole", confidence=0.91),
+])
+ANALYZE = AnalyzeOut(available=False, message="Vision model not loaded yet (example data)", suggestion=SUGGESTION)
+INSPECTION = InspectionOut(
+    id=301, roll_code="R-0142", inspector=Ref(id=2, name="Meena Devi"), inspected_at=NOW, verdict="rework",
+    overrode_ai=False, defects=[DefectOut(defect_type="hole", count=1, ai_detected=True)], photo_url=None,
+    ai_suggestion=SUGGESTION, notes=None,
+)
+QUEUE = QcQueue(
+    counts=QcCounts(awaiting_qc=4, awaiting_rework=1, in_rework=0, passed=11, rejected=1),
+    rolls=[ROLL.model_copy(update={"status": "awaiting_qc"})],
+)
+MODEL_CARD = ModelCard(
+    available=False, model_version=None, trained_at=None, datasets=[], test_defective=0, test_clean=0,
+    clean_false_alarm_rate=None, per_class=[], confusion_labels=[], confusion_matrix=[],
+)

@@ -142,6 +142,23 @@ export interface paths {
         patch: operations["update_fabric_type_api_fabric_types__item_id__patch"];
         trace?: never;
     };
+    "/api/floor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Floor Board */
+        get: operations["floor_board_api_floor_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -261,6 +278,57 @@ export interface paths {
         head?: never;
         /** Update/Machines */
         patch: operations["update_machines_api_machines__item_id__patch"];
+        trace?: never;
+    };
+    "/api/machines/{machine_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Machine Detail */
+        get: operations["machine_detail_api_machines__machine_code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/machines/{machine_code}/breakdown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Breakdown */
+        post: operations["breakdown_api_machines__machine_code__breakdown_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/machines/{machine_code}/repair": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Repair */
+        post: operations["repair_api_machines__machine_code__repair_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/movements/adjust": {
@@ -395,6 +463,193 @@ export interface paths {
         get: operations["yarn_check_api_orders__order_code__yarn_check_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Analyze */
+        post: operations["analyze_api_qc_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/inspections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Inspection */
+        post: operations["record_inspection_api_qc_inspections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/model-card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Model Card */
+        get: operations["model_card_api_qc_model_card_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Qc Queue */
+        get: operations["qc_queue_api_qc_queue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rework-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Rework */
+        post: operations["start_rework_api_rework_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rolls/{roll_code}/passport": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Roll Passport */
+        get: operations["roll_passport_api_rolls__roll_code__passport_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Run */
+        post: operations["start_run_api_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runs/{run_id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** End Run */
+        post: operations["end_run_api_runs__run_id__end_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runs/{run_id}/handover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Handover */
+        post: operations["handover_api_runs__run_id__handover_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runs/{run_id}/load-rolls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Load Rolls */
+        post: operations["load_rolls_api_runs__run_id__load_rolls_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runs/{run_id}/rolls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Roll Off */
+        post: operations["roll_off_api_runs__run_id__rolls_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -640,6 +895,31 @@ export interface components {
             /** Qty Kg */
             qty_kg: number;
         };
+        /** AiSuggestion */
+        AiSuggestion: {
+            /** Boxes */
+            boxes: components["schemas"]["Box"][];
+            /** Model Version */
+            model_version: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "pass" | "rework" | "reject";
+        };
+        /** AnalyzeIn */
+        AnalyzeIn: {
+            /** Photo Path */
+            photo_path: string;
+        };
+        /** AnalyzeOut */
+        AnalyzeOut: {
+            /** Available */
+            available: boolean;
+            /** Message */
+            message: string | null;
+            suggestion: components["schemas"]["AiSuggestion"] | null;
+        };
         /** BlockIn */
         BlockIn: {
             /** Reason */
@@ -649,6 +929,29 @@ export interface components {
         Body_upload_api_uploads_post: {
             /** File */
             file: string;
+        };
+        /** Box */
+        Box: {
+            /** Confidence */
+            confidence: number;
+            /**
+             * Defect Type
+             * @enum {string}
+             */
+            defect_type: "hole" | "stain" | "thread_fault" | "colour_mismatch" | "other";
+            /** H */
+            h: number;
+            /** W */
+            w: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /** BreakdownIn */
+        BreakdownIn: {
+            /** Reason */
+            reason: string;
         };
         /** BuyerIn */
         BuyerIn: {
@@ -685,6 +988,44 @@ export interface components {
             /** Phone */
             phone?: string | null;
         };
+        /** ClassResult */
+        ClassResult: {
+            /**
+             * Defect Type
+             * @enum {string}
+             */
+            defect_type: "hole" | "stain" | "thread_fault" | "colour_mismatch" | "other";
+            /** False Alarms */
+            false_alarms: number;
+            /** Found */
+            found: number;
+            /** Missed */
+            missed: number;
+            /** Precision */
+            precision: number | null;
+            /** Recall */
+            recall: number | null;
+        };
+        /** CostParts */
+        CostParts: {
+            /** Labour */
+            labour: number;
+            /** Machine */
+            machine: number;
+            /** Rework */
+            rework: number;
+            /** Yarn */
+            yarn: number;
+        };
+        /** DatasetRef */
+        DatasetRef: {
+            /** Licence */
+            licence: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+        };
         /** DeadlineIn */
         DeadlineIn: {
             /**
@@ -692,6 +1033,43 @@ export interface components {
              * Format: date
              */
             deadline: string;
+        };
+        /** DefectIn */
+        DefectIn: {
+            /**
+             * Ai Detected
+             * @default false
+             */
+            ai_detected: boolean;
+            /** Count */
+            count: number;
+            /**
+             * Defect Type
+             * @enum {string}
+             */
+            defect_type: "hole" | "stain" | "thread_fault" | "colour_mismatch" | "other";
+        };
+        /** DefectOut */
+        DefectOut: {
+            /** Ai Detected */
+            ai_detected: boolean;
+            /** Count */
+            count: number;
+            /**
+             * Defect Type
+             * @enum {string}
+             */
+            defect_type: "hole" | "stain" | "thread_fault" | "colour_mismatch" | "other";
+        };
+        /** DowntimeOut */
+        DowntimeOut: {
+            /** Reason */
+            reason: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
         };
         /** FabricTypeIn */
         FabricTypeIn: {
@@ -731,10 +1109,31 @@ export interface components {
             /** Width In */
             width_in?: number | null;
         };
+        /** FloorBoard */
+        FloorBoard: {
+            /** Down */
+            down: number;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Idle */
+            idle: number;
+            /** Machines */
+            machines: components["schemas"]["MachineCard"][];
+            /** Running */
+            running: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HandoverIn */
+        HandoverIn: {
+            /** Operator Worker Id */
+            operator_worker_id: number;
         };
         /** Health */
         Health: {
@@ -742,6 +1141,53 @@ export interface components {
             demo_data: boolean;
             /** Status */
             status: string;
+        };
+        /** InspectionIn */
+        InspectionIn: {
+            ai_suggestion?: components["schemas"]["AiSuggestion"] | null;
+            /**
+             * Defects
+             * @default []
+             */
+            defects: components["schemas"]["DefectIn"][];
+            /** Notes */
+            notes?: string | null;
+            /** Photo Path */
+            photo_path?: string | null;
+            /** Roll Code */
+            roll_code: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "pass" | "rework" | "reject";
+        };
+        /** InspectionOut */
+        InspectionOut: {
+            ai_suggestion: components["schemas"]["AiSuggestion"] | null;
+            /** Defects */
+            defects: components["schemas"]["DefectOut"][];
+            /** Id */
+            id: number;
+            /**
+             * Inspected At
+             * Format: date-time
+             */
+            inspected_at: string;
+            inspector: components["schemas"]["Ref"];
+            /** Notes */
+            notes: string | null;
+            /** Overrode Ai */
+            overrode_ai: boolean;
+            /** Photo Url */
+            photo_url: string | null;
+            /** Roll Code */
+            roll_code: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "pass" | "rework" | "reject";
         };
         /** IssueIn */
         IssueIn: {
@@ -751,6 +1197,11 @@ export interface components {
             qty_kg: number;
             /** Run Id */
             run_id: number;
+        };
+        /** LoadRollsIn */
+        LoadRollsIn: {
+            /** Roll Codes */
+            roll_codes: string[];
         };
         /** LoginIn */
         LoginIn: {
@@ -838,6 +1289,60 @@ export interface components {
             /** Yarn Type Id */
             yarn_type_id: number;
         };
+        /** MachineCard */
+        MachineCard: {
+            /** Code */
+            code: string;
+            current_run: components["schemas"]["RunBrief"] | null;
+            downtime: components["schemas"]["DowntimeOut"] | null;
+            /** Name */
+            name: string;
+            /** Output Today */
+            output_today: number;
+            /**
+             * Output Unit
+             * @enum {string}
+             */
+            output_unit: "kg" | "m";
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "spinning" | "weaving" | "dyeing";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "idle" | "down";
+        };
+        /** MachineDetail */
+        MachineDetail: {
+            /** Code */
+            code: string;
+            current_run: components["schemas"]["RunBrief"] | null;
+            downtime: components["schemas"]["DowntimeOut"] | null;
+            /** Name */
+            name: string;
+            /** Output Today */
+            output_today: number;
+            /**
+             * Output Unit
+             * @enum {string}
+             */
+            output_unit: "kg" | "m";
+            /** Recent Runs */
+            recent_runs: components["schemas"]["RunOut"][];
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "spinning" | "weaving" | "dyeing";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "idle" | "down";
+        };
         /** MachineIn */
         MachineIn: {
             /**
@@ -912,6 +1417,29 @@ export interface components {
             username: string;
             /** Worker Id */
             worker_id: number | null;
+        };
+        /** ModelCard */
+        ModelCard: {
+            /** Available */
+            available: boolean;
+            /** Clean False Alarm Rate */
+            clean_false_alarm_rate: number | null;
+            /** Confusion Labels */
+            confusion_labels: string[];
+            /** Confusion Matrix */
+            confusion_matrix: number[][];
+            /** Datasets */
+            datasets: components["schemas"]["DatasetRef"][];
+            /** Model Version */
+            model_version: string | null;
+            /** Per Class */
+            per_class: components["schemas"]["ClassResult"][];
+            /** Test Clean */
+            test_clean: number;
+            /** Test Defective */
+            test_defective: number;
+            /** Trained At */
+            trained_at: string | null;
         };
         /** MovementOut */
         MovementOut: {
@@ -1009,6 +1537,72 @@ export interface components {
              */
             yarn_status: "can_start" | "short" | "not_needed";
         };
+        /** Passport */
+        Passport: {
+            /** Buyer Name */
+            buyer_name: string;
+            cost: components["schemas"]["RollCost"] | null;
+            /**
+             * Deadline
+             * Format: date
+             */
+            deadline: string;
+            dispatch: components["schemas"]["PassportDispatch"] | null;
+            /** Inspections */
+            inspections: components["schemas"]["InspectionOut"][];
+            /** Order Code */
+            order_code: string;
+            roll: components["schemas"]["RollOut"];
+            /** Runs */
+            runs: components["schemas"]["PassportRun"][];
+            /** Yarn Lots */
+            yarn_lots: components["schemas"]["PassportLot"][];
+        };
+        /** PassportDispatch */
+        PassportDispatch: {
+            /** Code */
+            code: string;
+            /** Dispatched At */
+            dispatched_at: string | null;
+            /** Invoice No */
+            invoice_no: string | null;
+            /** Vehicle No */
+            vehicle_no: string;
+        };
+        /** PassportLot */
+        PassportLot: {
+            /** Is Blocked */
+            is_blocked: boolean;
+            /** Lot Code */
+            lot_code: string;
+            /** Supplier */
+            supplier: string;
+            /** Yarn Type */
+            yarn_type: string;
+        };
+        /** PassportRun */
+        PassportRun: {
+            /** Ended At */
+            ended_at: string | null;
+            /** Id */
+            id: number;
+            /** Machine Code */
+            machine_code: string | null;
+            /** Machine Name */
+            machine_name: string | null;
+            /** Operator */
+            operator: string;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "spinning" | "weaving" | "dyeing" | "rework";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+        };
         /** Progress */
         Progress: {
             /** Dispatched M */
@@ -1025,6 +1619,25 @@ export interface components {
             spun_kg: number;
             /** Woven M */
             woven_m: number;
+        };
+        /** QcCounts */
+        QcCounts: {
+            /** Awaiting Qc */
+            awaiting_qc: number;
+            /** Awaiting Rework */
+            awaiting_rework: number;
+            /** In Rework */
+            in_rework: number;
+            /** Passed */
+            passed: number;
+            /** Rejected */
+            rejected: number;
+        };
+        /** QcQueue */
+        QcQueue: {
+            counts: components["schemas"]["QcCounts"];
+            /** Rolls */
+            rolls: components["schemas"]["RollOut"][];
         };
         /** RecallBuyer */
         RecallBuyer: {
@@ -1105,6 +1718,127 @@ export interface components {
             qty_kg: number;
             /** Run Id */
             run_id: number;
+        };
+        /** ReworkIn */
+        ReworkIn: {
+            /** Machine Code */
+            machine_code?: string | null;
+            /** Operator Worker Id */
+            operator_worker_id: number;
+            /** Roll Code */
+            roll_code: string;
+        };
+        /** RollCost */
+        RollCost: {
+            parts: components["schemas"]["CostParts"];
+            /** Per Metre */
+            per_metre: number;
+            /** Provisional */
+            provisional: boolean;
+            /** Reject Share */
+            reject_share: number;
+            /** Roll Code */
+            roll_code: string;
+            /** Total */
+            total: number;
+        };
+        /** RollOffIn */
+        RollOffIn: {
+            /** Metres */
+            metres: number;
+        };
+        /** RollOut */
+        RollOut: {
+            /** Buyer Name */
+            buyer_name: string;
+            /** Code */
+            code: string;
+            /** Colour */
+            colour: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Fabric */
+            fabric: string;
+            /** Id */
+            id: number;
+            /** Metres */
+            metres: number;
+            /** Order Code */
+            order_code: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "woven" | "dyeing" | "awaiting_qc" | "awaiting_rework" | "in_rework" | "in_store" | "rejected" | "loading" | "dispatched";
+        };
+        /** RunBrief */
+        RunBrief: {
+            /** Id */
+            id: number;
+            operator: components["schemas"]["Ref"];
+            /** Order Code */
+            order_code: string;
+            /** Order Progress Pct */
+            order_progress_pct: number;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "spinning" | "weaving" | "dyeing" | "rework";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+        };
+        /** RunEndIn */
+        RunEndIn: {
+            /** Output Kg */
+            output_kg?: number | null;
+        };
+        /** RunOut */
+        RunOut: {
+            /** Ended At */
+            ended_at: string | null;
+            /** Id */
+            id: number;
+            /** Input Run Id */
+            input_run_id: number | null;
+            /** Machine Code */
+            machine_code: string | null;
+            /** Metres */
+            metres: number;
+            operator: components["schemas"]["Ref"];
+            /** Order Code */
+            order_code: string;
+            /** Output Kg */
+            output_kg: number | null;
+            /** Roll Codes */
+            roll_codes: string[];
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "spinning" | "weaving" | "dyeing" | "rework";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+        };
+        /** RunStartIn */
+        RunStartIn: {
+            /** Input Run Id */
+            input_run_id?: number | null;
+            /** Machine Code */
+            machine_code: string;
+            /** Operator Worker Id */
+            operator_worker_id: number;
+            /** Order Code */
+            order_code: string;
         };
         /** ShiftIn */
         ShiftIn: {
@@ -1644,6 +2378,26 @@ export interface operations {
             };
         };
     };
+    floor_board_api_floor_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FloorBoard"];
+                };
+            };
+        };
+    };
     health_api_health_get: {
         parameters: {
             query?: never;
@@ -1901,6 +2655,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MachineOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    machine_detail_api_machines__machine_code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                machine_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MachineDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    breakdown_api_machines__machine_code__breakdown_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                machine_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreakdownIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MachineCard"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    repair_api_machines__machine_code__repair_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                machine_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MachineCard"];
                 };
             };
             /** @description Validation Error */
@@ -2224,6 +3075,349 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["YarnCheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_api_qc_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalyzeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyzeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_inspection_api_qc_inspections_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspectionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    model_card_api_qc_model_card_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCard"];
+                };
+            };
+        };
+    };
+    qc_queue_api_qc_queue_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QcQueue"];
+                };
+            };
+        };
+    };
+    start_rework_api_rework_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReworkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    roll_passport_api_rolls__roll_code__passport_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roll_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Passport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_run_api_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunStartIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    end_run_api_runs__run_id__end_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunEndIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    handover_api_runs__run_id__handover_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    load_rolls_api_runs__run_id__load_rolls_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoadRollsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    roll_off_api_runs__run_id__rolls_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RollOffIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RollOut"];
                 };
             };
             /** @description Validation Error */
