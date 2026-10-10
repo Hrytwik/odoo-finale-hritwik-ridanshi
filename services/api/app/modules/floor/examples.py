@@ -10,6 +10,10 @@ RAVI = Ref(id=1, name="Ravi Kumar")
 RUN = RunOut(id=45, order_code="ORD-0012", machine_code="LOOM-04", stage="weaving", operator=RAVI,
              started_at=NOW - dt.timedelta(hours=3), ended_at=None, output_kg=None, input_run_id=41,
              roll_codes=["R-0142", "R-0143"], metres=220)
+SPIN_RUN = RUN.model_copy(update={
+    "id": 41, "machine_code": "SPIN-01", "stage": "spinning", "input_run_id": None, "roll_codes": [],
+    "metres": 0, "output_kg": 587.5, "started_at": NOW - dt.timedelta(days=2), "ended_at": NOW - dt.timedelta(days=1),
+})
 CARDS = [
     MachineCard(code="SPIN-01", name="Ring frame 1", stage="spinning", status="idle", current_run=None,
                 downtime=None, output_today=587.5, output_unit="kg"),

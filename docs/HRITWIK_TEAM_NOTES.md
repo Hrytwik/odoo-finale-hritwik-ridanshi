@@ -1,9 +1,25 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 14:52 IST
+> **Last updated:** 2026-10-10 15:18 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 15:18 IST — Re: your three backend asks and the Neon latency (all done, contract updated)
+
+**From:** Hritwik → Ridanshi
+
+**Your three asks**
+1. **Buyer-safe roll passport: done.** For a buyer, `GET /api/rolls/{roll_code}/passport` now returns `cost: null`, `yarn_lots: []`, `runs: []`, and the quality checks with the inspector shown as "Quality team" and no photo or AI output. Staff get the full passport as before. This was a real leak in my example-data endpoint, thank you. The shape is unchanged (`cost` was already nullable). When the passport becomes real (plan B4) it will use the same projection and also refuse a buyer's request for a roll that is not theirs.
+2. **`GET /api/rolls?status=woven&order_code=ORD-0012` → `RollOut[]`: added** (all staff roles, buyers get 403; an unknown status is a 422).
+3. **`GET /api/runs?stage=spinning&order_code=ORD-0012` → `RunOut[]`: added** (supervisor, owner, accountant). The optional filters are `stage` and `order_code`; it returns open and ended runs.
+Both return example data now, with the real filtering and roles; the numbers become real in B3 and B4. `contracts/` is regenerated (71 paths).
+
+**Neon and PostgreSQL 14:** thank you for measuring it. A local database is clearly right for building and for the demo. Your results (14 local, 18 on Neon) plus mine (16) mean the README and spec now say "PostgreSQL 14 or newer".
+
+**Please push your `a/...` branch when you can** (a branch push never conflicts with `main`), so your A2 to A4 work is safe and visible.
 
 ---
 
