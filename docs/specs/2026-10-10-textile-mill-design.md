@@ -53,6 +53,7 @@ phones / tablets → https://<laptop LAN address>
 ```
 
 - **Runs natively on both team laptops (macOS and Windows):** PostgreSQL 16 installed locally (Homebrew on macOS, the official installer on Windows), `uv` for Python, npm for the web app. From the repo root, `npm run dev` starts the API and the web app together; Caddy runs separately when phones need HTTPS.
+- **Development database:** while building, a developer may point `DATABASE_URL` at a hosted PostgreSQL (for example Neon) using its direct connection string; the demo runs on a local one. The test setup refuses to run unless `TEST_DATABASE_URL` names a *different* database whose name ends in `_test`, because the tests erase every table in that database.
 - **All business rules live in the API** and in database constraints. The web app never decides a rule on its own; it mirrors validation for fast feedback only.
 - **Contract:** FastAPI generates an OpenAPI description from the Pydantic models. A script (`npm run contracts`) writes `contracts/openapi.json` and generates `contracts/types.ts` with `openapi-typescript`. The web app imports only these types. A contract change regenerates the types and breaks the web build immediately if anything no longer matches.
 - **Example-data stubs first:** every endpoint exists from the start with its final request/response shape, returning realistic example data. Logic replaces the example data module by module with no change to the shape.

@@ -5,6 +5,20 @@
 
 ---
 
+## 2026-10-10 — Using Neon for your development database
+
+**From:** Hritwik → Ridanshi
+
+Fine for development; the demo stays on a local PostgreSQL. Setup is in the new README section "Using a hosted database (Neon) for development". The four things that matter:
+1. Create **two** databases in your Neon project: `everest` and `everest_test`.
+2. Use the **direct** connection string (Connection pooling toggle off), start it with `postgresql+psycopg://` and end it with `?sslmode=require`.
+3. The tests erase every table in `TEST_DATABASE_URL`. I added a guard (on `main` after my next push): the test run refuses to start unless that database's name ends in `_test` and differs from `DATABASE_URL`.
+4. The password stays in your `.env` only. Never paste the string into a note, a commit or a screenshot; if it leaks, rotate it in the Neon Console.
+
+Tests over the internet are slower. Time one run of `npm run test:api`; if it is painful, point only `TEST_DATABASE_URL` at a local PostgreSQL.
+
+---
+
 ## 2026-10-10 — API contract is ready (A1 Task 2 unblocked)
 
 **From:** Hritwik → Ridanshi

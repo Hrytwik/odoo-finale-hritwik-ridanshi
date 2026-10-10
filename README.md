@@ -21,6 +21,21 @@ npm run db:seed
 npm run dev                 # API on :8000, web on :3000
 ```
 
+## Using a hosted database (Neon) for development
+
+Optional and for development only: the demo runs on a local PostgreSQL.
+
+1. In Neon, create a project, then create **two databases** in it: `everest` and `everest_test` (Console → Databases, or run `CREATE DATABASE everest_test;`).
+2. Click **Connect**, turn **Connection pooling off** (migrations need the direct connection), pick each database in turn and copy its connection string.
+3. In `.env`, change the start of each string from `postgresql://` to `postgresql+psycopg://` and keep `?sslmode=require` at the end:
+   ```
+   DATABASE_URL=postgresql+psycopg://USER:PASSWORD@ep-xxxx.REGION.aws.neon.tech/everest?sslmode=require
+   TEST_DATABASE_URL=postgresql+psycopg://USER:PASSWORD@ep-xxxx.REGION.aws.neon.tech/everest_test?sslmode=require
+   ```
+4. `npm run db:migrate`, then `npm run db:seed`.
+
+Running the tests erases every table in `TEST_DATABASE_URL`, so the test setup refuses to start unless that database's name ends in `_test` and differs from `DATABASE_URL`. The connection string contains your password: it belongs only in `.env`, never in a commit, a note or a screenshot. Tests over the internet are slower than local ones; if that gets annoying, point only `TEST_DATABASE_URL` back at a local PostgreSQL.
+
 ## Useful commands
 
 | Command | What it does |

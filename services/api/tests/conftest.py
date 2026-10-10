@@ -10,12 +10,14 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db.session import get_db
 from app.main import app
+from tests.db_guard import assert_safe_test_database
 
 API_DIR = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(scope="session")
 def engine():
+    assert_safe_test_database(settings.test_database_url, settings.database_url)  # before anything is dropped
     eng = create_engine(settings.test_database_url)
     with eng.begin() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE"))

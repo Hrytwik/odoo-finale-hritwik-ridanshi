@@ -521,8 +521,8 @@ git commit -m "Add standard error format and shared schema types"
 **Files:**
 - Create: `services/api/app/db/__init__.py`, `services/api/app/db/base.py`, `services/api/app/db/session.py`, `services/api/app/db/models/__init__.py`
 - Create: `services/api/alembic.ini`, `services/api/alembic/env.py` (via `alembic init`, then replaced)
-- Create: `services/api/tests/conftest.py`
-- Test: `services/api/tests/test_db_harness.py`
+- Create: `services/api/tests/conftest.py`, `services/api/tests/db_guard.py`
+- Test: `services/api/tests/test_db_harness.py`, `services/api/tests/test_db_guard.py`
 
 **Interfaces:**
 - Produces: `Base`, `IdMixin` (`id`, `created_at`), column types `KG = Numeric(12, 3)`, `MONEY = Numeric(12, 2)`, helper `nonblank(column: str) -> CheckConstraint`; `engine`, `SessionLocal`, `get_db()`; pytest fixtures `engine` (session scope, migrated test DB), `db` (per-test session rolled back afterwards), `client` (TestClient using `db`).
@@ -666,6 +666,120 @@ else:
     run_migrations_online()
 ```
 
+- [ ] **Step 5b: Add the test-database guard (test first)**
+
+The test setup below runs `DROP SCHEMA public CASCADE`, which erases every table in `TEST_DATABASE_URL`. A teammate who pastes their hosted development database into that setting would lose all their data on the first test run, so the run must refuse to start unless the test database is clearly a throwaway one.
+
+`services/api/tests/test_db_guard.py`:
+```python
+import pytest
+
+from tests.db_guard import UnsafeTestDatabase, assert_safe_test_database as guard
+
+DEV = "postgresql+psycopg://localhost:5432/everest"
+
+
+def test_accepts_a_separate_test_database():
+    guard("postgresql+psycopg://localhost:5432/everest_test", DEV)
+
+
+def test_accepts_a_test_database_next_to_the_dev_one_on_a_hosted_server():
+    dev = "postgresql+psycopg://u:p@ep-quiet-123.ap-south-1.aws.neon.tech/everest?sslmode=require"
+    test = "postgresql+psycopg://u:p@ep-quiet-123.ap-south-1.aws.neon.tech/everest_test?sslmode=require"
+    guard(test, dev)
+
+
+def test_accepts_a_test_database_on_a_different_server_than_dev():
+    guard("postgresql+psycopg://localhost:5432/everest_test", "postgresql+psycopg://u:p@db.example.com/everest")
+
+
+def test_refuses_the_development_database():
+    with pytest.raises(UnsafeTestDatabase, match="must end with '_test'"):
+        guard(DEV, DEV)
+
+
+@pytest.mark.parametrize("name", ["everest", "test_everest", "everest_testing", "testdb", "postgres"])
+def test_refuses_names_without_the_test_suffix(name):
+    with pytest.raises(UnsafeTestDatabase):
+        guard(f"postgresql+psycopg://localhost:5432/{name}", DEV)
+
+
+def test_refuses_a_url_with_no_database_name():
+    with pytest.raises(UnsafeTestDatabase):
+        guard("postgresql+psycopg://localhost:5432", DEV)
+
+
+def test_refuses_when_dev_and_test_point_at_the_same_database_even_if_it_is_named_test():
+    same = "postgresql+psycopg://localhost:5432/everest_test"
+    with pytest.raises(UnsafeTestDatabase, match="same database"):
+        guard(same, same)
+
+
+def test_refuses_the_same_hosted_database_reached_through_the_pooled_host():
+    direct = "postgresql+psycopg://u:p@ep-quiet-123.ap-south-1.aws.neon.tech/everest_test?sslmode=require"
+    pooled = "postgresql+psycopg://u:p@ep-quiet-123-pooler.ap-south-1.aws.neon.tech/everest_test?sslmode=require"
+    with pytest.raises(UnsafeTestDatabase, match="same database"):
+        guard(pooled, direct)
+
+
+def test_refuses_an_unparseable_url():
+    with pytest.raises(UnsafeTestDatabase, match="not a valid"):
+        guard("not a url at all", DEV)
+
+
+def test_the_password_never_appears_in_an_error():
+    secret = "s3cr3t%40pass"
+    for bad in (f"postgresql+psycopg://u:{secret}@host/everest", f"postgresql+psycopg://u:{secret}@host/everest_test"):
+        with pytest.raises(UnsafeTestDatabase) as err:
+            guard(bad, bad)
+        assert "s3cr3t" not in str(err.value)
+```
+
+Run: `cd services/api && uv run pytest tests/test_db_guard.py` → FAIL (`No module named 'tests.db_guard'`).
+
+`services/api/tests/db_guard.py`:
+```python
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError
+
+
+class UnsafeTestDatabase(RuntimeError):
+    pass
+
+
+def assert_safe_test_database(test_url: str, dev_url: str) -> None:
+    """Stop the run before anything is dropped unless the test database is clearly a throwaway one.
+
+    The test setup runs DROP SCHEMA public CASCADE, which erases every table in its database,
+    so a TEST_DATABASE_URL that points at real development data must be refused up front.
+    Only the database name is ever put in an error message, never the password.
+    """
+    try:
+        test = make_url(test_url)
+    except ArgumentError:
+        raise UnsafeTestDatabase("TEST_DATABASE_URL is not a valid database URL") from None
+
+    name = test.database or ""
+    if not name.endswith("_test"):
+        raise UnsafeTestDatabase(
+            f"Refusing to run: TEST_DATABASE_URL points at database '{name}'. The tests erase every table in "
+            "their database, so its name must end with '_test' (for example 'everest_test'). "
+            "Create a separate database for the tests and point TEST_DATABASE_URL at it."
+        )
+
+    try:
+        dev_name = make_url(dev_url).database
+    except ArgumentError:
+        dev_name = None  # an unusable dev URL cannot collide with anything
+    if dev_name == name:
+        raise UnsafeTestDatabase(
+            f"Refusing to run: TEST_DATABASE_URL and DATABASE_URL name the same database ('{name}'). "
+            "The tests would erase your development data. Point them at two different databases."
+        )
+```
+
+Run it again → PASS (14 passed). The conftest in the next step calls this guard first thing.
+
 - [ ] **Step 6: Write `services/api/tests/conftest.py`**
 
 ```python
@@ -681,12 +795,14 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db.session import get_db
 from app.main import app
+from tests.db_guard import assert_safe_test_database
 
 API_DIR = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(scope="session")
 def engine():
+    assert_safe_test_database(settings.test_database_url, settings.database_url)  # before anything is dropped
     eng = create_engine(settings.test_database_url)
     with eng.begin() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE"))
@@ -727,7 +843,9 @@ Expected: a new file in `alembic/versions/` with empty `upgrade()`/`downgrade()`
 - [ ] **Step 8: Run the tests**
 
 Run: `cd services/api && uv run pytest`
-Expected: PASS (all earlier tests + 3 new)
+Expected: PASS (all earlier tests + 3 new harness tests + 14 guard tests)
+
+Optional end-to-end proof of the guard: create a scratch database containing a table, run `TEST_DATABASE_URL=postgresql+psycopg://localhost:5432/scratchdb uv run pytest tests/test_db_harness.py`; it must refuse to start and the table must still exist. Then drop the scratch database.
 
 Optional proof the isolation test works: temporarily change `outer.rollback()` to `outer.commit()` in `conftest.py`; `test_changes_are_rolled_back_between_tests_part2` must then FAIL. Restore it afterwards.
 
