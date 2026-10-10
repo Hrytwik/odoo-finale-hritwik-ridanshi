@@ -200,6 +200,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/buyer-invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Buyer Invites
+         * @description For the owner: each buyer's email, whether they have a login yet, and the invite code to give them.
+         */
+        get: operations["buyer_invites_api_auth_buyer_invites_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/change-password": {
         parameters: {
             query?: never;
@@ -265,6 +285,26 @@ export interface paths {
         get: operations["me_api_auth_me_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Signup
+         * @description A buyer makes their own login with the email the mill holds for them and the invite code the owner gave them.
+         */
+        post: operations["signup_api_auth_signup_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1605,6 +1645,19 @@ export interface components {
             name: string;
             /** Phone */
             phone?: string | null;
+        };
+        /** BuyerInviteOut */
+        BuyerInviteOut: {
+            /** Buyer Id */
+            buyer_id: number;
+            /** Buyer Name */
+            buyer_name: string;
+            /** Email */
+            email: string | null;
+            /** Has Account */
+            has_account: boolean;
+            /** Invite Code */
+            invite_code: string | null;
         };
         /** BuyerOut */
         BuyerOut: {
@@ -3086,6 +3139,15 @@ export interface components {
             supplier: components["schemas"]["Ref"] | null;
             yarn_type: components["schemas"]["YarnTypeRef"];
         };
+        /** SignupIn */
+        SignupIn: {
+            /** Email */
+            email: string;
+            /** Invite Code */
+            invite_code: string;
+            /** Password */
+            password: string;
+        };
         /** SourceOut */
         SourceOut: {
             /** Input */
@@ -3782,6 +3844,26 @@ export interface operations {
             };
         };
     };
+    buyer_invites_api_auth_buyer_invites_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuyerInviteOut"][];
+                };
+            };
+        };
+    };
     change_password_api_auth_change_password_post: {
         parameters: {
             query?: never;
@@ -3882,6 +3964,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    signup_api_auth_signup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignupIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

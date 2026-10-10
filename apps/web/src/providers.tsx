@@ -18,7 +18,7 @@ export function Providers({ children }: { children: ReactNode }) {
   useEffect(() => {
     setUnauthorizedHandler(() => {
       const { pathname, search } = window.location
-      if (pathname === '/' || pathname.startsWith('/login')) return
+      if (pathname === '/' || pathname.startsWith('/login') || pathname.startsWith('/signup')) return
       window.location.assign(`/login?next=${encodeURIComponent(pathname + search)}`)
     })
     return () => setUnauthorizedHandler(null)

@@ -383,6 +383,53 @@
         "title": "BuyerIn",
         "type": "object"
       },
+      "BuyerInviteOut": {
+        "properties": {
+          "buyer_id": {
+            "title": "Buyer Id",
+            "type": "integer"
+          },
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "has_account": {
+            "title": "Has Account",
+            "type": "boolean"
+          },
+          "invite_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite Code"
+          }
+        },
+        "required": [
+          "buyer_id",
+          "buyer_name",
+          "email",
+          "invite_code",
+          "has_account"
+        ],
+        "title": "BuyerInviteOut",
+        "type": "object"
+      },
       "BuyerOut": {
         "properties": {
           "contact_name": {
@@ -4667,6 +4714,35 @@
         "title": "ShortageOut",
         "type": "object"
       },
+      "SignupIn": {
+        "properties": {
+          "email": {
+            "maxLength": 120,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "invite_code": {
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Invite Code",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 72,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "invite_code",
+          "password"
+        ],
+        "title": "SignupIn",
+        "type": "object"
+      },
       "SourceOut": {
         "properties": {
           "input": {
@@ -6104,6 +6180,32 @@
         ]
       }
     },
+    "/api/auth/buyer-invites": {
+      "get": {
+        "description": "For the owner: each buyer's email, whether they have a login yet, and the invite code to give them.",
+        "operationId": "buyer_invites_api_auth_buyer_invites_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BuyerInviteOut"
+                  },
+                  "title": "Response Buyer Invites Api Auth Buyer Invites Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Buyer Invites",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/auth/change-password": {
       "post": {
         "description": "Changes the logged-in user's own password. Every other session of theirs stops working; this one carries on.",
@@ -6217,6 +6319,48 @@
           }
         },
         "summary": "Me",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/signup": {
+      "post": {
+        "description": "A buyer makes their own login with the email the mill holds for them and the invite code the owner gave them.",
+        "operationId": "signup_api_auth_signup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Signup",
         "tags": [
           "auth"
         ]

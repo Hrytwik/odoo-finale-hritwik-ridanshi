@@ -8,7 +8,7 @@ import pytest
 
 from app.main import app
 
-PUBLIC = {("GET", "/api/health"), ("POST", "/api/auth/login"), ("POST", "/api/auth/logout")}
+PUBLIC = {("GET", "/api/health"), ("POST", "/api/auth/login"), ("POST", "/api/auth/logout"), ("POST", "/api/auth/signup")}
 
 
 def _endpoints():

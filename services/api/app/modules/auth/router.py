@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.core.auth import COOKIE_NAME, create_token, current_user, hash_password, verify_password
+from app.core.auth import COOKIE_NAME, create_token, current_user, hash_password, require_roles, verify_password
 from app.core.enums import Role
 from app.core.errors import AppError, commit
 from app.core.login_guard import client_ip, guard
@@ -15,6 +15,7 @@ from app.core.passwords import DUMMY_HASH, check_new_password, needs_rehash
 from app.core.schemas import BcryptSafe
 from app.db.models import User
 from app.db.session import get_db
+from app.modules.auth import signup as signup_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 log = logging.getLogger("everest.auth")
@@ -70,6 +71,29 @@ def login(body: LoginIn, request: Request, response: Response, db: Session = Dep
         commit(db)
     _start_session(response, user)
     return to_me(user)
+
+
+@router.post("/signup", response_model=Me, status_code=201)
+def signup(body: signup_service.SignupIn, request: Request, response: Response, db: Session = Depends(get_db)) -> Me:
+    """A buyer makes their own login with the email the mill holds for them and the invite code the owner gave them."""
+    key = f"signup:{client_ip(request)}"
+    guard.check(key, client_ip(request))  # five wrong tries from one address lock sign-up there for 15 minutes
+    try:
+        user = signup_service.sign_up(db, body)
+    except AppError as exc:
+        if exc.code == "SIGNUP_REFUSED":
+            guard.failure(key, client_ip(request))
+            log.warning("refused buyer sign-up for %r from %s", body.email, client_ip(request))
+        raise
+    guard.success(key)
+    _start_session(response, user)
+    return to_me(user)
+
+
+@router.get("/buyer-invites", response_model=list[signup_service.BuyerInviteOut], dependencies=[Depends(require_roles("owner"))])
+def buyer_invites(db: Session = Depends(get_db)) -> list[signup_service.BuyerInviteOut]:
+    """For the owner: each buyer's email, whether they have a login yet, and the invite code to give them."""
+    return signup_service.invites(db)
 
 
 @router.post("/change-password", response_model=Me)

@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import wovenUrl from '@/assets/art/woven-plaid.svg'
 import { BrandMark } from '@/components/common/BrandMark'
 import { Typewriter } from '@/components/motion/Typewriter'
@@ -49,6 +49,9 @@ export function LoginScreen() {
                   navigate(safeNext(params.get('next')) ?? homeFor(me.role), { replace: true })
                 }}
               />
+              <p className="muted text-sm">
+                New buyer? <Link to="/signup">Create your account</Link>
+              </p>
             </div>
           </div>
         </div>

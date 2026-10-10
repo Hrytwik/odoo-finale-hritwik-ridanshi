@@ -1,26 +1,4 @@
-import {
-  Bot,
-  Boxes,
-  ClipboardCheck,
-  ClipboardList,
-  Factory,
-  FileText,
-  Gauge,
-  IdCard,
-  Layers,
-  LineChart,
-  PackageCheck,
-  PackagePlus,
-  Ruler,
-  Settings,
-  ShieldCheck,
-  ShoppingBag,
-  Truck,
-  Users,
-  Wallet,
-  Warehouse,
-  type LucideIcon,
-} from 'lucide-react'
+import { Bot, Boxes, ClipboardCheck, ClipboardList, Factory, FileText, Gauge, IdCard, Layers, LineChart, PackageCheck, PackagePlus, Ruler, Settings, ShieldCheck, ShoppingBag, Ticket, Truck, Users, Wallet, Warehouse, type LucideIcon } from 'lucide-react'
 import type { components } from '@contracts/types'
 
 export type Role = components['schemas']['Me']['role']
@@ -46,6 +24,7 @@ export const NAV: NavItem[] = [
   { href: '/settings/ai', label: 'AI settings', group: 'AI', roles: ['owner'], icon: Settings },
   { href: '/admin/suppliers', label: 'Suppliers', group: 'Master data', roles: ['owner'], icon: Truck },
   { href: '/admin/buyers', label: 'Buyers', group: 'Master data', roles: ['owner'], icon: ShoppingBag },
+  { href: '/admin/buyer-invites', label: 'Buyer invites', group: 'Master data', roles: ['owner'], icon: Ticket },
   { href: '/admin/yarn-types', label: 'Yarn types', group: 'Master data', roles: ['owner'], icon: Boxes },
   { href: '/admin/fabric-types', label: 'Fabric types', group: 'Master data', roles: ['owner'], icon: Layers },
   { href: '/admin/machines', label: 'Machines', group: 'Master data', roles: ['owner'], icon: Factory },
