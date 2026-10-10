@@ -11,12 +11,13 @@ import { Button } from '@/components/ui/Button'
 import { Table } from '@/components/ui/Table'
 import { api, call, type components } from '@/lib/api'
 import { todayIso } from '@/lib/dates'
-import { formatMoney } from '@/lib/format'
+import { useI18n } from '@/i18n/I18nContext'
+import { formatLocale, formatMoney } from '@/lib/format'
 import { PaymentDialog } from '@/pages/money/PaymentDialog'
 
 type Row = components['schemas']['WageRow']
 
-const monthName = (month: string) => new Date(`${month}-01T00:00:00`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+const monthName = (month: string) => new Date(`${month}-01T00:00:00`).toLocaleDateString(formatLocale(), { month: 'long', year: 'numeric' })
 const lastDay = (month: string) => {
   const [y, m] = month.split('-').map(Number)
   return `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`
@@ -24,6 +25,7 @@ const lastDay = (month: string) => {
 
 /** What each worker earned from attendance this month, what has been paid, and what is still owed. */
 export default function Wages() {
+  const { t } = useI18n()
   const [month, setMonth] = useState(() => todayIso().slice(0, 7))
   const [paying, setPaying] = useState<Row | null>(null)
   const sheet = useQuery({ queryKey: ['people', 'wages', month], queryFn: () => call(api.GET('/api/wages', { params: { query: { month } } })) })
@@ -31,12 +33,12 @@ export default function Wages() {
   return (
     <>
       <PageHeader
-        eyebrow="People"
-        title="Wages"
-        description="Earned from attendance: a full day pays the daily wage, a half day pays half. Pay what is owed, never more."
+        eyebrow={t('attendance.eyebrow')}
+        title={t('nav.wages')}
+        description={t('wages.description')}
         actions={
           <label className="month-picker">
-            <span className="muted text-sm">Month</span>
+            <span className="muted text-sm">{t('owner.month')}</span>
             <input type="month" className="input" value={month} max={todayIso().slice(0, 7)} onChange={(e) => e.target.value && setMonth(e.target.value)} />
           </label>
         }
@@ -44,28 +46,28 @@ export default function Wages() {
       <QueryBoundary query={sheet}>
         {(s) =>
           s.rows.length === 0 ? (
-            <EmptyState title="No workers on the payroll" description="Add workers under People to see their wages here." />
+            <EmptyState title={t('attendance.noWorkers')} description={t('wages.emptyDescription')} />
           ) : (
             <div className="stack">
               <AnimatedGroup className="grid-cards">
-                <KpiCard label="Earned" value={s.total_earned} format={formatMoney} />
-                <KpiCard label="Paid" value={s.total_paid} format={formatMoney} />
-                <KpiCard label="Still owed" value={s.total_owed} format={formatMoney} tone={s.total_owed > 0 ? 'danger' : undefined} />
+                <KpiCard label={t('wages.earned')} value={s.total_earned} format={formatMoney} />
+                <KpiCard label={t('money.col.paid')} value={s.total_paid} format={formatMoney} />
+                <KpiCard label={t('wages.stillOwed')} value={s.total_owed} format={formatMoney} tone={s.total_owed > 0 ? 'danger' : undefined} />
               </AnimatedGroup>
               <Reveal>
                 <Table>
                   <thead>
                     <tr>
-                      <th>Worker</th>
-                      <th className="num">Present</th>
-                      <th className="num">Half days</th>
-                      <th className="num">Absent</th>
-                      <th className="num">Daily wage</th>
-                      <th className="num">Earned</th>
-                      <th className="num">Paid</th>
-                      <th className="num">Owed</th>
+                      <th>{t('wages.col.worker')}</th>
+                      <th className="num">{t('attendance.present')}</th>
+                      <th className="num">{t('wages.col.halfDays')}</th>
+                      <th className="num">{t('attendance.absent')}</th>
+                      <th className="num">{t('wages.col.dailyWage')}</th>
+                      <th className="num">{t('wages.earned')}</th>
+                      <th className="num">{t('money.col.paid')}</th>
+                      <th className="num">{t('wages.col.owed')}</th>
                       <th>
-                        <span className="sr-only">Actions</span>
+                        <span className="sr-only">{t('money.actions')}</span>
                       </th>
                     </tr>
                   </thead>
@@ -87,11 +89,11 @@ export default function Wages() {
                         </td>
                         <td>
                           {r.owed > 0 ? (
-                            <Button variant="secondary" onClick={() => setPaying(r)} aria-label={`Record payment for ${r.worker_name}`}>
-                              Record payment
+                            <Button variant="secondary" onClick={() => setPaying(r)} aria-label={t('money.recordFor', { no: r.worker_name })}>
+                              {t('money.recordPayment')}
                             </Button>
                           ) : r.earned > 0 ? (
-                            <Badge tone="green">Paid</Badge>
+                            <Badge tone="green">{t('money.paid')}</Badge>
                           ) : null}
                         </td>
                       </tr>
@@ -105,15 +107,15 @@ export default function Wages() {
       </QueryBoundary>
       {paying && (
         <PaymentDialog
-          title="Record a wage payment"
-          subject={`${paying.worker_name} · wages for ${monthName(month)}`}
+          title={t('wages.dialogTitle')}
+          subject={t('wages.subject', { name: paying.worker_name, month: monthName(month) })}
           balance={paying.owed}
-          dateLabel="Paid on"
+          dateLabel={t('money.paidOn')}
           invalidate={[['people'], ['owner']]}
           send={(v) =>
             call(api.POST('/api/payments/wages', { body: { worker_id: paying.worker_id, period_start: `${month}-01`, period_end: lastDay(month), amount: v.amount, paid_at: v.date } }))
           }
-          successMessage={(v) => `${formatMoney(v.amount)} paid to ${paying.worker_name}`}
+          successMessage={(v) => t('money.paidToast', { amount: formatMoney(v.amount), name: paying.worker_name })}
           onClose={() => setPaying(null)}
         />
       )}
