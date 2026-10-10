@@ -110,6 +110,14 @@ _HINTS = {
 }
 
 
+def _trial_hint(message: str) -> str | None:
+    """Twilio's trial-account refusal for a destination, explained in steps the owner can follow."""
+    if "trial" in message.lower() and ("verified" in message.lower() or "destination" in message.lower()):
+        return ("Twilio will not send to this number from a trial account yet. On that phone, send the sandbox join code to the sandbox number; "
+                "check the sender here is the sandbox number; and in Twilio under Messaging, Settings, Geo permissions, allow the country.")
+    return None
+
+
 def send_text(config: WhatsAppConfig, to_number: str, body: str, post: PostForm = post_form) -> SendResult:
     """Sends one WhatsApp message. Never raises: the result says what happened."""
     if not config.ready:
@@ -120,10 +128,14 @@ def send_text(config: WhatsAppConfig, to_number: str, body: str, post: PostForm 
     if reply.get("error"):
         if reply.get("http") in (401, 403):
             return SendResult("failed", "WhatsApp refused the account details. Check the Account SID and Auth Token.")
-        hint = _HINTS.get(reply.get("code") or 0)
-        return SendResult("failed", hint or reply.get("message") or f"WhatsApp refused the message ({reply.get('http')})")
+        code = reply.get("code") or 0
+        text = _HINTS.get(code) or _trial_hint(reply.get("message") or "") or reply.get("message") or f"WhatsApp refused the message ({reply.get('http')})"
+        # Twilio's own error number is kept, so the exact cause can be looked up
+        return SendResult("failed", f"{text} (Twilio error {code})" if code else text)
     if reply.get("error_code"):
-        return SendResult("failed", _HINTS.get(int(reply["error_code"])) or str(reply.get("error_message") or "WhatsApp refused the message"), reply.get("sid"))
+        code = int(reply["error_code"])
+        text = _HINTS.get(code) or _trial_hint(str(reply.get("error_message") or "")) or str(reply.get("error_message") or "WhatsApp refused the message")
+        return SendResult("failed", f"{text} (Twilio error {code})", reply.get("sid"))
     return SendResult("sent", None, reply.get("sid"))
 
 

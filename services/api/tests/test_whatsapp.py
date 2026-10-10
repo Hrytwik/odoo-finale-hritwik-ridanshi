@@ -221,3 +221,14 @@ def test_the_buyers_phone_is_never_sent_to_the_buyer_or_shown_in_full(client, co
     order = make_order(db, buyer=buyer)
     text = json.dumps(client.post(f"/api/orders/{order.code}/delay-notice/draft", json={"reason": "other"}).json())
     assert "98450" not in text and "9845012345" not in text
+
+
+def test_twilios_own_error_number_is_kept_so_the_cause_can_be_looked_up():
+    r = send_text(READY, "+916283828678", "Hi", post=lambda *a: {"error": True, "http": 400, "code": 21608, "message": "unverified"})
+    assert r.status == "failed" and r.detail.endswith("(Twilio error 21608)")
+
+
+def test_the_trial_account_refusal_is_explained_in_steps():
+    reply = {"error": True, "http": 400, "code": 63015, "message": "No Twilio trial phone number is assigned for messaging to this destination number. Please add the 'to' number as a verified recipient."}
+    r = send_text(READY, "+916283828678", "Hi", post=lambda *a: dict(reply, code=99999))
+    assert "send the sandbox join code" in r.detail and "Geo permissions" in r.detail and "(Twilio error 99999)" in r.detail
