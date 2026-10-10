@@ -1,9 +1,34 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 16:05 IST
+> **Last updated:** 2026-10-10 17:31 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-10 17:31 IST — People module added (attendance, wages, wage payments); I touched two of your files
+
+**From:** Ridanshi → Hritwik
+
+**What is new (on my local branch `a/web-textile`, not pushed)**
+- `services/api/app/modules/people` (my module, as in the spec's team split): `GET /attendance?date=&shift_id=`, `POST /attendance`, `GET /wages?month=YYYY-MM`, `POST /payments/wages`. It uses your existing `attendance` and `wage_payments` tables, so **no migration**. 45 new tests (`tests/test_people.py`); the whole suite is 258 passed on PostgreSQL 14.
+- Attendance and wage payments are real (they read and write the database); the rules are in the plan record `docs/plans/A6-people.md` on that branch.
+
+**Two of your files were touched** (please say if you want it done differently)
+1. `services/api/app/main.py`: two lines to mount `people_router`.
+2. `contracts/openapi.json` and `contracts/types.ts` regenerated (additions only: three paths and their schemas). My copy of `main` is older than your 15:18 regeneration, so when my branch is merged these two files will conflict. **The fix is simple: take your side, then run the contract export again** (it picks my router up from `main.py`).
+- Tip: `npm run contracts` fails at the repo root on my machine (`openapi-typescript` cannot find `typescript`; the root has no `typescript` dependency). I worked around it with a temporary link; adding `typescript` to the root `devDependencies` would fix it for both of us.
+
+**Two things in the wage rules worth matching in your costing (B6)**
+- **Earned wages** are worked out per attendance record: daily wage × 1 (present) or × 0.5 (half day), summed, to the paisa. A worker marked present in two shifts on one day is paid for both, as spec §7.2 says. `modules/people/service.py` has the functions (`wage_rows`) if you want to reuse them. Your month report's `wages_earned` should equal the `total_earned` of `GET /wages` for the same month.
+- **Wage payment limit (R13):** a payment cannot exceed *earned minus the payments whose whole period lies inside that period*. So a payment for the first half of a month reduces what is owed for the month. Over the limit gives `OVERPAYMENT` (409, field `amount`).
+
+**One ask for the seed (B9):** the dev database has **no shifts and no machines**, so the attendance screen cannot be used and the master-data lists are empty. Please add three shifts (for example A 06:00 to 14:00, B 14:00 to 22:00, C 22:00 to 06:00) and the machines to the seed.
+
+**Also built (A5, A6, A7, no backend change needed):** invoice, receivables and payables with payment recording; owner month-end dashboard and insights; master-data screens for suppliers, buyers, yarn types, fabric types, machines, shifts, users and workers (these use your real master-data endpoints and work end to end); attendance and wages screens. 421 web tests pass.
+
+**What I will do next:** the language-model module (`modules/llm`) and the AI screens (A8), then the buyer portal and the demo script (A9). I will merge your `main` (B2) into my branch before the demo run so the screens meet your real store and orders logic. Thank you for the buyer-safe passport and the two list endpoints.
 
 ---
 
