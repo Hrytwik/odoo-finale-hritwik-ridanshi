@@ -230,8 +230,11 @@ def test_a_buyer_is_offered_only_their_own_tools_and_a_buyer_safe_prompt(client,
     assert "never mention costs" in fake.calls[0]["system"].lower()
 
 
-def test_a_buyer_reads_their_orders_through_the_portal(client, login_as):
-    login_as("buyer")
+def test_a_buyer_reads_their_orders_through_the_portal(client, login_as, db):
+    from tests.factories import make_order
+    buyer = login_as("buyer")
+    from app.db.models import Buyer
+    make_order(db, buyer=db.get(Buyer, buyer.buyer_id))
     use(Fake(Completion("", [ToolCall("c1", "get_my_orders", {})]), "You have one order."))
     body = asks(client, "/api/ai/buyer-assistant").json()
     assert body["sources"][0]["tool"] == "get_my_orders" and "ORD-" in body["sources"][0]["summary"]

@@ -1149,3 +1149,64 @@ h1 {
 .chat-text p { margin: 0 0 var(--space-2); }
 .chat-text p:last-child { margin-bottom: 0; }
 .chat-list { margin: 0 0 var(--space-2); padding-left: 1.2rem; }
+
+/* ---------- Buyer portal ---------- */
+.portal-orders {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+}
+.portal-card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+.portal-card:hover,
+.portal-card:focus-visible {
+  border-color: var(--color-primary);
+}
+.portal-meter {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+.portal-meter i {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+}
+.portal-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+}
+.portal-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--space-4);
+  border-left: 2px solid var(--color-border-strong);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.portal-timeline li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.portal-timeline li::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--space-4) - 7px);
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid var(--color-surface);
+}

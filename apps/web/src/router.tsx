@@ -47,6 +47,8 @@ const SCREENS: Record<string, ComponentType> = {
   orders: lazy(() => import('@/pages/orders/OrdersList')),
   'orders/new': lazy(() => import('@/pages/orders/NewOrder')),
   'orders/:code': lazy(() => import('@/pages/orders/OrderDetail')),
+  portal: lazy(() => import('@/pages/portal/PortalHome')),
+  'portal/orders/:code': lazy(() => import('@/pages/portal/PortalOrder')),
 }
 
 /** All routes. Exported separately so tests can mount them in a memory router. */

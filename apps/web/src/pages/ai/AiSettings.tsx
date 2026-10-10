@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Field, Input, Select } from '@/components/ui/Field'
 import { ApiError, api, call, errorMessage, type components } from '@/lib/api'
+import { addressProblem } from '@/lib/aiAddress'
 import { useSubmitLock } from '@/lib/forms'
 
 type Settings = components['schemas']['SettingsOut']
@@ -21,23 +22,6 @@ const PRESETS = [
   { label: 'OpenAI', url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
   { label: 'Ollama on this computer', url: 'http://localhost:11434/v1', model: 'llama3.1' },
 ]
-
-/** Why an address cannot work, or null. Catches the usual slip: pasting the provider's website instead of its API address. */
-export function addressProblem(address: string): string | null {
-  const text = address.trim()
-  if (!text) return 'Enter the address of the provider'
-  let url: URL
-  try {
-    url = new URL(text)
-  } catch {
-    return 'This is not a web address. It should start with https://'
-  }
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') return 'This is not a web address. It should start with https://'
-  if (/^(console|platform|www)\./.test(url.hostname) || /\/(keys|api-keys|settings)\/?$/.test(url.pathname)) {
-    return 'That is a website page, not the API address. Click the Groq or OpenAI button below to fill in the right one.'
-  }
-  return null
-}
 
 /** True while the model box still holds a name that belongs to a different provider than the chosen preset. */
 const isStarterModel = (model: string) => !model.trim() || model.startsWith('claude-') || PRESETS.some((p) => p.model === model)
