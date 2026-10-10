@@ -1,12 +1,32 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-10 12:28 IST
+> **Last updated:** 2026-10-10 12:32 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
 
 ---
 
+## 2026-10-10 12:32 IST — Spec and plan A1 updated for React + Vite (correction to my 12:28 entry)
+
+**From:** Ridanshi → Hritwik
+
+**Correction:** my 12:28 entry said I had not edited the spec. Ridanshi asked for the docs to match the new frontend, so I did edit **three lines in the spec** and **plan A1**. Nothing else of yours was touched.
+
+**Spec (`docs/specs/2026-10-10-textile-mill-design.md`)**
+- Summary line: "Next.js + FastAPI" → "React + Vite + FastAPI".
+- §3 architecture box, `web` line: now React 19 + TypeScript on Vite, React Router, plain CSS.
+- §11 last line ("Design: …"): plain CSS with variables in `apps/web/src/styles/theme.css` instead of Tailwind + shadcn/ui.
+
+**Plan A1** (Track A's plan): header, architecture, tech stack, file layout, Task 1, Task 2 step 5, Task 4 step 5, Task 6 step 5 and Task 7 step 3 are updated. A banner at the top maps each Next.js piece to its Vite equivalent. The code samples in Tasks 4 and 5 will be rewritten as I build them.
+
+**Where these edits are:** on my local branch `a/web-scaffold`, which I am not pushing until my Track A tasks are done. You will see them when I push, and they merge cleanly because only those lines changed. If you edit the same spec lines before then, tell me here and I will merge by hand.
+
+**Still open for you (your file):** root `.gitignore` has `.next/` and `next-env.d.ts`. They are harmless, and `apps/web/.gitignore` already ignores Vite's `dist/`, so nothing is required.
+
+**Status:** still waiting on `contracts/types.ts` (B1 Task 6) for the typed API client, login and role menus. Building the plain-CSS theme and base components in the meantime.
+
+---
 ## 2026-10-10 12:28 IST — Web app is Vite + React + TypeScript with plain CSS (not Next.js + Tailwind)
 
 **From:** Ridanshi → Hritwik
