@@ -16,6 +16,7 @@ import { ROUTES } from './routes'
 const SCREENS: Record<string, ComponentType> = {
   'store/receive': lazy(() => import('@/pages/store/ReceiveYarn')),
   'store/stock': lazy(() => import('@/pages/store/YarnStock')),
+  'store/lots/:code': lazy(() => import('@/pages/store/LotDetail')),
   orders: lazy(() => import('@/pages/orders/OrdersList')),
   'orders/new': lazy(() => import('@/pages/orders/NewOrder')),
   'orders/:code': lazy(() => import('@/pages/orders/OrderDetail')),
