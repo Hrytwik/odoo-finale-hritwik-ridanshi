@@ -3,6 +3,8 @@ from itertools import count
 
 from sqlalchemy.orm import Session
 
+from app.core.codes import next_code
+
 from app.db.models import (
     Buyer, Dispatch, FabricRecipeLine, FabricType, Machine, Order, ProductionRun, Roll, RollRun, Shift,
     Supplier, SupplierBill, User, Worker, YarnLot, YarnMovement, YarnType,
@@ -65,7 +67,7 @@ def make_user(db: Session, role: str = "owner", **kw) -> User:
 def make_order(db: Session, buyer=None, fabric_type=None, state: str = "confirmed", **kw) -> Order:
     n = next(_n)
     fields = {
-        "code": f"ORD-{n:04d}", "buyer_id": (buyer or make_buyer(db)).id,
+        "code": next_code(db, "order"), "buyer_id": (buyer or make_buyer(db)).id,
         "fabric_type_id": (fabric_type or make_fabric_type(db)).id, "colour": "navy",
         "qty_metres": 1000, "price_per_metre": 120, "deadline": dt.date(2026, 10, 30), "state": state,
         "confirmed_at": dt.datetime(2026, 10, 1, tzinfo=dt.UTC) if state == "confirmed" else None,
@@ -96,7 +98,7 @@ def make_lot(db: Session, yarn_type=None, supplier=None, qty_kg: float = 500, co
     supplier = supplier or make_supplier(db)
     receiver = kw.pop("received_by", None) or make_user(db, role="store").id
     lot = _add(db, YarnLot(**{
-        "lot_code": f"L-{n:04d}", "yarn_type_id": (yarn_type or make_yarn_type(db)).id,
+        "lot_code": next_code(db, "lot"), "yarn_type_id": (yarn_type or make_yarn_type(db)).id,
         "supplier_id": supplier.id, "cost_per_kg": cost_per_kg, "challan_no": f"CH-{n}",
         "received_by": receiver, **kw,
     }))
