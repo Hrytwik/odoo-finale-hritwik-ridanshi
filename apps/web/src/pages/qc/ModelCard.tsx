@@ -21,7 +21,6 @@ const HOLE_RECALL_BAR = 0.8
 const FALSE_ALARM_BAR = 0.2
 
 const pct = (n: number | null) => (n === null ? '-' : `${Math.round(n * 100)}%`)
-const safeHref = (url: string) => (/^https?:\/\//i.test(url) ? url : null)
 
 function meetsBar(c: Card_) {
   const holes = c.per_class.find((p) => p.defect_type === 'hole')
@@ -146,28 +145,6 @@ function Evaluated({ c }: { c: Card_ }) {
               ))}
             </tbody>
           </Table>
-        </Card>
-      </Reveal>
-
-      <Reveal>
-        <Card title="Where the training photos came from">
-          <ul className="plain-list">
-            {c.datasets.map((d) => {
-              const href = safeHref(d.url)
-              return (
-                <li key={d.name}>
-                  {href ? (
-                    <a href={href} target="_blank" rel="noopener noreferrer">
-                      {d.name}
-                    </a>
-                  ) : (
-                    <span>{d.name}</span>
-                  )}{' '}
-                  <span className="muted text-sm">({d.licence})</span>
-                </li>
-              )
-            })}
-          </ul>
         </Card>
       </Reveal>
     </div>

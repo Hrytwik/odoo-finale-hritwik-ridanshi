@@ -82,18 +82,6 @@ describe('ModelCard with a model', () => {
     expect(within(matrix).getByRole('rowheader', { name: 'hole' }).closest('tr')).toHaveTextContent('34')
     expect(within(matrix).getByRole('rowheader', { name: 'stain' }).closest('tr')).toHaveTextContent('20')
   })
-
-  it('credits every dataset with its licence, and only links to web addresses', async () => {
-    mockApi({ GET: { '/api/qc/model-card': GOOD } })
-    renderPage(<ModelCard />)
-    const link = await screen.findByRole('link', { name: /roboflow fabric defect detection subset/i })
-    expect(link).toHaveAttribute('href', 'https://universe.roboflow.com/x/y')
-    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
-    expect(screen.getByText(/CC BY 4\.0/)).toBeInTheDocument()
-    // an unsafe address is shown as text, never as a link
-    expect(screen.queryByRole('link', { name: /our own cloth photos/i })).not.toBeInTheDocument()
-    expect(screen.getByText(/our own cloth photos/i)).toBeInTheDocument()
-  })
 })
 
 describe('ModelCard: does it meet the bar from the spec?', () => {
