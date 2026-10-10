@@ -1506,3 +1506,16 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   font-size: var(--text-sm);
   font-weight: 400;
 }
+.notice-new {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--color-danger, #b3402f);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}

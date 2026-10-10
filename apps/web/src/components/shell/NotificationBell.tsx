@@ -24,8 +24,9 @@ export function NotificationBell() {
     seen.current = new Set(notices.data.items.map((n) => n.id))
   }, [notices.data])
 
-  async function openBell() {
-    setOpen(true)
+  // the count stays while the list is open, so the new ones can be told apart; they are marked read when it is closed
+  async function closeBell() {
+    setOpen(false)
     if ((notices.data?.unread ?? 0) > 0) {
       try {
         queryClient.setQueryData<Notifications>(['notices'], await call(api.POST('/api/portal/notifications/read')))
@@ -38,7 +39,7 @@ export function NotificationBell() {
   const unread = notices.data?.unread ?? 0
   return (
     <>
-      <Button variant="ghost" icon className="header-square bell" aria-label={unread > 0 ? `Notifications, ${unread} new` : 'Notifications'} onClick={() => void openBell()}>
+      <Button variant="ghost" icon className="header-square bell" aria-label={unread > 0 ? `Notifications, ${unread} new` : 'Notifications'} onClick={() => setOpen(true)}>
         <Bell size={18} aria-hidden />
         {unread > 0 && (
           <span className="bell-count" aria-hidden>
@@ -46,16 +47,19 @@ export function NotificationBell() {
           </span>
         )}
       </Button>
-      <Dialog open={open} onClose={() => setOpen(false)} title="Notifications">
+      <Dialog open={open} onClose={() => void closeBell()} title={unread > 0 ? `Notifications (${unread} new)` : 'Notifications'}>
         {notices.data && notices.data.items.length === 0 ? (
           <p className="muted">Nothing yet. If the mill has news about one of your orders, it appears here.</p>
         ) : (
           <ul className="notice-list">
             {notices.data?.items.map((n) => (
-              <li key={n.id}>
-                <p>{n.message}</p>
+              <li key={n.id} className={n.read ? undefined : 'is-new'}>
+                <p>
+                  {!n.read && <span className="notice-new">New</span>}
+                  {n.message}
+                </p>
                 <p className="muted text-sm">
-                  <Link to={`/portal/orders/${n.order_code}`} onClick={() => setOpen(false)}>
+                  <Link to={`/portal/orders/${n.order_code}`} onClick={() => void closeBell()}>
                     {n.order_code}
                   </Link>{' '}
                   · {n.reason_label} · {formatDateTime(n.created_at)}
