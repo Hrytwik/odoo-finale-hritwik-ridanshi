@@ -2,7 +2,10 @@
  * Every sentence the translated screens show, in English. The other languages translate these same keys; a key a language has
  * not translated yet shows in English. {name} marks a blank filled in when the sentence is shown, and must stay in every translation.
  */
-export const en = {
+import { englishOf } from './area'
+import { store } from './areas/store'
+
+const core = {
   // ---- menu groups and pages
   'nav.group.Store': 'Store',
   'nav.group.Production': 'Production',
@@ -191,5 +194,8 @@ export const en = {
   'copilot.q.owed': 'Which buyers owe us money?',
   'copilot.q.suppliers': 'What do we owe suppliers?',
 } as const
+
+/** The core sentences plus each screen's own file under `areas/`. Add a screen's area here. */
+export const en = { ...core, ...englishOf(store) }
 
 export type Key = keyof typeof en
