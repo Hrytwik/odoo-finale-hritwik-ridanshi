@@ -1,7 +1,7 @@
 /*
   Textile finish. Loaded last. It keeps the original design (teal, ivory, saffron, Fraunces + Inter)
-  and adds the things a mill would recognise: linen ground, a selvedge edge, stitched labels,
-  twill, and thread. Remove this one file (and its import in main.tsx) to get the plain version back.
+  and adds quiet things a mill would recognise: linen ground, stitched labels, twill and thread.
+  Green only: no yellow. Remove this one file (and its import in main.tsx) to get the plain version back.
 */
 :root {
   /* the greys of the original, warmed by a few degrees towards undyed cotton */
@@ -10,7 +10,6 @@
   --color-surface-muted: #f2eee4;
   --color-border: #e0dacb;
   --color-border-strong: #bfb7a3;
-  --thread: 56px; /* length of the short thread drawn under page titles */
   --stitch: rgb(15 118 110 / 0.2);
 }
 
@@ -20,52 +19,9 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 0h2v2H0zM2 2h2v2H2z' fill='%230f766e' fill-opacity='0.035'/%3E%3C/svg%3E");
 }
 
-/* ---------- Selvedge: the woven edge along the bottom of the header ---------- */
-.shell-header {
-  background: rgb(253 251 246 / 0.88);
-  border-bottom-color: transparent;
-}
-.shell-header::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 4px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--color-primary) 0 22px,
-    var(--color-surface) 22px 25px,
-    var(--color-accent) 25px 31px,
-    var(--color-surface) 31px 34px
-  );
-  opacity: 0.9;
-}
-
 /* ---------- Logo mark ---------- */
 .brand-mark {
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.3) inset, 0 3px 8px rgb(15 118 110 / 0.35);
-}
-
-/* ---------- Page titles: a short thread that draws itself in once ---------- */
-.page-header h1::after {
-  content: '';
-  display: block;
-  width: var(--thread);
-  height: 4px;
-  margin-top: 10px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, var(--color-primary) 0 62%, var(--color-accent) 62% 100%);
-  transform-origin: left;
-  animation: thread-draw 0.7s var(--ease-out) both;
-}
-@keyframes thread-draw {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
 }
 
 /* ---------- Stitched labels: cards, tiles and the login card get a running-stitch border ---------- */
@@ -150,17 +106,6 @@ body {
 }
 
 /* ---------- Login ---------- */
-.login-art-copy h2::after {
-  content: '';
-  display: block;
-  width: 96px;
-  height: 5px;
-  margin-top: var(--space-4);
-  border-radius: 5px;
-  background: linear-gradient(90deg, #14b8a6 0 62%, var(--color-accent) 62% 100%);
-  transform-origin: left;
-  animation: thread-draw 1s 0.5s var(--ease-out) both;
-}
 .login-card::after {
   inset: 7px;
 }
@@ -169,8 +114,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-header h1::after,
-  .login-art-copy h2::after,
   .machine-running::before {
     animation: none;
   }

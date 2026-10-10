@@ -40,7 +40,7 @@ export function LoginScreen() {
 
       <section className="login-panel" style={{ backgroundImage: `url(${meshUrl})` }}>
         <div className="login-wrap">
-          <GlowEffect blur={36} duration={10} scale={1.05} style={{ opacity: 0.6, borderRadius: 24 }} />
+          <GlowEffect colors={['#14b8a6', '#0f766e', '#5eead4', '#14b8a6']} blur={36} duration={10} scale={1.05} style={{ opacity: 0.6, borderRadius: 24 }} />
           <div className="login-card">
             <BorderTrail size={90} duration={7} />
             <div className="card-body stack">
