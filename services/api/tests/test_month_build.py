@@ -183,3 +183,38 @@ def test_the_audit_fails_when_something_is_wrong(built):
     assert "every run's operator was present that shift" in failing(
         "UPDATE production_runs SET operator_worker_id = (SELECT id FROM workers WHERE code = 'W-010') "
         "WHERE id = (SELECT min(id) FROM production_runs WHERE machine_id IS NOT NULL)")
+
+
+def test_the_two_demo_buyers_have_emails_so_buyer_sign_up_works(built):
+    from app.db.models import Buyer
+    plan, clock, runner, db = built
+    emails = {b.name: b.email for b in db.scalars(select(Buyer))}
+    assert emails == {"Sharma Fabrics": "accounts@sharmafabrics.example", "Kavya Garments": "orders@kavyagarments.example"}
+
+
+from scripts.build_month import build_month, choose_end  # noqa: E402
+
+E2E_URL = "postgresql+psycopg://localhost:5432/everest_month_e2e"
+
+
+def test_the_end_is_the_hour_before_now_rounded_down():
+    now = dt.datetime(2026, 10, 11, 3, 40, tzinfo=IST)
+    assert choose_end(now) == dt.datetime(2026, 10, 11, 2, 0, tzinfo=IST)
+    assert choose_end(now) <= now - dt.timedelta(hours=1)
+
+
+def test_a_month_that_would_end_after_the_real_clock_is_refused():
+    with pytest.raises(SystemExit):
+        build_month(E2E_URL, end=dt.datetime.now(IST) + dt.timedelta(hours=2), days=3, orders=ORDERS[:1], full=False)
+    with pytest.raises(SystemExit):
+        build_month(E2E_URL, end=dt.datetime.now(IST) - dt.timedelta(minutes=10), days=3, orders=ORDERS[:1], full=False)
+
+
+def test_a_build_against_any_other_database_is_refused_before_anything_connects():
+    with pytest.raises(SystemExit):
+        build_month("postgresql+psycopg://localhost:5432/everest", days=3, orders=ORDERS[:1], full=False)
+
+
+def test_a_small_month_builds_end_to_end_through_the_entry_point_and_audits_clean():
+    checks = build_month(E2E_URL, days=30, orders=ORDERS[:3], full=False, keep=False)
+    assert checks and all(c.ok for c in checks), [c for c in checks if not c.ok]

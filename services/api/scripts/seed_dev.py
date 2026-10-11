@@ -36,7 +36,8 @@ MACHINES = (
 )
 YARN_TYPES = [("30S-COT-RAW", "30s cotton", "raw white", 300), ("40S-PC-RAW", "40s poly-cotton", "raw white", 250)]
 SUPPLIERS = [("Vardhman Yarns", 7), ("Coastal Spinners", 5)]
-BUYERS = [("Sharma Fabrics", "Anil Sharma", "9800000001"), ("Kavya Garments", "Kavya Menon", "9800000002")]
+BUYERS = [("Sharma Fabrics", "Anil Sharma", "9800000001", "accounts@sharmafabrics.example"),
+          ("Kavya Garments", "Kavya Menon", "9800000002", "orders@kavyagarments.example")]
 # name, width in inches, wastage %, [(yarn type code, kg per metre)]
 FABRICS = [
     ("Poplin 58in", 58, 5, [("30S-COT-RAW", Decimal("0.12"))]),
@@ -60,7 +61,7 @@ def seed_users(db: Session) -> None:
         workers[code] = w
     sharma = _missing(db, Buyer, Buyer.name, BUYERS[0][0])
     if sharma is None:
-        sharma = Buyer(name=BUYERS[0][0], contact_name=BUYERS[0][1], phone=BUYERS[0][2])
+        sharma = Buyer(name=BUYERS[0][0], contact_name=BUYERS[0][1], phone=BUYERS[0][2], email=BUYERS[0][3])
         db.add(sharma)
         db.flush()
     for username, role, worker_code in USERS:
@@ -87,9 +88,9 @@ def seed_master(db: Session) -> None:
     for name, lead_days in SUPPLIERS:
         if _missing(db, Supplier, Supplier.name, name) is None:
             db.add(Supplier(name=name, lead_time_days=lead_days))
-    for name, contact, phone in BUYERS:
+    for name, contact, phone, email in BUYERS:
         if _missing(db, Buyer, Buyer.name, name) is None:
-            db.add(Buyer(name=name, contact_name=contact, phone=phone))
+            db.add(Buyer(name=name, contact_name=contact, phone=phone, email=email))
     db.flush()
     yarn = {y.code: y for y in db.scalars(select(YarnType))}
     for name, width, wastage, recipe in FABRICS:

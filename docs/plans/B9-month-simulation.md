@@ -1,7 +1,7 @@
 # B9 — A Simulated Month Implementation Plan
 
 > **Summary:** Builds `scripts/month/` and `scripts/build_month.py`: a deterministic scheduler that turns a hand-picked set of orders into timed mill events for the 30 days ending an hour before the build, a simulated clock that moves every real-clock timestamp the services write to the simulated moment, a runner that plays the events through the real service functions, and an audit that proves seven stories show up through the real endpoints. The target is a separate database `everest_month`; `everest` is never touched.
-> **Last updated:** 2026-10-11 06:02 IST (Tasks 1-5 done)
+> **Last updated:** 2026-10-11 06:06 IST (Tasks 1-6 done)
 
 > **How this plan is executed:** inline, one task at a time (atomic-workflow): test first, the full suite twice at each boundary, the important behaviours mutation-checked. Steps use checkbox (`- [ ]`) syntax.
 
@@ -24,6 +24,8 @@ Task 3 done and verified (2026-10-11 05:51 IST): `scripts/month/database.py`, th
 Task 4 done and verified (2026-10-11 05:56 IST): the second half of `runner.py` (quality, rework, dispatch, invoices, buyer and supplier payments, attendance, wages, breakdowns) and 6 more tests; **the real services accepted every event on the first run** (a 30-day month with three orders: inspections, hand and machine rework, trucks, invoices, 4 breakdowns with SPIN-02 still down at the end, wage payments, attendance). Checked in SQL from the tables, not from the plan: every run's operator was marked present for the shift in which the run started; every dispatched roll's latest inspection is a pass; the opening lot's bill is overdue. Corrections to the plan's code: `WageRow` has `worker_id` (not `worker.id`); the two module-scoped fixtures were merged into one (the second `DROP DATABASE ... WITH (FORCE)` killed the first one's connection), so `Runner.play` lost its `only` filter. Mutations: wrong operator, everyone absent, wages skipped, breakdowns not recorded (the real service refuses the repair), supplier payment skipped and verdict forced to pass (the real service refuses the rework) all die. Full backend suite 1,497 passed (1,491 before), twice.
 
 Task 5 done and verified (2026-10-11 06:02 IST): `scripts/month/audit.py` (structure checks for any month: no leaks, yarn on hand = ledger, every run's operator present, month reports with invoiced = invoices in SQL and no "not covered" warning, order yarn cost = ledger x lot price in SQL, portal scope; story checks for the full month: bad lot flagged and recall reaching both buyers, unlucky operator not flagged, loss order, late order, low cotton, floor board statuses, idle loom, QC queue, overdue bill, part-paid invoice, truck still loading, and the month's counts) and 2 tests. **The first audit run found a real design flaw in the clock (Task 1):** the mover kept the few milliseconds a step really took, so a hand-over planned for 14:00:00 landed at 14:00:00.012, a hair outside the outgoing operator's shift, and the month report warned "0.0 hours not covered by attendance". A simulated step is instantaneous, so the mover now sets every value written in a step to exactly the planned moment; its tests were rewritten to say so (and the old design now fails six tests). Plan changes: `audit(db, clock, runner=None, full=True)` takes the runner (for the lot, order and roll codes), not the plan. Planted-fault tests prove the leak check and the attendance check turn red; the ledger and invoiced checks compare two derivations of the same table, so no SQL plant can separate them (the real build is their test). Full backend suite 1,499 passed (1,497 before), twice.
+
+Task 6 done and verified (2026-10-11 06:06 IST): `scripts/build_month.py` (`choose_end`, `build_month`, `main`), `npm run db:month`, the two buyer emails in `seed_dev.py`, and 7 more tests including a whole 30-day, three-order month built end to end through the entry point into its own database and audited clean. The refusals are proved: any other database name, a month ending after (or within 30 minutes of) the real clock, and the end not rounded down. `ALLOWED` grew to three fixed names (`everest_month`, `everest_month_test`, `everest_month_e2e`) because dropping a database kills the other test fixture's connection to it. Mutations die (future end allowed; end not rounded down). Full backend suite 1,504 passed (1,499 before), twice; nothing under `app/` changed; `everest` untouched.
 
 ## Spec corrections found while planning
 
@@ -1302,7 +1304,7 @@ git commit -m "Add the audit that proves each story shows through the real endpo
 - Consumes: `scripts/month/database.py` (Task 3), `plan`, `runner`, `audit`.
 - Produces: `choose_end(now) -> datetime`, `build_month(url, end=None, days=30, orders=None, seed=11, full=True, keep=True) -> list[Check]`, `main()`.
 
-- [ ] **Step 1: Write the failing tests** (added to `test_month_build.py`):
+- [x] **Step 1: Write the failing tests** (added to `test_month_build.py`):
 
 ```python
 from scripts.build_month import build_month, choose_end
@@ -1324,8 +1326,8 @@ def test_a_small_month_builds_end_to_end_through_the_entry_point_and_audits_clea
     assert checks and all(c.ok for c in checks), [c for c in checks if not c.ok]
 ```
 
-- [ ] **Step 2: Run to verify it fails.** Expected: `scripts.build_month` does not exist.
-- [ ] **Step 3: Implement `services/api/scripts/build_month.py`:**
+- [x] **Step 2: Run to verify it fails.** Expected: `scripts.build_month` does not exist.
+- [x] **Step 3: Implement `services/api/scripts/build_month.py`:**
 
 ```python
 """Builds `everest_month`: 30 days of mill history, ending an hour before now, through the real services.
@@ -1397,9 +1399,9 @@ if __name__ == "__main__":
 ```
 
   `seed_dev.py`: give the two buyers `email="accounts@sharmafabrics.example"` and `"orders@kavyagarments.example"` (read the `Buyer` model for the column name first; if there is none, stop and say so). `package.json`: `"db:month": "uv run --directory services/api python -m scripts.build_month"`.
-- [ ] **Step 4: Run it.** Expected: the end-moment rule and the refusal pass; the end-to-end mini build passes (about a minute).
-- [ ] **Step 5: Full suite twice;** green; `test_committed_contract_matches_the_code` untouched; `git status` shows no change under `app/`.
-- [ ] **Step 6: Commit.**
+- [x] **Step 4: Run it.** Expected: the end-moment rule and the refusal pass; the end-to-end mini build passes (about a minute).
+- [x] **Step 5: Full suite twice;** green; `test_committed_contract_matches_the_code` untouched; `git status` shows no change under `app/`.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add services/api/scripts/build_month.py services/api/scripts/seed_dev.py package.json services/api/tests/test_month_build.py

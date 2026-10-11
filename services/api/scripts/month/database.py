@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
 API_DIR = Path(__file__).resolve().parents[2]
-ALLOWED = {"everest_month", "everest_month_test"}
+ALLOWED = {"everest_month", "everest_month_test", "everest_month_e2e"}      # the real one, and two for the tests
 
 
 def database_name(url: str) -> str:

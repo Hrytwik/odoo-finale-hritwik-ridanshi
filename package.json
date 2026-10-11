@@ -9,6 +9,7 @@
     "db:migrate": "uv run --directory services/api alembic upgrade head",
     "db:seed": "uv run --directory services/api python -m scripts.seed_dev",
     "db:demo": "uv run --directory services/api python -m scripts.seed_demo",
+    "db:month": "uv run --directory services/api python -m scripts.build_month",
     "test:api": "uv run --directory services/api pytest",
     "contracts": "uv run --directory services/api python -m scripts.export_openapi && openapi-typescript contracts/openapi.json -o contracts/types.ts"
   },
