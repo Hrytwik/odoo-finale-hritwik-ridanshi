@@ -5,11 +5,20 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import Buyer, Dispatch, FabricType, Invoice, Shift, Supplier, SupplierBill, User, Worker, YarnLot, YarnType
+from app.modules.dispatch import schemas as ds
+from app.modules.dispatch import service as dispatch
 from app.modules.floor import rolls as floor_rolls
 from app.modules.floor import schemas as fs
 from app.modules.floor import service as floor
+from app.modules.money import schemas as ms
+from app.modules.money import service as money
 from app.modules.orders import schemas as os_
 from app.modules.orders import service as orders
+from app.modules.people import router as people
+from app.modules.people import schemas as ps
+from app.modules.people import service as people_service
+from app.modules.qc import schemas as qs
+from app.modules.qc import service as qc
 from app.modules.store import schemas as ss
 from app.modules.store import service as store
 from scripts.month.clock import SimClock
@@ -39,10 +48,8 @@ class Runner:
         self.hand_run: dict[str, int] = {}       # roll key -> its hand-mending run id
         self.count = 0
 
-    def play(self, events: list[Event], only: set[str] | None = None) -> None:
+    def play(self, events: list[Event]) -> None:
         for e in events:
-            if only is not None and e.action not in only:
-                continue
             handler = getattr(self, f"do_{e.action}")
             try:
                 with self.clock.at(e.t):
@@ -95,3 +102,62 @@ class Runner:
 
     def do_load_rolls(self, machine, rolls):
         floor_rolls.load_rolls(self.db, self.open[machine], fs.LoadRollsIn(roll_codes=[self.roll[r] for r in rolls]))
+
+    # ---- quality
+    def do_inspect(self, roll, verdict, defects):
+        qc.record_inspection(self.db, self.users["qc"], qs.InspectionIn(
+            roll_code=self.roll[roll], verdict=verdict, defects=[qs.DefectIn(defect_type=t, count=n) for t, n in defects]))
+
+    def do_rework_start(self, roll, machine, operator):
+        run = qc.start_rework(self.db, qs.ReworkIn(roll_code=self.roll[roll], machine_code=machine,
+                                                  operator_worker_id=self.worker[operator]))
+        if machine:
+            self.open[machine] = run.id
+        else:
+            self.hand_run[roll] = run.id
+
+    # ---- dispatch and money
+    def do_dispatch_create(self, truck, order, buyer, vehicle):
+        self.truck[truck] = dispatch.create_dispatch(self.db, ds.DispatchIn(buyer_id=self.buyer[buyer], vehicle_no=vehicle)).code
+
+    def do_dispatch_scan(self, truck, roll):
+        dispatch.scan_roll(self.db, self.truck[truck], ds.ScanIn(roll_code=self.roll[roll]))
+
+    def do_dispatch_confirm(self, truck, order):
+        dispatch.confirm_dispatch(self.db, self.truck[truck])
+
+    def _invoice(self, truck) -> Invoice:
+        d = self.db.scalar(select(Dispatch).where(Dispatch.code == self.truck[truck]))
+        return self.db.scalar(select(Invoice).where(Invoice.dispatch_id == d.id))
+
+    def do_buyer_payment(self, truck, fraction, reference):
+        invoice = self._invoice(truck)
+        money.record_buyer_payment(self.db, ms.BuyerPaymentIn(
+            invoice_no=invoice.invoice_no, amount=round(float(invoice.total_amount) * fraction, 2),
+            received_on=self.clock.now.date(), reference=reference))
+
+    def do_supplier_payment(self, lot, fraction, reference):
+        bill = self.db.scalar(select(SupplierBill).join(YarnLot, YarnLot.id == SupplierBill.yarn_lot_id)
+                              .where(YarnLot.lot_code == self.lot[lot]))
+        money.record_supplier_payment(self.db, ms.SupplierPaymentIn(
+            bill_id=bill.id, amount=round(float(bill.amount) * fraction, 2), paid_on=self.clock.now.date(), reference=reference))
+
+    # ---- people
+    def do_attendance(self, date, shift, entries):
+        people.mark_attendance(ps.AttendanceIn(date=date, shift_id=self.shift[shift], entries=[
+            ps.AttendanceEntry(worker_id=self.worker[w], status=s) for w, s in entries.items()]),
+            db=self.db, user=self.users["supervisor"])
+
+    def do_wage_period(self, start, end, fraction):
+        for row in people_service.wage_rows(self.db, start, end):
+            owed = round(float(row.owed) * fraction, 2)
+            if owed > 0:
+                people.pay_wages(ps.WagePaymentIn(worker_id=row.worker_id, period_start=start, period_end=end, amount=owed,
+                                                 paid_at=self.clock.now.date()), db=self.db)
+
+    # ---- machines
+    def do_breakdown(self, machine, reason):
+        floor.breakdown(self.db, machine, fs.BreakdownIn(reason=reason))
+
+    def do_repair(self, machine):
+        floor.repair(self.db, machine)

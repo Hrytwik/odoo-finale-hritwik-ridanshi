@@ -15,8 +15,7 @@ from scripts.month.runner import Runner
 
 URL = "postgresql+psycopg://localhost:5432/everest_month_test"
 END = dt.datetime(2026, 10, 11, 2, 0, tzinfo=IST)
-FIRST_HALF = {"create_order", "confirm_order", "cancel_order", "receive_lot", "issue_yarn", "start_run", "handover", "end_run",
-              "roll_off", "load_rolls"}
+
 
 
 @pytest.mark.parametrize("url", ["postgresql+psycopg://localhost:5432/everest", "postgresql+psycopg://localhost/everest_test",
@@ -36,27 +35,6 @@ def test_recreate_and_drop_refuse_a_wrong_name_before_connecting():
     for action in (database.recreate, database.drop):
         with pytest.raises(SystemExit):
             action("postgresql+psycopg://localhost:5432/everest")
-
-
-@pytest.fixture(scope="module")
-def built():
-    """Three orders over twelve days, played through the real services into a fresh `everest_month_test`."""
-    database.recreate(URL)
-    database.migrate(URL)
-    engine = create_engine(URL)
-    db = Session(engine)
-    plan = build_plan(END, seed=11, days=12, orders=ORDERS[:3])
-    clock = SimClock(db, END)
-    with clock.installed():
-        with clock.at(plan.day0 - dt.timedelta(days=6)):
-            seed_dev.seed_all(db)
-        runner = Runner(db, clock)
-        first_inspection = min(e.t for e in plan.events if e.action == "inspect")       # before quality starts there is no rework
-        runner.play([e for e in plan.events if e.t < first_inspection], only=FIRST_HALF)
-    yield plan, clock, runner, db
-    db.close()
-    engine.dispose()
-    database.drop(URL)
 
 
 def test_orders_yarn_runs_and_rolls_are_made_by_the_real_services_and_no_timestamp_leaks(built):
@@ -86,3 +64,94 @@ def test_an_orders_deadline_and_dates_follow_the_simulated_calendar(built):
         assert plan.day0.date() <= created <= END.date()
         assert (order.deadline - created).days == 12                     # the plan asked for twelve days from creation
         assert order.confirmed_at is not None and abs((order.confirmed_at - order.created_at).total_seconds()) < 3600
+
+
+@pytest.fixture(scope="module")
+def built():
+    """A 30-day month with the first three orders, every event played into a fresh `everest_month_test`: orders, yarn, runs,
+    quality, rework, trucks, invoices, payments, attendance, wages and breakdowns."""
+    database.recreate(URL)
+    database.migrate(URL)
+    engine = create_engine(URL)
+    db = Session(engine)
+    plan = build_plan(END, seed=11, days=30, orders=ORDERS[:3])
+    clock = SimClock(db, END)
+    with clock.installed():
+        with clock.at(plan.day0 - dt.timedelta(days=6)):
+            seed_dev.seed_all(db)
+        runner = Runner(db, clock)
+        runner.play(plan.events)
+    yield plan, clock, runner, db
+    db.close()
+    engine.dispose()
+    database.drop(URL)
+
+
+def count(plan, action):
+    return sum(1 for e in plan.events if e.action == action)
+
+
+def test_every_event_was_played_and_nothing_leaks(built):
+    plan, clock, runner, db = built
+    assert runner.count == len(plan.events)
+    assert clock.leaks() == [], clock.leaks()
+
+
+def test_inspections_rework_trucks_and_invoices_match_the_plan(built):
+    from app.db.models import Dispatch, DispatchItem, Invoice, QcInspection, RollRun
+    plan, clock, runner, db = built
+    assert db.scalar(select(func.count()).select_from(QcInspection)) == count(plan, "inspect") > 10
+    assert db.scalar(select(func.count()).select_from(RollRun).where(RollRun.purpose == "rework")) >= count(plan, "rework_start") >= 1
+    assert db.scalar(select(func.count()).select_from(Dispatch)) == count(plan, "dispatch_create") >= 3
+    assert db.scalar(select(func.count()).select_from(Invoice)) == count(plan, "dispatch_confirm") >= 3
+    assert db.scalar(select(func.count()).select_from(DispatchItem)) == count(plan, "dispatch_scan")
+
+
+def test_a_dispatched_roll_always_has_a_final_pass(built):
+    from sqlalchemy import text
+    plan, clock, runner, db = built
+    bad = db.execute(text("""
+        SELECT r.code FROM dispatch_items di JOIN rolls r ON r.id = di.roll_id
+        WHERE (SELECT verdict FROM qc_inspections q WHERE q.roll_id = r.id ORDER BY q.inspected_at DESC, q.id DESC LIMIT 1) <> 'pass'""")).all()
+    assert bad == []
+
+
+def test_attendance_covers_every_shift_and_every_run_operator_was_present(built):
+    from sqlalchemy import text
+    from app.db.models import Attendance
+    plan, clock, runner, db = built
+    expected = sum(len(e.args["entries"]) for e in plan.events if e.action == "attendance")
+    assert db.scalar(select(func.count()).select_from(Attendance)) == expected
+    uncovered = db.execute(text("""
+        SELECT p.id FROM production_runs p JOIN shifts s ON TRUE
+        WHERE p.machine_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM attendance a WHERE a.worker_id = p.operator_worker_id AND a.status = 'present'
+                          AND a.shift_id = (SELECT id FROM shifts WHERE name = CASE
+                              WHEN (p.started_at AT TIME ZONE 'Asia/Kolkata')::time >= '06:00' AND (p.started_at AT TIME ZONE 'Asia/Kolkata')::time < '14:00' THEN 'A'
+                              WHEN (p.started_at AT TIME ZONE 'Asia/Kolkata')::time >= '14:00' AND (p.started_at AT TIME ZONE 'Asia/Kolkata')::time < '22:00' THEN 'B'
+                              ELSE 'C' END)
+                          AND a.date = CASE WHEN (p.started_at AT TIME ZONE 'Asia/Kolkata')::time < '06:00'
+                                            THEN (p.started_at AT TIME ZONE 'Asia/Kolkata')::date - 1
+                                            ELSE (p.started_at AT TIME ZONE 'Asia/Kolkata')::date END)
+        GROUP BY p.id""")).all()
+    assert uncovered == [], f"{len(uncovered)} runs started with an operator who was not marked present for that shift"
+
+
+def test_breakdowns_payments_and_wages_were_recorded(built):
+    from app.db.models import BuyerPayment, MachineDowntime, SupplierPayment, WagePayment
+    plan, clock, runner, db = built
+    assert db.scalar(select(func.count()).select_from(MachineDowntime)) == count(plan, "breakdown") == 4
+    still_down = db.scalars(select(MachineDowntime).where(MachineDowntime.ended_at.is_(None))).all()
+    assert len(still_down) == 1                                                       # SPIN-02 is down "now"
+    assert db.scalar(select(func.count()).select_from(SupplierPayment)) == count(plan, "supplier_payment") == 2
+    assert db.scalar(select(func.count()).select_from(WagePayment)) > 0
+    assert db.scalar(select(func.count()).select_from(BuyerPayment)) == sum(
+        1 for e in plan.events if e.action == "buyer_payment")
+
+
+def test_the_money_screens_load_and_the_opening_lots_bill_is_overdue(built):
+    from app.modules.money import service as money
+    plan, clock, runner, db = built
+    assert money.receivables(db)
+    overdue = [p for p in money.payables(db) if p.overdue]
+    assert len(overdue) >= 1

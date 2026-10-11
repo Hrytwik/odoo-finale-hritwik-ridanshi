@@ -1,7 +1,7 @@
 # B9 — A Simulated Month Implementation Plan
 
 > **Summary:** Builds `scripts/month/` and `scripts/build_month.py`: a deterministic scheduler that turns a hand-picked set of orders into timed mill events for the 30 days ending an hour before the build, a simulated clock that moves every real-clock timestamp the services write to the simulated moment, a runner that plays the events through the real service functions, and an audit that proves seven stories show up through the real endpoints. The target is a separate database `everest_month`; `everest` is never touched.
-> **Last updated:** 2026-10-11 05:51 IST (Tasks 1-3 done)
+> **Last updated:** 2026-10-11 05:56 IST (Tasks 1-4 done)
 
 > **How this plan is executed:** inline, one task at a time (atomic-workflow): test first, the full suite twice at each boundary, the important behaviours mutation-checked. Steps use checkbox (`- [ ]`) syntax.
 
@@ -20,6 +20,8 @@ Task 1 done and verified (2026-10-11 05:42 IST): `scripts/month/clock.py` (`SimC
 Task 2 done and verified (2026-10-11 05:47 IST): `scripts/month/plan.py` and 21 tests (`test_month_plan.py`, no database). First run found: (1) a real bug, `ZeroDivisionError` in `Roster.operator`: the roster covered 36 days but a late order's pipeline is planned past the end and those dropped events still name an operator, so the roster now covers `days + 90`; (2) my own arithmetic: the twelve orders total **39,500 m** (not 40,000), about 61% of the dyers' capacity, and the plan makes **69 rolls** (not about 150), 66 inspections (73% passed first time), 10 trucks (one still loading at the end), 4 machines running and SPIN-02 down at the end; (3) the in-progress story: orders took 7 to 8 days each, so only O11 was open; fixed by moving O9 to day 22 and O10 to day 25 and adding `OrderSpec.hold` (hours a loaded truck waits for sign-out: O9 holds 20 h so its truck is still loading "now"); (4) only one buyer payment landed in the month because payments came 12 to 25 days after the truck; now 4 to 14 days, and the partial payment is the third payment that really happens. Mutations: nine of ten died at once; the survivor (spinning ignores the machine's free time) showed that the standard month never makes orders compete for the ring frames, so a stress test (three orders arriving together queue for two frames) was added and the mutant now dies. Full backend suite 1,482 passed (1,461 before), twice.
 
 Task 3 done and verified (2026-10-11 05:51 IST): `scripts/month/database.py`, the first half of `scripts/month/runner.py`, and 9 tests in `test_month_build.py` on a real throwaway database (`everest_month_test`, made once per module and dropped; only `everest` and `everest_test` remain afterwards). **The real services accepted every order, lot, run, hand-over, roll-off and dye load on the first run, and the leak check was empty**: the database defaults, `db_now` and `datetime.now` were all moved, and bill dates and deadlines follow the simulated calendar. The test's first-half filter had to change (play the events before the first inspection, since nothing before that involves rework). Mutations: the mover doing nothing, `today_ist` swapped only in the core module, no safety margin (which does matter), seeding outside a clock step, and the deadline taken from the real date all die; the last one first survived because no test checked deadlines, so one was added. Full backend suite 1,491 passed (1,482 before), twice.
+
+Task 4 done and verified (2026-10-11 05:56 IST): the second half of `runner.py` (quality, rework, dispatch, invoices, buyer and supplier payments, attendance, wages, breakdowns) and 6 more tests; **the real services accepted every event on the first run** (a 30-day month with three orders: inspections, hand and machine rework, trucks, invoices, 4 breakdowns with SPIN-02 still down at the end, wage payments, attendance). Checked in SQL from the tables, not from the plan: every run's operator was marked present for the shift in which the run started; every dispatched roll's latest inspection is a pass; the opening lot's bill is overdue. Corrections to the plan's code: `WageRow` has `worker_id` (not `worker.id`); the two module-scoped fixtures were merged into one (the second `DROP DATABASE ... WITH (FORCE)` killed the first one's connection), so `Runner.play` lost its `only` filter. Mutations: wrong operator, everyone absent, wages skipped, breakdowns not recorded (the real service refuses the repair), supplier payment skipped and verdict forced to pass (the real service refuses the rework) all die. Full backend suite 1,497 passed (1,491 before), twice.
 
 ## Spec corrections found while planning
 
@@ -1172,9 +1174,9 @@ git commit -m "Play orders, yarn, runs and rolls through the real services under
 - Consumes: Task 3's `Runner`; the services `qc`, `dispatch`, `money`, `people` and `floor`.
 - Produces: the remaining `do_*` handlers: `do_inspect`, `do_rework_start`, `do_dispatch_create`, `do_dispatch_scan`, `do_dispatch_confirm`, `do_buyer_payment`, `do_supplier_payment`, `do_attendance`, `do_wage_period`, `do_breakdown`, `do_repair`.
 
-- [ ] **Step 1: Write the failing test** (added to `test_month_build.py`, using a second module-scoped fixture `built_all` like `built` but playing every event, `runner.play(plan.events)`): assert that inspections, at least one dispatch, an invoice, attendance rows and at least one rework run exist, that no roll is dispatched without a final pass, that `clock.leaks() == []`, that `receivables` and `payables` return rows, and that every attendance row's date is within the simulated month. (If 12 days still ends before the first dispatch, raise `days` until it does and record the number; a buyer payment only appears once a truck is old enough, so assert it only if the plan has one.)
-- [ ] **Step 2: Run to verify it fails.** Expected: `AttributeError: 'Runner' object has no attribute 'do_inspect'`.
-- [ ] **Step 3: Implement.** Append to `runner.py` (imports added at the top: `from app.modules.dispatch import schemas as ds, service as dispatch`, `from app.modules.money import schemas as ms, service as money`, `from app.modules.people import router as people, schemas as ps, service as people_service`, `from app.modules.qc import schemas as qs, service as qc`):
+- [x] **Step 1: Write the failing test** (added to `test_month_build.py`, using a second module-scoped fixture `built_all` like `built` but playing every event, `runner.play(plan.events)`): assert that inspections, at least one dispatch, an invoice, attendance rows and at least one rework run exist, that no roll is dispatched without a final pass, that `clock.leaks() == []`, that `receivables` and `payables` return rows, and that every attendance row's date is within the simulated month. (If 12 days still ends before the first dispatch, raise `days` until it does and record the number; a buyer payment only appears once a truck is old enough, so assert it only if the plan has one.)
+- [x] **Step 2: Run to verify it fails.** Expected: `AttributeError: 'Runner' object has no attribute 'do_inspect'`.
+- [x] **Step 3: Implement.** Append to `runner.py` (imports added at the top: `from app.modules.dispatch import schemas as ds, service as dispatch`, `from app.modules.money import schemas as ms, service as money`, `from app.modules.people import router as people, schemas as ps, service as people_service`, `from app.modules.qc import schemas as qs, service as qc`):
 
 ```python
     # ---- quality
@@ -1238,9 +1240,9 @@ git commit -m "Play orders, yarn, runs and rolls through the real services under
 ```
 
   Verify at execution: `WageRow`'s fields (the plan assumes `.owed` and `.worker.id`; read `people/schemas.py`), the router function's exact parameter names (`mark_attendance(body, db, user)` takes `body`, not positional: use keywords), `qs.DefectIn`'s `ai_detected` default, and that `record_inspection` needs `user.worker` (the `qc` user is linked to W-002).
-- [ ] **Step 4: Run it.** Expect real findings; fix the cause. A service refusing a payment as "before the invoice date" or "future-dated" means the payment day and the simulated date disagree: check `today_ist` is swapped inside the step.
-- [ ] **Step 5: Full suite twice;** green. Hritwik's server check.
-- [ ] **Step 6: Commit.**
+- [x] **Step 4: Run it.** Expect real findings; fix the cause. A service refusing a payment as "before the invoice date" or "future-dated" means the payment day and the simulated date disagree: check `today_ist` is swapped inside the step.
+- [x] **Step 5: Full suite twice;** green. Hritwik's server check.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add services/api/scripts/month/runner.py services/api/tests/test_month_build.py
