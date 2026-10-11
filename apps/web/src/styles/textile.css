@@ -766,7 +766,7 @@ h1 {
   fill: #658c58;
 }
 .chart-bar.is-cost {
-  fill: var(--color-primary);
+  fill: #c98a3d; /* a warm colour, so cost never reads as a second revenue bar in light or dark mode */
 }
 .chart-value {
   fill: var(--color-text-muted);
@@ -804,7 +804,7 @@ h1 {
   background: #658c58;
 }
 .chart-key.is-cost {
-  background: var(--color-primary);
+  background: #c98a3d;
 }
 
 /* ---------- Insights ---------- */
