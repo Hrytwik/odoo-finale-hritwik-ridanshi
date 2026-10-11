@@ -34,7 +34,9 @@ REDYE_SHARE = {"normal": 0.2, "bad": 0.2, "loss": 0.5, "remake": 0.2}         # 
 DEFECTS = {"normal": ["hole", "stain", "thread_fault"], "bad": ["thread_fault", "hole"], "loss": ["stain", "hole"],
            "remake": ["stain"]}
 BREAKDOWNS = [("LOOM-06", 9, 10, 40, "belt snapped"), ("SPIN-01", 15, 11, 14, "bearing noise"),
-              ("DYE-02", 22, 8, 20, "heater fault"), ("SPIN-02", 29, 20, 12, "drive belt slipping")]
+              ("DYE-02", 22, 8, 20, "heater fault")]
+# a machine that is down when the month ends, whatever time of day that is: (machine, hours before the end it broke, hours it needs)
+DOWN_AT_END = ("SPIN-02", 4, 12, "drive belt slipping")
 
 
 def hours(x: float) -> dt.timedelta:
@@ -120,7 +122,7 @@ class OrderSpec:
     state: str = "confirmed"       # confirmed | draft | cancelled
     story: str = ""                # "" | bad | loss | late | no_yarn
     opening_lot: bool = False      # its yarn lot arrived 4 days before the month began
-    hold: int = 0                  # hours the truck waits, loaded, before the driver signs it out (a truck still loading "now")
+    still_loading: bool = False    # its truck is loaded but not yet signed out when the month ends ("a truck still loading now")
 
 
 SHARMA, KAVYA = "Sharma Fabrics", "Kavya Garments"
@@ -133,7 +135,7 @@ ORDERS = [
     OrderSpec("O6", KAVYA, "Poplin 58in", "red", 2000, 48, 9, 12, story="loss"),      # under 5 rolls: its lot is never tested
     OrderSpec("O7", SHARMA, "Poplin 58in", "sky blue", 3000, 122, 11, 12, story="bad"),
     OrderSpec("O8", KAVYA, "Poplin 58in", "teal", 3000, 118, 12, 12, story="bad"),
-    OrderSpec("O9", SHARMA, "Twill 58in", "olive", 3500, 150, 22, 12, hold=20),
+    OrderSpec("O9", SHARMA, "Twill 58in", "olive", 3500, 150, 22, 12, still_loading=True),
     OrderSpec("O10", KAVYA, "Twill 58in", "black", 3000, 152, 25, 12),
     OrderSpec("O11", SHARMA, "Poplin 58in", "burgundy", 6000, 115, 26, 4, story="late"),
     OrderSpec("O12", KAVYA, "Poplin 58in", "beige", 3000, 118, 28, 10, story="no_yarn"),
@@ -161,6 +163,8 @@ class Builder:
         self.roster = Roster(self.day0.date() - dt.timedelta(days=5), days + 90, seed)
         self.events: list[Event] = []
         self.busy: list[tuple[str, dt.datetime, dt.datetime]] = []        # every booked run: machine, start, end
+        machine, before, length, _reason = DOWN_AT_END                     # booked first, so no run is ever planned across it
+        self.busy.append((machine, end - hours(before), end - hours(before) + hours(length)))
         self.trucks = 0
 
     def at(self, day: int, hour: float = 9) -> dt.datetime:
@@ -343,7 +347,9 @@ def _plan_order(b: Builder, o: OrderSpec, state: dict) -> None:
         b.ev(t, "dispatch_create", truck=truck, order=o.key, buyer=o.buyer, vehicle=f"KA-01-AB-{1000 + b.trucks}")
         for i, (_ft, key, _v, _m) in enumerate(group):
             b.ev(t + minutes(2 + 2 * i), "dispatch_scan", truck=truck, roll=key)
-        done = t + minutes(10 + 2 * len(group)) + hours(o.hold)
+        done = t + minutes(10 + 2 * len(group))
+        if o.still_loading:                  # a sign-out after the end is never played, whatever time of day the month is built
+            done = max(done, b.end + minutes(1))
         b.ev(done, "dispatch_confirm", truck=truck, order=o.key)
         state.setdefault("trucks", []).append((truck, o.key, done))
 
@@ -382,6 +388,9 @@ def _plan_breakdowns(b: Builder) -> None:
             start += hours(6)
         b.ev(start, "breakdown", machine=machine, reason=reason)
         b.ev(start + hours(length_h), "repair", machine=machine)
+    machine, before, length, reason = DOWN_AT_END
+    b.ev(b.end - hours(before), "breakdown", machine=machine, reason=reason)
+    b.ev(b.end - hours(before) + hours(length), "repair", machine=machine)         # after the end: never played
 
 
 def build_plan(end: dt.datetime, seed: int = 11, days: int = 30, orders: list[OrderSpec] | None = None) -> Plan:

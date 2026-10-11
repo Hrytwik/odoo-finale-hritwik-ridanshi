@@ -1,7 +1,7 @@
 # Demo: a simulated month at Everest Mills
 
 > **Summary:** How to build and open `everest_month`, a separate database holding 30 days of mill history built by the real service functions, with the logins, the real numbers of the current build, and the page to open for each of the seven stories (a bad yarn lot, a loss-making order, a late order, low yarn, a broken and an idle machine, overdue and part-paid money, a mill still running now).
-> **Last updated:** 2026-10-11 06:27 IST (numbers are from the build made at about 06:10 IST on 11 Oct 2026; nobody has yet looked at the screens in a browser)
+> **Last updated:** 2026-10-11 07:23 IST (numbers re-checked on the build made at 07:21 IST on 11 Oct 2026 after the merge, 22 of 22; the truck-loading and machine-down stories are now relative to the end of the month; nobody has yet looked at the screens in a browser)
 
 ## Build it
 
@@ -57,6 +57,7 @@ Every one of these was recalculated independently from the tables in SQL and mat
 
 - **Open runs are costed up to now.** Orders with a machine still running show their cost as *provisional*, and the October month report lists "is still open, so its cost is provisional" warnings for the 3 or 4 runs open at the end. That is true and expected; it is not missing data.
 - **Attendance for the shifts still to come today is already marked**, so the machines running now are covered. Left for many hours after the build, an open run is eventually costed past the next shift change, so rebuild before a long demo.
+- **Known gap: build between about 07:50 and 08:40 IST and the QC queue may be empty** (the audit then fails its one check "the QC queue has rolls waiting"; the app is fine). The four rolls waiting for inspection come from a dyeing batch that finishes at about 08:30 on the final day, so a month that ends before that has none waiting. Every other story (the truck still loading, the machine down now, the late order, the bad lot, the loss order) holds at every hour of the day: they are placed relative to the end of the month, and `test_month_plan.py` checks that across the whole day. A sweep of full builds at 30 different end times passed 22 of 22 everywhere except that window. If you build in it, rebuild after 08:45.
 - **Rejected metres are re-made.** An order is complete only when its good metres reach the ordered metres, so a rejected roll leads to a replacement batch (its own yarn lot, spinning, weaving, dyeing and check). That is why there are 16 lots for 12 orders.
 - **The two buyers' payments are real receipts against real invoices**, made by the same service the Receivables screen uses.
 - Every figure is made by the real rules. Nothing was typed in. The 22 checks and the independent SQL recalculations are in `services/api/scripts/month/audit.py`.

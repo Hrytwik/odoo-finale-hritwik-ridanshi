@@ -255,3 +255,29 @@ def test_rejected_metres_are_re_made_so_a_finished_order_reaches_its_ordered_met
     for key in ("O1", "O2", "O3", "O4", "O5"):                    # the orders long finished by the end of the month
         assert scanned[key] >= ordered[key], (key, scanned[key], ordered[key])
     assert any(":r:" in e.args["roll"] for e in plan.events if e.action == "roll_off"), "no replacement batch was ever made"
+
+
+@pytest.mark.parametrize("hour,minute", [(0, 5), (3, 0), (6, 23), (6, 31), (7, 8), (9, 59), (12, 0), (15, 30), (18, 0), (21, 45), (23, 55)])
+def test_a_truck_is_still_loading_whenever_in_the_day_the_month_is_built(hour, minute):
+    """The jury demo runs at a different time of day than the build was tried at; "a truck still loading" must not depend on it."""
+    end = dt.datetime(2026, 10, 11, hour, minute, tzinfo=IST)
+    events = build_plan(end, seed=11).events
+    created = {e.args["truck"] for e in events if e.action == "dispatch_create"}
+    confirmed = {e.args["truck"] for e in events if e.action == "dispatch_confirm"}
+    scanned = {e.args["truck"] for e in events if e.action == "dispatch_scan"}
+    loading = created - confirmed
+    assert len(loading) == 1, f"{len(loading)} trucks loading at {end:%H:%M}"
+    assert loading <= scanned, "the loading truck has rolls on it"
+
+
+@pytest.mark.parametrize("hour,minute", [(0, 5), (6, 23), (7, 8), (8, 1), (9, 59), (12, 0), (18, 0), (23, 55)])
+def test_a_machine_is_down_and_not_yet_repaired_whenever_in_the_day_the_month_is_built(hour, minute):
+    """Same family as the loading truck: "a down machine now" is relative to the end moment, not to a clock hour of the day."""
+    end = dt.datetime(2026, 10, 11, hour, minute, tzinfo=IST)
+    down = set()
+    for e in build_plan(end, seed=11).events:
+        if e.action == "breakdown":
+            down.add(e.args["machine"])
+        elif e.action == "repair":
+            down.discard(e.args["machine"])
+    assert down == {"SPIN-02"}, f"machines down at {end:%H:%M}: {sorted(down)}"
