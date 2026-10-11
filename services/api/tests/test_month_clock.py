@@ -38,11 +38,12 @@ def test_a_value_written_inside_the_step_moves_and_an_older_one_stays(db):
     with clock.at(MOMENT):
         db.execute(text("UPDATE orders SET confirmed_at = clock_timestamp() WHERE id = :i"), {"i": new.id})
     db.expire_all()
-    assert abs((new.confirmed_at - MOMENT).total_seconds()) < 0.2
+    assert new.confirmed_at == MOMENT                                      # exactly the planned moment, not a few ms after it
     assert old.confirmed_at == old_value
 
 
-def test_two_values_in_one_step_keep_their_distance(db):
+def test_two_values_written_in_one_step_become_the_same_moment(db):
+    """A simulated step is instantaneous: a hand-over planned for 14:00:00 must not land at 14:00:00.012."""
     clock = SimClock(db, END)
     first, second = make_order(db), make_order(db)
     with clock.at(MOMENT):
@@ -50,7 +51,7 @@ def test_two_values_in_one_step_keep_their_distance(db):
         time.sleep(0.05)
         db.execute(text("UPDATE orders SET confirmed_at = clock_timestamp() WHERE id = :i"), {"i": second.id})
     db.expire_all()
-    assert 0.04 < (second.confirmed_at - first.confirmed_at).total_seconds() < 0.5
+    assert first.confirmed_at == second.confirmed_at == MOMENT
 
 
 def test_one_statement_may_move_two_columns_of_a_row_without_breaking_a_check(db):
@@ -63,7 +64,7 @@ def test_one_statement_may_move_two_columns_of_a_row_without_breaking_a_check(db
         time.sleep(0.02)
         db.execute(text("UPDATE production_runs SET ended_at = clock_timestamp() WHERE id = :i"), {"i": run.id})
     db.expire_all()
-    assert run.started_at <= run.ended_at and abs((run.started_at - MOMENT).total_seconds()) < 0.2
+    assert run.started_at == run.ended_at == MOMENT
 
 
 def test_an_older_value_in_the_same_row_stays_put(db):
@@ -76,7 +77,7 @@ def test_an_older_value_in_the_same_row_stays_put(db):
     with clock.at(MOMENT):
         db.execute(text("UPDATE production_runs SET ended_at = clock_timestamp() WHERE id = :i"), {"i": run.id})
     db.expire_all()
-    assert run.started_at == old_start and abs((run.ended_at - MOMENT).total_seconds()) < 0.2
+    assert run.started_at == old_start and run.ended_at == MOMENT
 
 
 def test_one_statement_moves_all_of_a_tables_columns_so_a_check_between_them_holds(db):
@@ -87,7 +88,7 @@ def test_one_statement_moves_all_of_a_tables_columns_so_a_check_between_them_hol
     with clock.at(MOMENT):
         db.execute(text("INSERT INTO zz_pair (early, late) VALUES (clock_timestamp(), clock_timestamp())"))
     row = db.execute(text("SELECT early, late FROM zz_pair")).one()
-    assert row.early <= row.late and abs((row.early - MOMENT).total_seconds()) < 0.2
+    assert row.early == row.late == MOMENT
 
 
 def test_today_is_swapped_only_inside_installed(db):

@@ -1,7 +1,7 @@
 # B9 — A Simulated Month Implementation Plan
 
 > **Summary:** Builds `scripts/month/` and `scripts/build_month.py`: a deterministic scheduler that turns a hand-picked set of orders into timed mill events for the 30 days ending an hour before the build, a simulated clock that moves every real-clock timestamp the services write to the simulated moment, a runner that plays the events through the real service functions, and an audit that proves seven stories show up through the real endpoints. The target is a separate database `everest_month`; `everest` is never touched.
-> **Last updated:** 2026-10-11 05:56 IST (Tasks 1-4 done)
+> **Last updated:** 2026-10-11 06:02 IST (Tasks 1-5 done)
 
 > **How this plan is executed:** inline, one task at a time (atomic-workflow): test first, the full suite twice at each boundary, the important behaviours mutation-checked. Steps use checkbox (`- [ ]`) syntax.
 
@@ -22,6 +22,8 @@ Task 2 done and verified (2026-10-11 05:47 IST): `scripts/month/plan.py` and 21 
 Task 3 done and verified (2026-10-11 05:51 IST): `scripts/month/database.py`, the first half of `scripts/month/runner.py`, and 9 tests in `test_month_build.py` on a real throwaway database (`everest_month_test`, made once per module and dropped; only `everest` and `everest_test` remain afterwards). **The real services accepted every order, lot, run, hand-over, roll-off and dye load on the first run, and the leak check was empty**: the database defaults, `db_now` and `datetime.now` were all moved, and bill dates and deadlines follow the simulated calendar. The test's first-half filter had to change (play the events before the first inspection, since nothing before that involves rework). Mutations: the mover doing nothing, `today_ist` swapped only in the core module, no safety margin (which does matter), seeding outside a clock step, and the deadline taken from the real date all die; the last one first survived because no test checked deadlines, so one was added. Full backend suite 1,491 passed (1,482 before), twice.
 
 Task 4 done and verified (2026-10-11 05:56 IST): the second half of `runner.py` (quality, rework, dispatch, invoices, buyer and supplier payments, attendance, wages, breakdowns) and 6 more tests; **the real services accepted every event on the first run** (a 30-day month with three orders: inspections, hand and machine rework, trucks, invoices, 4 breakdowns with SPIN-02 still down at the end, wage payments, attendance). Checked in SQL from the tables, not from the plan: every run's operator was marked present for the shift in which the run started; every dispatched roll's latest inspection is a pass; the opening lot's bill is overdue. Corrections to the plan's code: `WageRow` has `worker_id` (not `worker.id`); the two module-scoped fixtures were merged into one (the second `DROP DATABASE ... WITH (FORCE)` killed the first one's connection), so `Runner.play` lost its `only` filter. Mutations: wrong operator, everyone absent, wages skipped, breakdowns not recorded (the real service refuses the repair), supplier payment skipped and verdict forced to pass (the real service refuses the rework) all die. Full backend suite 1,497 passed (1,491 before), twice.
+
+Task 5 done and verified (2026-10-11 06:02 IST): `scripts/month/audit.py` (structure checks for any month: no leaks, yarn on hand = ledger, every run's operator present, month reports with invoiced = invoices in SQL and no "not covered" warning, order yarn cost = ledger x lot price in SQL, portal scope; story checks for the full month: bad lot flagged and recall reaching both buyers, unlucky operator not flagged, loss order, late order, low cotton, floor board statuses, idle loom, QC queue, overdue bill, part-paid invoice, truck still loading, and the month's counts) and 2 tests. **The first audit run found a real design flaw in the clock (Task 1):** the mover kept the few milliseconds a step really took, so a hand-over planned for 14:00:00 landed at 14:00:00.012, a hair outside the outgoing operator's shift, and the month report warned "0.0 hours not covered by attendance". A simulated step is instantaneous, so the mover now sets every value written in a step to exactly the planned moment; its tests were rewritten to say so (and the old design now fails six tests). Plan changes: `audit(db, clock, runner=None, full=True)` takes the runner (for the lot, order and roll codes), not the plan. Planted-fault tests prove the leak check and the attendance check turn red; the ledger and invoiced checks compare two derivations of the same table, so no SQL plant can separate them (the real build is their test). Full backend suite 1,499 passed (1,497 before), twice.
 
 ## Spec corrections found while planning
 
@@ -1261,9 +1263,9 @@ git commit -m "Play quality checks, rework, dispatch, money, attendance and brea
 - Consumes: the finished database; the endpoint functions `costing.router.month_report(month, db)` and `order_cost(order_code, db)`, `insights.router.late_orders(db)`, `shortages(db)`, `root_causes(db)`, `store.router.lot_recall(lot_code, db)`, `money.service.receivables(db)` and `payables(db)`, `floor.board`, `qc.service.queue(db)`, `portal.service`.
 - Produces: `Check(name, ok, detail)`; `audit(db, clock, plan=None, full=True) -> list[Check]`; `report(checks) -> str`.
 
-- [ ] **Step 1: Write the failing tests.** In `test_month_build.py`: `audit(db, clock, full=False)` on the mini month returns checks that are all `ok` (structure only: no leaks, every attendance-covered run, the yarn ledger equals receipts minus issues for every lot, the month report has no "not covered by attendance" warning, receivables and payables load); and a unit test that a check fails when it should: a database with a timestamp later than the end gives a failing `leaks` check.
-- [ ] **Step 2: Run to verify it fails.** Expected: `scripts.month.audit` does not exist.
-- [ ] **Step 3: Implement `audit.py`.** The full list (`full=True`), each a function returning a `Check` and each reading through the real endpoint functions, with an independent SQL figure where noted:
+- [x] **Step 1: Write the failing tests.** In `test_month_build.py`: `audit(db, clock, full=False)` on the mini month returns checks that are all `ok` (structure only: no leaks, every attendance-covered run, the yarn ledger equals receipts minus issues for every lot, the month report has no "not covered by attendance" warning, receivables and payables load); and a unit test that a check fails when it should: a database with a timestamp later than the end gives a failing `leaks` check.
+- [x] **Step 2: Run to verify it fails.** Expected: `scripts.month.audit` does not exist.
+- [x] **Step 3: Implement `audit.py`.** The full list (`full=True`), each a function returning a `Check` and each reading through the real endpoint functions, with an independent SQL figure where noted:
   1. `leaks`: `clock.leaks() == []`.
   2. `ledger`: for every lot, on-hand from the stock endpoint equals receipts minus issues plus returns summed in SQL.
   3. `month_report`: for the month of the end date and the previous month, no warning contains "not covered"; invoiced total equals `SELECT sum(total_amount) FROM invoices WHERE issued_at` in that month (independent SQL, to the paisa).
@@ -1278,9 +1280,9 @@ git commit -m "Play quality checks, rework, dispatch, money, attendance and brea
   12. `mix`: reported, not asserted: the overall verdict mix and the counts of orders, lots, rolls, runs, inspections.
   Output: `report(checks)` prints one line per check, `PASS` or `FAIL`, with the detail.
   Verify at execution: the field names above against the schemas (`MonthReport.profit`, `RecallOut`, `MachineMonth`), and adjust the audit, never loosen a threshold.
-- [ ] **Step 4: Run it.** Expected: the mini-month audit passes. The full audit is first run in Task 7.
-- [ ] **Step 5: Full suite twice;** green.
-- [ ] **Step 6: Commit.**
+- [x] **Step 4: Run it.** Expected: the mini-month audit passes. The full audit is first run in Task 7.
+- [x] **Step 5: Full suite twice;** green.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add services/api/scripts/month/audit.py services/api/tests/test_month_build.py
@@ -1374,8 +1376,9 @@ def build_month(url: str, end: dt.datetime | None = None, days: int = 30, orders
             with clock.installed():
                 with clock.at(plan.day0 - dt.timedelta(days=6)):
                     seed_dev.seed_all(db)
-                Runner(db, clock).play(plan.events)
-            return audit(db, clock, plan=plan, full=full)
+                runner = Runner(db, clock)
+                runner.play(plan.events)
+            return audit(db, clock, runner=runner, full=full)
     finally:
         engine.dispose()
         if not keep:

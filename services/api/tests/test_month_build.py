@@ -155,3 +155,31 @@ def test_the_money_screens_load_and_the_opening_lots_bill_is_overdue(built):
     assert money.receivables(db)
     overdue = [p for p in money.payables(db) if p.overdue]
     assert len(overdue) >= 1
+
+
+def test_the_audit_passes_on_a_small_month(built):
+    from scripts.month.audit import audit, report
+    plan, clock, runner, db = built
+    checks = audit(db, clock, runner=runner, full=False)
+    assert len(checks) >= 8 and all(c.ok for c in checks), report([c for c in checks if not c.ok])
+
+
+def test_the_audit_fails_when_something_is_wrong(built):
+    """Each planted fault must turn its own check red: a real-clock timestamp, and a run whose operator (a night-shift
+    worker) was never marked present in the shift the run started in."""
+    from sqlalchemy import text
+    from scripts.month.audit import audit
+    plan, clock, runner, db = built
+
+    def failing(plant):
+        nested = db.begin_nested()
+        try:
+            db.execute(text(plant))
+            return {c.name for c in audit(db, clock, runner=runner, full=False) if not c.ok}
+        finally:
+            nested.rollback()
+
+    assert "no real-clock timestamp left" in failing("UPDATE orders SET confirmed_at = clock_timestamp() WHERE id = (SELECT min(id) FROM orders)")
+    assert "every run's operator was present that shift" in failing(
+        "UPDATE production_runs SET operator_worker_id = (SELECT id FROM workers WHERE code = 'W-010') "
+        "WHERE id = (SELECT min(id) FROM production_runs WHERE machine_id IS NOT NULL)")
