@@ -21,19 +21,23 @@ const HOLE_RECALL_BAR = 0.8
 const FALSE_ALARM_BAR = 0.2
 
 const pct = (n: number | null) => (n === null ? '-' : `${Math.round(n * 100)}%`)
-const safeHref = (url: string) => (/^https?:\/\//i.test(url) ? url : null)
 
 function meetsBar(c: Card_) {
   const holes = c.per_class.find((p) => p.defect_type === 'hole')
   return !!holes && holes.recall !== null && holes.recall >= HOLE_RECALL_BAR && c.clean_false_alarm_rate !== null && c.clean_false_alarm_rate <= FALSE_ALARM_BAR
 }
 
-export default function ModelCard() {
+/** How the model did on photos it had never seen: the part of the Vision model page about accuracy. */
+export function ModelAccuracy() {
   const card = useQuery({ queryKey: ['qc', 'model-card'], queryFn: () => call(api.GET('/api/qc/model-card')) })
+  return <QueryBoundary query={card}>{(c) => (c.available ? <Evaluated c={c} /> : <NotYet />)}</QueryBoundary>
+}
+
+export default function ModelCard() {
   return (
     <>
       <PageHeader title="Vision model" description="How the defect model did on photos it had never seen. Real numbers only." />
-      <QueryBoundary query={card}>{(c) => (c.available ? <Evaluated c={c} /> : <NotYet />)}</QueryBoundary>
+      <ModelAccuracy />
     </>
   )
 }
@@ -146,28 +150,6 @@ function Evaluated({ c }: { c: Card_ }) {
               ))}
             </tbody>
           </Table>
-        </Card>
-      </Reveal>
-
-      <Reveal>
-        <Card title="Where the training photos came from">
-          <ul className="plain-list">
-            {c.datasets.map((d) => {
-              const href = safeHref(d.url)
-              return (
-                <li key={d.name}>
-                  {href ? (
-                    <a href={href} target="_blank" rel="noopener noreferrer">
-                      {d.name}
-                    </a>
-                  ) : (
-                    <span>{d.name}</span>
-                  )}{' '}
-                  <span className="muted text-sm">({d.licence})</span>
-                </li>
-              )
-            })}
-          </ul>
         </Card>
       </Reveal>
     </div>

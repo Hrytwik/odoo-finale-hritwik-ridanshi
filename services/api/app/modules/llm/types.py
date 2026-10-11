@@ -38,6 +38,7 @@ class ToolSpec:
 class Completion:
     text: str
     tool_calls: list[ToolCall]
+    truncated: bool = False  # the provider stopped because it ran out of tokens, so the text may end mid-sentence
 
 
 class AdapterError(Exception):

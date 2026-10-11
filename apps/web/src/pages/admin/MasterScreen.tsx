@@ -48,6 +48,8 @@ type Props<T extends { id: number }> = {
   canEdit?: boolean
   /** keys other screens read too, refetched after a save */
   alsoInvalidate?: string[][]
+  /** extra buttons or badges for a row, shown beside Edit */
+  rowActions?: (row: T) => ReactNode
 }
 
 const sentence = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
@@ -103,9 +105,12 @@ export function MasterScreen<T extends { id: number }>(props: Props<T>) {
                       ))}
                       {canEdit && (
                         <td>
-                          <Button variant="secondary" onClick={() => setEditing(row)} aria-label={`Edit ${singular} ${row.id}`}>
-                            <Pencil size={14} aria-hidden /> Edit
-                          </Button>
+                          <span className="row">
+                            <Button variant="secondary" onClick={() => setEditing(row)} aria-label={`Edit ${singular} ${row.id}`}>
+                              <Pencil size={14} aria-hidden /> Edit
+                            </Button>
+                            {props.rowActions?.(row)}
+                          </span>
                         </td>
                       )}
                     </tr>

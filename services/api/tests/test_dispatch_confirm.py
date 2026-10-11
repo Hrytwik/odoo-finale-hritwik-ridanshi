@@ -64,7 +64,7 @@ def test_the_worked_invoice_two_orders_two_lines(client, db, clerk, events):
     out = r.json()
     assert out["state"] == "dispatched" and out["dispatched_at"] and out["invoice_no"].startswith("INV-")
     assert {x["status"] for x in out["rolls"]} == {"dispatched"}
-    assert events[0] == ("dispatch.changed", out["id"]) and {k for k, _ in events} == {"dispatch.changed", "roll.changed"}
+    assert events[0] == ("dispatch.changed", out["id"]) and {k for k, _ in events} == {"dispatch.changed", "roll.changed", "notice.changed"}  # the buyer is told too
     assert [i for k, i in events if k == "roll.changed"] == sorted(x.id for x in (r1, r2, r3))
     inv = client.get(f"/api/invoices/{out['invoice_no']}").json()
     assert inv["issued_at"] == out["dispatched_at"] and inv["dispatch_code"] == code and inv["vehicle_no"] == "KA01AB1234"

@@ -14,6 +14,8 @@ import { Card } from '@/components/ui/Card'
 import { Field, Input, Select, Textarea } from '@/components/ui/Field'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Table } from '@/components/ui/Table'
+import type { Key } from '@/i18n/en'
+import { useI18n } from '@/i18n/I18nContext'
 import { api, call, type components } from '@/lib/api'
 import { formatDateTime, formatKg, formatMetres } from '@/lib/format'
 import { useAction } from '@/lib/useAction'
@@ -35,14 +37,15 @@ export default function MachineDetail() {
 }
 
 function Machine({ m }: { m: Detail }) {
+  const { t } = useI18n()
   return (
     <>
-      <PageHeader title={m.name} description={`${m.code} · ${m.stage} machine`} actions={<Actions m={m} />} />
+      <PageHeader title={m.name} description={t('machine.subtitle', { code: m.code, stage: t(`floor.stage.${m.stage}` as Key) })} actions={<Actions m={m} />} />
       <div className="stack">
         <div className="row">
           <StatusBadge kind="machine" value={m.status} />
           <span className="muted text-sm">
-            Today: <strong>{m.output_unit === 'kg' ? formatKg(m.output_today) : formatMetres(m.output_today)}</strong>
+            {t('floor.today')}: <strong>{m.output_unit === 'kg' ? formatKg(m.output_today) : formatMetres(m.output_today)}</strong>
           </span>
         </div>
 
@@ -52,26 +55,26 @@ function Machine({ m }: { m: Detail }) {
             <span>
               <strong>{m.downtime.reason}</strong>
               <br />
-              <span className="text-sm">Down since {formatDateTime(m.downtime.started_at)}</span>
+              <span className="text-sm">{t('floor.downSince', { time: formatDateTime(m.downtime.started_at) })}</span>
             </span>
           </div>
         )}
 
         {m.current_run && (
           <Reveal>
-            <Card title="Running now">
+            <Card title={t('machine.runningNow')}>
               <div className="stack-sm">
                 <p>
-                  <strong>{m.current_run.order_code}</strong> · {m.current_run.operator.name}, since {formatDateTime(m.current_run.started_at)}
+                  <strong>{m.current_run.order_code}</strong> · {t('machine.runningLine', { operator: m.current_run.operator.name, time: formatDateTime(m.current_run.started_at) })}
                 </p>
-                <ProgressBar label="Order progress" value={m.current_run.order_progress_pct} max={100} tone="blue" unit="%" />
+                <ProgressBar label={t('floor.orderProgress')} value={m.current_run.order_progress_pct} max={100} tone="blue" unit="%" />
               </div>
             </Card>
           </Reveal>
         )}
 
         <Reveal>
-          <Card title="Recent runs">
+          <Card title={t('machine.recentRuns')}>
             <RecentRuns runs={m.recent_runs} />
           </Card>
         </Reveal>
@@ -81,17 +84,18 @@ function Machine({ m }: { m: Detail }) {
 }
 
 function RecentRuns({ runs }: { runs: Run[] }) {
-  if (runs.length === 0) return <EmptyState title="No runs on this machine yet" />
+  const { t } = useI18n()
+  if (runs.length === 0) return <EmptyState title={t('machine.noRuns')} />
   return (
     <Table>
       <thead>
         <tr>
-          <th>Run</th>
-          <th>Order</th>
-          <th>Operator</th>
-          <th>Started</th>
-          <th>Ended</th>
-          <th className="num">Output</th>
+          <th>{t('machine.col.run')}</th>
+          <th>{t('qc.col.order')}</th>
+          <th>{t('qc.rework.operator')}</th>
+          <th>{t('machine.col.started')}</th>
+          <th>{t('machine.col.ended')}</th>
+          <th className="num">{t('machine.col.output')}</th>
         </tr>
       </thead>
       <tbody>
@@ -101,7 +105,7 @@ function RecentRuns({ runs }: { runs: Run[] }) {
             <td>{r.order_code}</td>
             <td>{r.operator.name}</td>
             <td className="nowrap">{formatDateTime(r.started_at)}</td>
-            <td className="nowrap">{r.ended_at ? formatDateTime(r.ended_at) : <Badge tone="green">running</Badge>}</td>
+            <td className="nowrap">{r.ended_at ? formatDateTime(r.ended_at) : <Badge tone="green">{t('floor.running')}</Badge>}</td>
             <td className="num">{r.stage === 'spinning' ? (r.output_kg === null ? '-' : formatKg(r.output_kg)) : formatMetres(r.metres)}</td>
           </tr>
         ))}
@@ -115,6 +119,7 @@ function RecentRuns({ runs }: { runs: Run[] }) {
 type Kind = 'start' | 'end' | 'handover' | 'rolloff' | 'load' | 'issue' | 'breakdown' | null
 
 function Actions({ m }: { m: Detail }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState<Kind>(null)
   const close = () => setOpen(null)
   const run = m.current_run
@@ -124,11 +129,11 @@ function Actions({ m }: { m: Detail }) {
     return (
       <Button
         onClick={() =>
-          repair.act(() => call(api.POST('/api/machines/{machine_code}/repair', { params: { path: { machine_code: m.code } } })), `${m.name} is back in service`)
+          repair.act(() => call(api.POST('/api/machines/{machine_code}/repair', { params: { path: { machine_code: m.code } } })), t('machine.repairedToast', { name: m.name }))
         }
         aria-busy={repair.pending}
       >
-        <Wrench size={16} aria-hidden /> Mark repaired
+        <Wrench size={16} aria-hidden /> {t('machine.markRepaired')}
       </Button>
     )
   }
@@ -137,36 +142,36 @@ function Actions({ m }: { m: Detail }) {
     <>
       {!run && (
         <Button onClick={() => setOpen('start')}>
-          <Play size={16} aria-hidden /> Start run
+          <Play size={16} aria-hidden /> {t('machine.startRun')}
         </Button>
       )}
       {run && m.stage === 'weaving' && (
         <Button onClick={() => setOpen('rolloff')}>
-          <Scissors size={16} aria-hidden /> Roll off
+          <Scissors size={16} aria-hidden /> {t('machine.rollOff')}
         </Button>
       )}
       {run && m.stage === 'dyeing' && (
         <Button onClick={() => setOpen('load')}>
-          <Layers size={16} aria-hidden /> Load rolls
+          <Layers size={16} aria-hidden /> {t('machine.loadRolls')}
         </Button>
       )}
       {run && m.stage === 'spinning' && (
         <Button onClick={() => setOpen('issue')}>
-          <Hammer size={16} aria-hidden /> Issue yarn
+          <Hammer size={16} aria-hidden /> {t('machine.issueYarn')}
         </Button>
       )}
       {run && (
         <Button variant="secondary" onClick={() => setOpen('handover')}>
-          <ArrowRightLeft size={16} aria-hidden /> Hand over
+          <ArrowRightLeft size={16} aria-hidden /> {t('machine.handOver')}
         </Button>
       )}
       {run && (
         <Button variant="secondary" onClick={() => setOpen('end')}>
-          <CircleStop size={16} aria-hidden /> End run
+          <CircleStop size={16} aria-hidden /> {t('machine.endRun')}
         </Button>
       )}
       <Button variant="secondary" onClick={() => setOpen('breakdown')}>
-        <AlertTriangle size={16} aria-hidden /> Report breakdown
+        <AlertTriangle size={16} aria-hidden /> {t('machine.reportBreakdown')}
       </Button>
 
       <StartRunDialog m={m} open={open === 'start'} onClose={close} />
@@ -192,12 +197,13 @@ function useOperators(enabled: boolean) {
 }
 
 function OperatorSelect({ label, value, onChange, exclude, error, enabled }: { label: string; value: string; onChange: (v: string) => void; exclude?: number; error?: string; enabled: boolean }) {
+  const { t } = useI18n()
   const operators = useOperators(enabled)
   return (
     <Field label={label} error={error}>
       {(c) => (
         <Select {...c} value={value} onChange={(e) => onChange(e.target.value)}>
-          <option value="">Select an operator</option>
+          <option value="">{t('qc.rework.selectOperator')}</option>
           {(operators.data ?? [])
             .filter((w) => w.id !== exclude)
             .map((w) => (
@@ -212,6 +218,7 @@ function OperatorSelect({ label, value, onChange, exclude, error, enabled }: { l
 }
 
 function StartRunDialog({ m, open, onClose }: { m: Detail; open: boolean } & Pick<DialogProps, 'onClose'>) {
+  const { t } = useI18n()
   const [order, setOrder] = useState('')
   const [operator, setOperator] = useState('')
   const [inputRun, setInputRun] = useState('')
@@ -225,9 +232,9 @@ function StartRunDialog({ m, open, onClose }: { m: Detail; open: boolean } & Pic
 
   function submit() {
     const next: Record<string, string> = {}
-    if (!order) next.order = 'Choose an order'
-    if (!operator) next.operator = 'Choose an operator'
-    if (needsInput && !(Number.isInteger(Number(inputRun)) && Number(inputRun) > 0)) next.input = 'Enter the spinning run number that supplies the yarn'
+    if (!order) next.order = t('machine.chooseOrder')
+    if (!operator) next.operator = t('machine.chooseOperator')
+    if (needsInput && !(Number.isInteger(Number(inputRun)) && Number(inputRun) > 0)) next.input = t('machine.needSpinningRun')
     setErrors(next)
     if (Object.keys(next).length) return
     return act(
@@ -237,16 +244,16 @@ function StartRunDialog({ m, open, onClose }: { m: Detail; open: boolean } & Pic
             body: { order_code: order, machine_code: m.code, operator_worker_id: Number(operator), ...(needsInput ? { input_run_id: Number(inputRun) } : {}) },
           }),
         ),
-      `Run started on ${m.name}`,
+      t('machine.startedToast', { name: m.name }),
     )
   }
 
   return (
-    <ActionDialog open={open} onClose={onClose} title={`Start a run on ${m.name}`} confirmLabel="Start run" onConfirm={submit} pending={pending} error={error}>
-      <Field label="Order" error={errors.order}>
+    <ActionDialog open={open} onClose={onClose} title={t('machine.startTitle', { name: m.name })} confirmLabel={t('machine.startRun')} onConfirm={submit} pending={pending} error={error}>
+      <Field label={t('qc.col.order')} error={errors.order}>
         {(c) => (
           <Select {...c} value={order} onChange={(e) => setOrder(e.target.value)}>
-            <option value="">Select an order</option>
+            <option value="">{t('machine.selectOrder')}</option>
             {(orders.data ?? []).map((o) => (
               <option key={o.code} value={o.code}>
                 {o.code} · {o.buyer.name}
@@ -255,9 +262,9 @@ function StartRunDialog({ m, open, onClose }: { m: Detail; open: boolean } & Pic
           </Select>
         )}
       </Field>
-      <OperatorSelect label="Operator" value={operator} onChange={setOperator} error={errors.operator} enabled={open} />
+      <OperatorSelect label={t('qc.rework.operator')} value={operator} onChange={setOperator} error={errors.operator} enabled={open} />
       {needsInput && (
-        <Field label="Spinning run number" error={errors.input} hint="The spinning run whose yarn this loom uses.">
+        <Field label={t('machine.spinningRun')} error={errors.input} hint={t('machine.spinningRunHint')}>
           {(c) => <Input {...c} inputMode="numeric" value={inputRun} onChange={(e) => setInputRun(e.target.value)} />}
         </Field>
       )}
@@ -265,7 +272,7 @@ function StartRunDialog({ m, open, onClose }: { m: Detail; open: boolean } & Pic
         <div className="row">
           {candidates.map((x) => (
             <Button key={x.code} variant="secondary" onClick={() => setInputRun(String(x.current_run!.id))}>
-              #{x.current_run!.id} on {x.code}
+              {t('machine.runOn', { id: x.current_run!.id, code: x.code })}
             </Button>
           ))}
         </div>
@@ -275,25 +282,26 @@ function StartRunDialog({ m, open, onClose }: { m: Detail; open: boolean } & Pic
 }
 
 function EndRunDialog({ m, runId, open, onClose }: { m: Detail; runId: number } & DialogProps) {
+  const { t } = useI18n()
   const [kg, setKg] = useState('')
   const [err, setErr] = useState<string | undefined>()
   const { act, pending, error } = useAction({ invalidate: REFRESH, onDone: onClose })
   const spinning = m.stage === 'spinning'
 
   function submit() {
-    if (spinning && (kg.trim() === '' || !(Number(kg) >= 0))) return setErr('Enter the kilos spun')
+    if (spinning && (kg.trim() === '' || !(Number(kg) >= 0))) return setErr(t('machine.enterKilos'))
     setErr(undefined)
     return act(
       () => call(api.POST('/api/runs/{run_id}/end', { params: { path: { run_id: runId } }, body: spinning ? { output_kg: Number(kg) } : {} })),
-      'Run ended',
+      t('machine.endedToast'),
     )
   }
 
   return (
-    <ActionDialog open={open} onClose={onClose} title="End this run?" confirmLabel="End run" onConfirm={submit} pending={pending} error={error}>
-      <p>The machine becomes free for the next job.</p>
+    <ActionDialog open={open} onClose={onClose} title={t('machine.endTitle')} confirmLabel={t('machine.endRun')} onConfirm={submit} pending={pending} error={error}>
+      <p>{t('machine.endBody')}</p>
       {spinning && (
-        <Field label="Kilos spun" error={err}>
+        <Field label={t('machine.kilosSpun')} error={err}>
           {(c) => <Input {...c} type="number" inputMode="decimal" step="any" value={kg} onChange={(e) => setKg(e.target.value)} />}
         </Field>
       )}
@@ -302,32 +310,34 @@ function EndRunDialog({ m, runId, open, onClose }: { m: Detail; runId: number } 
 }
 
 function HandoverDialog({ m, runId, currentOperatorId, open, onClose }: { m: Detail; runId: number; currentOperatorId: number } & DialogProps) {
+  const { t } = useI18n()
   const [operator, setOperator] = useState('')
   const [err, setErr] = useState<string | undefined>()
   const { act, pending, error } = useAction({ invalidate: REFRESH, onDone: onClose })
 
   function submit() {
-    if (!operator) return setErr('Choose the new operator')
+    if (!operator) return setErr(t('machine.chooseNewOperator'))
     setErr(undefined)
-    return act(() => call(api.POST('/api/runs/{run_id}/handover', { params: { path: { run_id: runId } }, body: { operator_worker_id: Number(operator) } })), `${m.name} handed over`)
+    return act(() => call(api.POST('/api/runs/{run_id}/handover', { params: { path: { run_id: runId } }, body: { operator_worker_id: Number(operator) } })), t('machine.handedToast', { name: m.name }))
   }
 
   return (
-    <ActionDialog open={open} onClose={onClose} title="Hand over the machine" confirmLabel="Hand over" onConfirm={submit} pending={pending} error={error}>
-      <p>The current run ends now and a new one starts for the same order with the new operator.</p>
-      <OperatorSelect label="New operator" value={operator} onChange={setOperator} exclude={currentOperatorId} error={err} enabled={open} />
+    <ActionDialog open={open} onClose={onClose} title={t('machine.handoverTitle')} confirmLabel={t('machine.handOver')} onConfirm={submit} pending={pending} error={error}>
+      <p>{t('machine.handoverBody')}</p>
+      <OperatorSelect label={t('machine.newOperator')} value={operator} onChange={setOperator} exclude={currentOperatorId} error={err} enabled={open} />
     </ActionDialog>
   )
 }
 
 function RollOffDialog({ runId, open, onClose }: { runId: number } & DialogProps) {
+  const { t } = useI18n()
   const [metres, setMetres] = useState('')
   const [err, setErr] = useState<string | undefined>()
   const { act, pending, error } = useAction({ invalidate: REFRESH, onDone: onClose })
 
   function submit() {
     const n = Number(metres)
-    if (metres.trim() === '' || !(n > 0)) return setErr('Enter the metres, more than 0')
+    if (metres.trim() === '' || !(n > 0)) return setErr(t('machine.enterMetres'))
     setErr(undefined)
     return act(
       async () => {
@@ -335,14 +345,14 @@ function RollOffDialog({ runId, open, onClose }: { runId: number } & DialogProps
         setMetres('')
         return roll
       },
-      (roll) => `Roll ${roll.code} created, ${formatMetres(roll.metres)}`,
+      (roll) => t('machine.rollCreated', { code: roll.code, metres: formatMetres(roll.metres) }),
     )
   }
 
   return (
-    <ActionDialog open={open} onClose={onClose} title="Roll off a roll" confirmLabel="Roll off" onConfirm={submit} pending={pending} error={error}>
-      <p>Measure the finished roll, then enter its length. It gets its own code and QR.</p>
-      <Field label="Metres" error={err}>
+    <ActionDialog open={open} onClose={onClose} title={t('machine.rollOffTitle')} confirmLabel={t('machine.rollOff')} onConfirm={submit} pending={pending} error={error}>
+      <p>{t('machine.rollOffBody')}</p>
+      <Field label={t('dispatch.col.metres')} error={err}>
         {(c) => <Input {...c} type="number" inputMode="decimal" step="any" value={metres} onChange={(e) => setMetres(e.target.value)} />}
       </Field>
     </ActionDialog>
@@ -350,20 +360,21 @@ function RollOffDialog({ runId, open, onClose }: { runId: number } & DialogProps
 }
 
 function LoadRollsDialog({ runId, open, onClose }: { runId: number } & DialogProps) {
+  const { t } = useI18n()
   const [text, setText] = useState('')
   const [err, setErr] = useState<string | undefined>()
   const { act, pending, error } = useAction({ invalidate: REFRESH, onDone: onClose })
 
   function submit() {
     const codes = text.split(/[\s,;]+/).map((c) => c.trim().toUpperCase()).filter(Boolean)
-    if (codes.length === 0) return setErr('Enter at least one roll code')
+    if (codes.length === 0) return setErr(t('machine.enterOneRoll'))
     setErr(undefined)
-    return act(() => call(api.POST('/api/runs/{run_id}/load-rolls', { params: { path: { run_id: runId } }, body: { roll_codes: codes } })), `${codes.length} ${codes.length === 1 ? 'roll' : 'rolls'} loaded`)
+    return act(() => call(api.POST('/api/runs/{run_id}/load-rolls', { params: { path: { run_id: runId } }, body: { roll_codes: codes } })), t(codes.length === 1 ? 'machine.loaded.one' : 'machine.loaded.many', { count: codes.length }))
   }
 
   return (
-    <ActionDialog open={open} onClose={onClose} title="Load rolls into the dyeing machine" confirmLabel="Load rolls" onConfirm={submit} pending={pending} error={error}>
-      <Field label="Roll codes" error={err} hint="Separate with spaces or commas. Only woven rolls of this order can be loaded.">
+    <ActionDialog open={open} onClose={onClose} title={t('machine.loadTitle')} confirmLabel={t('machine.loadRolls')} onConfirm={submit} pending={pending} error={error}>
+      <Field label={t('machine.rollCodes')} error={err} hint={t('machine.rollCodesHint')}>
         {(c) => <Textarea {...c} value={text} onChange={(e) => setText(e.target.value)} />}
       </Field>
     </ActionDialog>
@@ -371,6 +382,7 @@ function LoadRollsDialog({ runId, open, onClose }: { runId: number } & DialogPro
 }
 
 function IssueYarnDialog({ runId, open, onClose }: { runId: number } & DialogProps) {
+  const { t } = useI18n()
   const [lot, setLot] = useState('')
   const [qty, setQty] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -380,28 +392,28 @@ function IssueYarnDialog({ runId, open, onClose }: { runId: number } & DialogPro
 
   function submit() {
     const next: Record<string, string> = {}
-    if (!lot) next.lot = 'Choose a lot'
-    if (!(Number(qty) > 0)) next.qty = 'Enter the quantity in kg, more than 0'
+    if (!lot) next.lot = t('machine.chooseLot')
+    if (!(Number(qty) > 0)) next.qty = t('machine.enterQty')
     setErrors(next)
     if (Object.keys(next).length) return
-    return act(() => call(api.POST('/api/movements/issue', { body: { lot_code: lot, run_id: runId, qty_kg: Number(qty) } })), `${formatKg(Number(qty))} issued from ${lot}`)
+    return act(() => call(api.POST('/api/movements/issue', { body: { lot_code: lot, run_id: runId, qty_kg: Number(qty) } })), t('machine.issuedToast', { qty: formatKg(Number(qty)), lot }))
   }
 
   return (
-    <ActionDialog open={open} onClose={onClose} title="Issue yarn to this run" confirmLabel="Issue yarn" onConfirm={submit} pending={pending} error={error}>
-      <Field label="Lot" error={errors.lot}>
+    <ActionDialog open={open} onClose={onClose} title={t('machine.issueTitle')} confirmLabel={t('machine.issueYarn')} onConfirm={submit} pending={pending} error={error}>
+      <Field label={t('machine.lot')} error={errors.lot}>
         {(c) => (
           <Select {...c} value={lot} onChange={(e) => setLot(e.target.value)}>
-            <option value="">Select a lot</option>
+            <option value="">{t('machine.selectLot')}</option>
             {usable.map((l) => (
               <option key={l.lot_code} value={l.lot_code}>
-                {l.lot_code} · {l.yarn_type.name} · {formatKg(l.on_hand_kg)} on hand
+                {t('machine.lotOption', { code: l.lot_code, yarn: l.yarn_type.name, qty: formatKg(l.on_hand_kg) })}
               </option>
             ))}
           </Select>
         )}
       </Field>
-      <Field label="Quantity (kg)" error={errors.qty}>
+      <Field label={t('store.receive.qty')} error={errors.qty}>
         {(c) => <Input {...c} type="number" inputMode="decimal" step="any" value={qty} onChange={(e) => setQty(e.target.value)} />}
       </Field>
     </ActionDialog>
@@ -409,12 +421,13 @@ function IssueYarnDialog({ runId, open, onClose }: { runId: number } & DialogPro
 }
 
 function BreakdownDialog({ m, open, onClose }: { m: Detail } & DialogProps) {
+  const { t } = useI18n()
   const [reason, setReason] = useState('')
   const [err, setErr] = useState<string | undefined>()
   const { act, pending, error } = useAction({ invalidate: REFRESH, onDone: onClose })
 
   function submit() {
-    if (!reason.trim()) return setErr('Say what went wrong')
+    if (!reason.trim()) return setErr(t('machine.sayWhat'))
     setErr(undefined)
     return act(
       async () => {
@@ -422,14 +435,14 @@ function BreakdownDialog({ m, open, onClose }: { m: Detail } & DialogProps) {
         setReason('')
         return card
       },
-      `${m.name} marked down`,
+      t('machine.downToast', { name: m.name }),
     )
   }
 
   return (
-    <ActionDialog open={open} onClose={onClose} title={`Report a breakdown on ${m.name}`} confirmLabel="Report breakdown" onConfirm={submit} pending={pending} error={error} danger>
-      <p>Any run on this machine ends at the same moment. The board and the order delivery dates update for everyone.</p>
-      <Field label="What went wrong" error={err}>
+    <ActionDialog open={open} onClose={onClose} title={t('machine.breakdownTitle', { name: m.name })} confirmLabel={t('machine.reportBreakdown')} onConfirm={submit} pending={pending} error={error} danger>
+      <p>{t('machine.breakdownBody')}</p>
+      <Field label={t('machine.whatWrong')} error={err}>
         {(c) => <Textarea {...c} value={reason} onChange={(e) => setReason(e.target.value)} />}
       </Field>
     </ActionDialog>

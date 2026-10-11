@@ -1,18 +1,21 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useMemo } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import wovenUrl from '@/assets/art/woven-plaid.svg'
 import { BrandMark } from '@/components/common/BrandMark'
 import { Typewriter } from '@/components/motion/Typewriter'
+import { LanguageSwitcher } from '@/i18n/LanguageSwitcher'
+import { useI18n } from '@/i18n/I18nContext'
 import { homeFor, safeNext } from '@/lib/nav'
 import { LoginForm } from './LoginForm'
-
-/** The second line of the headline; each is typed, held, deleted, then the next. The first is what screen readers get. */
-const PHRASES = ['from yarn to invoice.', 'from loom to buyer.', 'from scan to payment.']
 
 export function LoginScreen() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const queryClient = useQueryClient()
+  const { t } = useI18n()
+  // The same words twice: the effect types them, holds, deletes and types them again.
+  const phrases = useMemo(() => [t('login.heroPhrase'), t('login.heroPhrase')], [t])
 
   return (
     <main className="login">
@@ -23,12 +26,12 @@ export function LoginScreen() {
             <span className="brand-mark">
               <BrandMark size={18} />
             </span>
-            Everest Mills
+            {t('brand.name')}
           </span>
           <div className="stack-sm">
-            <Typewriter before="Every roll," phrases={PHRASES} />
+            <Typewriter before={t('login.heroBefore')} phrases={phrases} />
             <p style={{ maxWidth: '40ch' }}>
-              Store, floor, quality, dispatch and the books in one place. Scan a roll and see its whole life.
+              {t('login.heroBody')}
             </p>
           </div>
         </div>
@@ -36,12 +39,15 @@ export function LoginScreen() {
 
       <section className="login-panel">
         <div className="login-wrap">
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <LanguageSwitcher />
+          </div>
           <div className="login-card">
             <div className="card-body stack">
               <div className="stack-sm">
-                <p className="eyebrow">Sign in</p>
-                <h1>Welcome back</h1>
-                <p className="muted text-sm">Log in to continue to Everest Mills.</p>
+                <p className="eyebrow">{t('login.eyebrow')}</p>
+                <h1>{t('login.title')}</h1>
+                <p className="muted text-sm">{t('login.intro')}</p>
               </div>
               <LoginForm
                 onSuccess={(me) => {
@@ -49,6 +55,9 @@ export function LoginScreen() {
                   navigate(safeNext(params.get('next')) ?? homeFor(me.role), { replace: true })
                 }}
               />
+              <p className="muted text-sm">
+                {t('login.newBuyer')} <Link to="/signup">{t('login.createAccount')}</Link>
+              </p>
             </div>
           </div>
         </div>

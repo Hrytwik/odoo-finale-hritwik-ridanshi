@@ -200,6 +200,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/buyer-invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Buyer Invites
+         * @description For the owner: each buyer's email, whether they have a login yet, and the invite code to give them.
+         */
+        get: operations["buyer_invites_api_auth_buyer_invites_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/change-password": {
         parameters: {
             query?: never;
@@ -265,6 +285,26 @@ export interface paths {
         get: operations["me_api_auth_me_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Signup
+         * @description A buyer makes their own login with the email the mill holds for them and the invite code the owner gave them.
+         */
+        post: operations["signup_api_auth_signup_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -735,6 +775,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/messaging/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Messaging Settings */
+        get: operations["get_messaging_settings_api_messaging_settings_get"];
+        /**
+         * Put Messaging Settings
+         * @description Saves the WhatsApp connection. The token is encrypted before it is stored and is never sent back.
+         */
+        put: operations["put_messaging_settings_api_messaging_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/messaging/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Message */
+        post: operations["test_message_api_messaging_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/money/payables": {
         parameters: {
             query?: never;
@@ -890,6 +968,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{order_code}/delay-notice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Notice */
+        post: operations["send_notice_api_orders__order_code__delay_notice_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{order_code}/delay-notice/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Notice
+         * @description A sentence for the buyer, for the owner to read and edit before sending, and how it would also reach them on WhatsApp.
+         */
+        post: operations["draft_notice_api_orders__order_code__delay_notice_draft_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{order_code}/eta": {
         parameters: {
             query?: never;
@@ -978,6 +1093,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Notifications */
+        get: operations["my_notifications_api_portal_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/notifications/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read Notifications */
+        post: operations["read_notifications_api_portal_notifications_read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/orders": {
         parameters: {
             query?: never;
@@ -1040,6 +1189,40 @@ export interface paths {
         put?: never;
         /** Record Inspection */
         post: operations["record_inspection_api_qc_inspections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Photo Log */
+        get: operations["photo_log_api_qc_log_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/log/filters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Log Filters */
+        get: operations["log_filters_api_qc_log_filters_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1606,6 +1789,19 @@ export interface components {
             /** Phone */
             phone?: string | null;
         };
+        /** BuyerInviteOut */
+        BuyerInviteOut: {
+            /** Buyer Id */
+            buyer_id: number;
+            /** Buyer Name */
+            buyer_name: string;
+            /** Email */
+            email: string | null;
+            /** Has Account */
+            has_account: boolean;
+            /** Invite Code */
+            invite_code: string | null;
+        };
         /** BuyerOut */
         BuyerOut: {
             /** Contact Name */
@@ -1666,6 +1862,22 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /**
+         * ChannelOut
+         * @description How the message would also reach this buyer on WhatsApp, shown to the owner before sending.
+         */
+        ChannelOut: {
+            /** Phone */
+            phone: string | null;
+            /** Problem */
+            problem: string | null;
+            /** To */
+            to: string | null;
+            /** Tracking Url */
+            tracking_url: string | null;
+            /** Whatsapp Ready */
+            whatsapp_ready: boolean;
+        };
         /** ChatIn */
         ChatIn: {
             /**
@@ -1673,6 +1885,12 @@ export interface components {
              * @default []
              */
             history: components["schemas"]["ChatTurnIn"][];
+            /**
+             * Language
+             * @default English
+             * @enum {string}
+             */
+            language: "English" | "Hindi" | "Kannada" | "Tamil" | "Telugu" | "Marathi" | "Bengali" | "Gujarati" | "Malayalam" | "Punjabi";
             /** Question */
             question: string;
         };
@@ -1822,17 +2040,6 @@ export interface components {
              * Format: date-time
              */
             started_at: string;
-        };
-        /** DraftOut */
-        DraftOut: {
-            /** Model */
-            model: string;
-            /** Provider */
-            provider: string;
-            /** Sources */
-            sources: components["schemas"]["SourceOut"][];
-            /** Text */
-            text: string;
         };
         /** EtaOut */
         EtaOut: {
@@ -2041,6 +2248,76 @@ export interface components {
         LoadRollsIn: {
             /** Roll Codes */
             roll_codes: string[];
+        };
+        /** LogCounts */
+        LogCounts: {
+            /** Overrode Ai */
+            overrode_ai: number;
+            /** Passed */
+            passed: number;
+            /** Rejected */
+            rejected: number;
+            /** Rework */
+            rework: number;
+            /** Total */
+            total: number;
+        };
+        /** LogFilters */
+        LogFilters: {
+            /** Lots */
+            lots: string[];
+            /** Orders */
+            orders: components["schemas"]["OrderOption"][];
+        };
+        /** LogItem */
+        LogItem: {
+            ai: components["schemas"]["AiSuggestion"] | null;
+            /** Buyer Name */
+            buyer_name: string;
+            /** Colour */
+            colour: string;
+            /** Defects */
+            defects: components["schemas"]["DefectOut"][];
+            /** Fabric */
+            fabric: string;
+            /** Id */
+            id: number;
+            /**
+             * Inspected At
+             * Format: date-time
+             */
+            inspected_at: string;
+            /** Inspector */
+            inspector: string;
+            /** Lots */
+            lots: string[];
+            /** Metres */
+            metres: number;
+            /** Order Code */
+            order_code: string;
+            /** Overrode Ai */
+            overrode_ai: boolean;
+            /** Photo Url */
+            photo_url: string | null;
+            /** Remark */
+            remark: string | null;
+            /** Roll Code */
+            roll_code: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "pass" | "rework" | "reject";
+        };
+        /** LogPage */
+        LogPage: {
+            counts: components["schemas"]["LogCounts"];
+            /** Items */
+            items: components["schemas"]["LogItem"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
         };
         /** LoginIn */
         LoginIn: {
@@ -2289,6 +2566,41 @@ export interface components {
             /** Worker Id */
             worker_id: number | null;
         };
+        /** MessagingSettingsIn */
+        MessagingSettingsIn: {
+            /** Account Sid */
+            account_sid?: string | null;
+            /** Auth Token */
+            auth_token?: string | null;
+            /** Content Sid */
+            content_sid?: string | null;
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /** From Number */
+            from_number?: string | null;
+            /** Public Url */
+            public_url?: string | null;
+        };
+        /** MessagingSettingsOut */
+        MessagingSettingsOut: {
+            /** Account Sid */
+            account_sid: string | null;
+            /** Content Sid */
+            content_sid: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** From Number */
+            from_number: string | null;
+            /** Public Url */
+            public_url: string | null;
+            /** Ready */
+            ready: boolean;
+            /** Token Set */
+            token_set: boolean;
+        };
         /** ModelCard */
         ModelCard: {
             /** Available */
@@ -2322,6 +2634,12 @@ export interface components {
         };
         /** MonthIn */
         MonthIn: {
+            /**
+             * Language
+             * @default English
+             * @enum {string}
+             */
+            language: "English" | "Hindi" | "Kannada" | "Tamil" | "Telugu" | "Marathi" | "Bengali" | "Gujarati" | "Malayalam" | "Punjabi";
             /** Month */
             month: string;
         };
@@ -2366,6 +2684,55 @@ export interface components {
             qty_kg: number;
             /** Run Id */
             run_id: number | null;
+        };
+        /** NoticeIn */
+        NoticeIn: {
+            /** Message */
+            message: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "yarn_shortage" | "machine_breakdown" | "power_cut" | "staff_shortage" | "quality_rework" | "dye_delay" | "transport" | "buyer_change" | "other";
+        };
+        /** NoticeOut */
+        NoticeOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "delay" | "dispatch";
+            /** Message */
+            message: string;
+            /** Order Code */
+            order_code: string;
+            /** Read */
+            read: boolean;
+            /** Reason */
+            reason: ("yarn_shortage" | "machine_breakdown" | "power_cut" | "staff_shortage" | "quality_rework" | "dye_delay" | "transport" | "buyer_change" | "other") | "dispatched";
+            /** Reason Label */
+            reason_label: string;
+            /** Whatsapp Detail */
+            whatsapp_detail: string | null;
+            /**
+             * Whatsapp Status
+             * @enum {string}
+             */
+            whatsapp_status: "not_sent" | "sent" | "failed" | "skipped";
+        };
+        /** NotificationsOut */
+        NotificationsOut: {
+            /** Items */
+            items: components["schemas"]["NoticeOut"][];
+            /** Unread */
+            unread: number;
         };
         /** OrderCost */
         OrderCost: {
@@ -2438,6 +2805,13 @@ export interface components {
             profit: number;
             /** Revenue */
             revenue: number;
+        };
+        /** OrderOption */
+        OrderOption: {
+            /** Buyer Name */
+            buyer_name: string;
+            /** Code */
+            code: string;
         };
         /** OrderOut */
         OrderOut: {
@@ -2704,6 +3078,14 @@ export interface components {
             counts: components["schemas"]["QcCounts"];
             /** Rolls */
             rolls: components["schemas"]["RollOut"][];
+        };
+        /** ReasonIn */
+        ReasonIn: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "yarn_shortage" | "machine_breakdown" | "power_cut" | "staff_shortage" | "quality_rework" | "dye_delay" | "transport" | "buyer_change" | "other";
         };
         /** RecallBuyer */
         RecallBuyer: {
@@ -3088,6 +3470,15 @@ export interface components {
             supplier: components["schemas"]["Ref"] | null;
             yarn_type: components["schemas"]["YarnTypeRef"];
         };
+        /** SignupIn */
+        SignupIn: {
+            /** Email */
+            email: string;
+            /** Invite Code */
+            invite_code: string;
+            /** Password */
+            password: string;
+        };
         /** SourceOut */
         SourceOut: {
             /** Input */
@@ -3171,6 +3562,23 @@ export interface components {
             paid_on: string;
             /** Reference */
             reference?: string | null;
+        };
+        /** TestIn */
+        TestIn: {
+            /** To */
+            to: string;
+        };
+        /** TestOut */
+        TestOut: {
+            /** Detail */
+            detail: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "sent" | "failed" | "skipped";
+            /** To */
+            to: string | null;
         };
         /** TimelineEvent */
         TimelineEvent: {
@@ -3436,6 +3844,25 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** DraftOut */
+        app__modules__llm__schemas__DraftOut: {
+            /** Model */
+            model: string;
+            /** Provider */
+            provider: string;
+            /** Sources */
+            sources: components["schemas"]["SourceOut"][];
+            /** Text */
+            text: string;
+        };
+        /** DraftOut */
+        app__modules__notices__schemas__DraftOut: {
+            channel: components["schemas"]["ChannelOut"];
+            /** Drafted By Ai */
+            drafted_by_ai: boolean;
+            /** Message */
+            message: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -3528,7 +3955,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DraftOut"];
+                    "application/json": components["schemas"]["app__modules__llm__schemas__DraftOut"];
                 };
             };
             /** @description Validation Error */
@@ -3581,7 +4008,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DraftOut"];
+                    "application/json": components["schemas"]["app__modules__llm__schemas__DraftOut"];
                 };
             };
             /** @description Validation Error */
@@ -3784,6 +4211,26 @@ export interface operations {
             };
         };
     };
+    buyer_invites_api_auth_buyer_invites_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuyerInviteOut"][];
+                };
+            };
+        };
+    };
     change_password_api_auth_change_password_post: {
         parameters: {
             query?: never;
@@ -3884,6 +4331,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    signup_api_auth_signup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignupIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -4815,6 +5295,92 @@ export interface operations {
             };
         };
     };
+    get_messaging_settings_api_messaging_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagingSettingsOut"];
+                };
+            };
+        };
+    };
+    put_messaging_settings_api_messaging_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessagingSettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagingSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_message_api_messaging_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     payables_api_money_payables_get: {
         parameters: {
             query?: never;
@@ -5147,6 +5713,76 @@ export interface operations {
             };
         };
     };
+    send_notice_api_orders__order_code__delay_notice_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoticeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoticeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    draft_notice_api_orders__order_code__delay_notice_draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__modules__notices__schemas__DraftOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     order_eta_api_orders__order_code__eta_get: {
         parameters: {
             query?: never;
@@ -5308,6 +5944,46 @@ export interface operations {
             };
         };
     };
+    my_notifications_api_portal_notifications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationsOut"];
+                };
+            };
+        };
+    };
+    read_notifications_api_portal_notifications_read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationsOut"];
+                };
+            };
+        };
+    };
     my_orders_api_portal_orders_get: {
         parameters: {
             query?: never;
@@ -5421,6 +6097,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    photo_log_api_qc_log_get: {
+        parameters: {
+            query?: {
+                /** @description order code, buyer or fabric */
+                order?: string | null;
+                /** @description yarn lot (batch) code */
+                lot?: string | null;
+                verdict?: ("pass" | "rework" | "reject") | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                overrode_ai?: boolean | null;
+                with_photo?: boolean;
+                sort?: "newest" | "oldest" | "order" | "batch";
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    log_filters_api_qc_log_filters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogFilters"];
                 };
             };
         };

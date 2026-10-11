@@ -1,7 +1,8 @@
+import type { Key } from '@/i18n/en'
 import type { OrderStage } from './statusMaps'
 
-/** The five steps of making an order, in the order they happen. */
-export const STAGE_STEPS = ['Spinning', 'Weaving', 'Dyeing', 'Quality check', 'Ready'] as const
+/** The five steps of making an order, in the order they happen (each is a translation key). */
+export const STAGE_STEPS: readonly Key[] = ['floor.stage.spinning', 'floor.stage.weaving', 'floor.stage.dyeing', 'qc.title', 'portal.step.ready']
 
 /** How many of the five steps an order has reached. Drafts and cancelled orders have reached none. */
 const STEPS_DONE: Record<OrderStage, number> = {

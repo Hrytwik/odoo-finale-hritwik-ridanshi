@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Field'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Table } from '@/components/ui/Table'
+import { useI18n } from '@/i18n/I18nContext'
 import { api, call, errorMessage, type components } from '@/lib/api'
 import { formatDateTime, formatMetres } from '@/lib/format'
 import { parseRollCode } from '@/lib/rollCode'
@@ -35,6 +36,7 @@ export default function DispatchDetail() {
 }
 
 function TruckPage({ d }: { d: Dispatch }) {
+  const { t } = useI18n()
   const loading = d.state === 'loading'
   return (
     <>
@@ -45,10 +47,10 @@ function TruckPage({ d }: { d: Dispatch }) {
       />
       <div className="stack">
         <div className="row">
-          {loading ? <Badge tone="amber">Loading</Badge> : <Badge tone="green">Dispatched</Badge>}
+          {loading ? <Badge tone="amber">{t('status.roll.loading')}</Badge> : <Badge tone="green">{t('status.roll.dispatched')}</Badge>}
           <span className="muted text-sm">
-            {d.rolls.length} {d.rolls.length === 1 ? 'roll' : 'rolls'} · {formatMetres(d.total_metres)}
-            {d.dispatched_at ? ` · sent ${formatDateTime(d.dispatched_at)}` : ''}
+            {t(d.rolls.length === 1 ? 'dispatch.rolls.one' : 'dispatch.rolls.many', { count: d.rolls.length })} · {formatMetres(d.total_metres)}
+            {d.dispatched_at ? t('dispatch.sentAt', { time: formatDateTime(d.dispatched_at) }) : ''}
           </span>
         </div>
 
@@ -62,17 +64,17 @@ function TruckPage({ d }: { d: Dispatch }) {
 
         {d.orders.length > 0 && (
           <Reveal>
-            <Card title="Orders on this truck">
+            <Card title={t('dispatch.ordersOnTruck')}>
               <div className="stack">
                 {d.orders.map((o) => (
                   <div key={o.order_code} className="load-order">
                     <div className="row">
                       <strong>{o.order_code}</strong>
-                      {o.over_shipped && <Badge tone="red">Over-shipping</Badge>}
+                      {o.over_shipped && <Badge tone="red">{t('dispatch.overShipping')}</Badge>}
                     </div>
-                    <ProgressBar label={`${o.order_code} shipped`} value={o.previously_dispatched_m + o.loaded_m} max={o.ordered_m} unit="m" tone={o.over_shipped ? 'red' : 'blue'} />
+                    <ProgressBar label={t('dispatch.shippedLabel', { order: o.order_code })} value={o.previously_dispatched_m + o.loaded_m} max={o.ordered_m} unit="m" tone={o.over_shipped ? 'red' : 'blue'} />
                     <p className="muted text-sm">
-                      Loaded now {formatMetres(o.loaded_m)} · already sent {formatMetres(o.previously_dispatched_m)} · remaining {formatMetres(o.remaining_m)} of {formatMetres(o.ordered_m)}
+                      {t('dispatch.loadedLine', { loaded: formatMetres(o.loaded_m), sent: formatMetres(o.previously_dispatched_m), remaining: formatMetres(o.remaining_m), ordered: formatMetres(o.ordered_m) })}
                     </p>
                   </div>
                 ))}
@@ -82,17 +84,17 @@ function TruckPage({ d }: { d: Dispatch }) {
         )}
 
         <Reveal>
-          <Card title="Rolls on the truck">
+          <Card title={t('dispatch.rollsOnTruck')}>
             {d.rolls.length === 0 ? (
-              <EmptyState title="Nothing loaded yet" description="Scan a roll's QR tag, or type its code, to put it on this truck." />
+              <EmptyState title={t('dispatch.nothingLoaded')} description={t('dispatch.nothingLoadedDescription')} />
             ) : (
               <Table>
                 <thead>
                   <tr>
-                    <th>Roll</th>
-                    <th>Order</th>
-                    <th className="num">Metres</th>
-                    <th>Status</th>
+                    <th>{t('qc.col.roll')}</th>
+                    <th>{t('qc.col.order')}</th>
+                    <th className="num">{t('dispatch.col.metres')}</th>
+                    <th>{t('qc.col.status')}</th>
                     {loading && <th />}
                   </tr>
                 </thead>
@@ -125,9 +127,10 @@ function TruckPage({ d }: { d: Dispatch }) {
 }
 
 function InvoiceLink({ no }: { no: string }) {
+  const { t } = useI18n()
   return (
     <Link to={`/invoices/${no}`}>
-      <Button>Open invoice {no}</Button>
+      <Button>{t('dispatch.openInvoice', { no })}</Button>
     </Link>
   )
 }
@@ -137,6 +140,7 @@ function InvoiceLink({ no }: { no: string }) {
 let logId = 0
 
 function ScanLoad({ d }: { d: Dispatch }) {
+  const { t } = useI18n()
   const queryClient = useQueryClient()
   const input = useRef<HTMLInputElement>(null)
   const [text, setText] = useState('')
@@ -148,18 +152,18 @@ function ScanLoad({ d }: { d: Dispatch }) {
 
   async function load(raw: string) {
     const code = parseRollCode(raw)
-    if (!code) return setError('That is not a roll code. It looks like R-0142.')
+    if (!code) return setError(t('dispatch.notRollCode'))
     setError(undefined)
     setBusy(true)
     try {
       const updated = await call(api.POST('/api/dispatches/{dispatch_code}/items', { params: { path: { dispatch_code: d.code } }, body: { roll_code: code } }))
       queryClient.setQueryData(['dispatches', d.code], updated)
       void queryClient.invalidateQueries({ queryKey: ['dispatches'], exact: true })
-      add(true, `${code} loaded`)
+      add(true, t('dispatch.rollLoaded', { code }))
       setText('')
     } catch (err) {
       // the server's reason is shown as it is: not passed QC, already dispatched, wrong buyer...
-      add(false, `${code} refused: ${errorMessage(err)}`)
+      add(false, t('dispatch.rollRefused', { code, reason: errorMessage(err) }))
       setText('')
     } finally {
       setBusy(false)
@@ -168,7 +172,7 @@ function ScanLoad({ d }: { d: Dispatch }) {
   }
 
   return (
-    <Card title="Scan rolls onto the truck">
+    <Card title={t('dispatch.scanTitle')}>
       <div className="stack">
         <form
           className="scan-row"
@@ -178,14 +182,14 @@ function ScanLoad({ d }: { d: Dispatch }) {
             void load(text)
           }}
         >
-          <Field label="Roll code" error={error}>
+          <Field label={t('dispatch.rollCode')} error={error}>
             {(c) => <Input {...c} ref={input} autoFocus autoComplete="off" autoCapitalize="characters" readOnly={busy} value={text} onChange={(e) => setText(e.target.value)} />}
           </Field>
           <Button type="submit" disabled={busy}>
-            <Truck size={16} aria-hidden /> Load roll
+            <Truck size={16} aria-hidden /> {t('dispatch.loadRoll')}
           </Button>
           <Button variant="secondary" onClick={() => setScanning(true)}>
-            <ScanLine size={16} aria-hidden /> Scan with camera
+            <ScanLine size={16} aria-hidden /> {t('dispatch.scanCamera')}
           </Button>
         </form>
         <QrScanner
@@ -196,7 +200,7 @@ function ScanLoad({ d }: { d: Dispatch }) {
             void load(code)
           }}
         />
-        <ol className="scan-log" role="log" aria-live="polite" aria-label="Scan log">
+        <ol className="scan-log" role="log" aria-live="polite" aria-label={t('dispatch.scanLog')}>
           {log.map((e) => (
             <li key={e.id} className={e.ok ? 'scan-ok' : 'scan-refused'}>
               {e.ok ? <CheckCircle2 size={16} aria-hidden /> : <XCircle size={16} aria-hidden />}
@@ -210,19 +214,20 @@ function ScanLoad({ d }: { d: Dispatch }) {
 }
 
 function RemoveButton({ dispatchCode, rollCode }: { dispatchCode: string; rollCode: string }) {
+  const { t } = useI18n()
   const queryClient = useQueryClient()
   const { act } = useAction({ invalidate: [['rolls'], ['orders']] })
   return (
     <Button
       variant="ghost"
       icon
-      aria-label={`Remove ${rollCode}`}
+      aria-label={t('dispatch.removeRoll', { code: rollCode })}
       onClick={() =>
         act(async () => {
           const updated = await call(api.DELETE('/api/dispatches/{dispatch_code}/items/{roll_code}', { params: { path: { dispatch_code: dispatchCode, roll_code: rollCode } } }))
           queryClient.setQueryData(['dispatches', dispatchCode], updated)
           void queryClient.invalidateQueries({ queryKey: ['dispatches'], exact: true })
-        }, `${rollCode} taken off the truck`)
+        }, t('dispatch.takenOff', { code: rollCode }))
       }
     >
       <Trash2 size={16} aria-hidden />
@@ -233,20 +238,21 @@ function RemoveButton({ dispatchCode, rollCode }: { dispatchCode: string; rollCo
 /* ---------- confirm ---------- */
 
 function ConfirmButton({ d }: { d: Dispatch }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const { act, pending, error } = useAction({ invalidate: [['rolls'], ['orders'], ['money']], onDone: () => setOpen(false) })
   return (
     <>
       <Button disabled={d.rolls.length === 0} onClick={() => setOpen(true)}>
-        <CheckCircle2 size={16} aria-hidden /> Confirm dispatch
+        <CheckCircle2 size={16} aria-hidden /> {t('dispatch.confirm')}
       </Button>
       <ActionDialog
         open={open}
         onClose={() => setOpen(false)}
-        title={`Send ${d.code}?`}
-        confirmLabel="Confirm dispatch"
-        cancelLabel="Keep loading"
+        title={t('dispatch.sendTitle', { code: d.code })}
+        confirmLabel={t('dispatch.confirm')}
+        cancelLabel={t('dispatch.keepLoading')}
         pending={pending}
         error={error}
         onConfirm={() =>
@@ -254,11 +260,11 @@ function ConfirmButton({ d }: { d: Dispatch }) {
             const sent = await call(api.POST('/api/dispatches/{dispatch_code}/confirm', { params: { path: { dispatch_code: d.code } } }))
             queryClient.setQueryData(['dispatches', d.code], sent)
             void queryClient.invalidateQueries({ queryKey: ['dispatches'], exact: true })
-          }, `${d.code} sent`)
+          }, t('dispatch.sentToast', { code: d.code }))
         }
       >
         <p>
-          {d.rolls.length} {d.rolls.length === 1 ? 'roll' : 'rolls'}, {formatMetres(d.total_metres)}, for {d.buyer.name}. This creates the invoice. After this the dispatch and the invoice cannot be changed.
+          {t('dispatch.confirmBody', { rolls: t(d.rolls.length === 1 ? 'dispatch.rolls.one' : 'dispatch.rolls.many', { count: d.rolls.length }), metres: formatMetres(d.total_metres), buyer: d.buyer.name })}
         </p>
       </ActionDialog>
     </>

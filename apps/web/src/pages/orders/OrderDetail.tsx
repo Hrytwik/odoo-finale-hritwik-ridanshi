@@ -23,6 +23,8 @@ import { useMe } from '@/lib/auth'
 import { todayIso } from '@/lib/dates'
 import { useSubmitLock } from '@/lib/forms'
 import { formatDate, formatKg, formatMetres, formatMoney } from '@/lib/format'
+import { DelayNoticeButton } from './DelayNotice'
+import { ShipmentsCard } from './Shipments'
 
 type Order = components['schemas']['OrderOut']
 
@@ -69,6 +71,11 @@ export default function OrderDetail() {
             <Reveal>
               <ProgressCard order={o} />
             </Reveal>
+            {role === 'owner' && o.state === 'confirmed' && (
+              <Reveal>
+                <ShipmentsCard order={o} />
+              </Reveal>
+            )}
             {canPlan && (
               <Reveal>
                 <DeliveryCard query={eta} deadline={o.deadline} />
@@ -271,6 +278,7 @@ function Actions({ order, canWrite }: { order: Order; canWrite: boolean }) {
           Change deadline
         </Button>
       )}
+      {order.state === 'confirmed' && <DelayNoticeButton orderCode={order.code} buyerName={order.buyer.name} />}
       <Button variant="secondary" onClick={() => setOpen('cancel')}>
         <XCircle size={16} aria-hidden /> Cancel order
       </Button>

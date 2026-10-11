@@ -40,6 +40,7 @@ export const ROUTES: RouteDef[] = [
   { path: 'settings/ai/report-card', title: 'AI report card', description: 'How the configured model scores on known questions.', roles: OWNER },
   { path: 'admin/suppliers', title: 'Suppliers', description: 'Yarn suppliers and lead times.', roles: OWNER },
   { path: 'admin/buyers', title: 'Buyers', description: 'Buyers and their contacts.', roles: OWNER },
+  { path: 'admin/buyer-invites', title: 'Buyer invites', description: 'Invite codes buyers use to create their own login.', roles: OWNER },
   { path: 'admin/yarn-types', title: 'Yarn types', description: 'Yarn types and reorder levels.', roles: OWNER },
   { path: 'admin/fabric-types', title: 'Fabric types', description: 'Fabric types and their yarn recipes.', roles: OWNER },
   { path: 'admin/machines', title: 'Machines', description: 'Machines, stages, speeds and running costs.', roles: OWNER },

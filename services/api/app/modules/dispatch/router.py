@@ -6,6 +6,7 @@ from app.db.models import User
 from app.db.session import get_db
 from app.modules.dispatch import schemas as s
 from app.modules.dispatch import service
+from app.modules.notices.hooks import after_dispatch_confirmed
 
 router = APIRouter(tags=["dispatch"])
 clerks = require_roles("dispatch", "owner")
@@ -40,7 +41,9 @@ def unload_roll(dispatch_code: str, roll_code: str, db: Session = Depends(get_db
 
 @router.post("/dispatches/{dispatch_code}/confirm", response_model=s.DispatchOut, dependencies=[Depends(clerks)])
 def confirm_dispatch(dispatch_code: str, db: Session = Depends(get_db)) -> s.DispatchOut:
-    return service.dispatch_out(db, service.confirm_dispatch(db, dispatch_code))
+    dispatch = service.confirm_dispatch(db, dispatch_code)
+    after_dispatch_confirmed(db, dispatch.code)  # tells the buyer; never stops the dispatch
+    return service.dispatch_out(db, dispatch)
 
 
 @router.get("/invoices/{invoice_no}", response_model=s.InvoiceOut)

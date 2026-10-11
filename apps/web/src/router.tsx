@@ -7,6 +7,7 @@ import CameraCheck from '@/pages/dev/CameraCheck'
 import ComponentsPreview from '@/pages/dev/ComponentsPreview'
 import { LandingGate } from '@/pages/landing/LandingPage'
 import { LoginScreen } from '@/pages/login/LoginScreen'
+import { SignupScreen } from '@/pages/login/SignupScreen'
 import { NotFound, RequireRole } from '@/pages/RequireRole'
 import { ROUTES } from './routes'
 
@@ -24,6 +25,7 @@ const SCREENS: Record<string, ComponentType> = {
   'money/payables': lazy(() => import('@/pages/money/Payables')),
   'admin/suppliers': lazy(() => import('@/pages/admin/screens').then((m) => ({ default: m.Suppliers }))),
   'admin/buyers': lazy(() => import('@/pages/admin/screens').then((m) => ({ default: m.Buyers }))),
+  'admin/buyer-invites': lazy(() => import('@/pages/admin/BuyerInvites')),
   'admin/yarn-types': lazy(() => import('@/pages/admin/screens').then((m) => ({ default: m.YarnTypes }))),
   'admin/fabric-types': lazy(() => import('@/pages/admin/FabricTypes')),
   'admin/machines': lazy(() => import('@/pages/admin/screens').then((m) => ({ default: m.Machines }))),
@@ -40,7 +42,7 @@ const SCREENS: Record<string, ComponentType> = {
   dispatch: lazy(() => import('@/pages/dispatch/DispatchList')),
   'dispatch/:code': lazy(() => import('@/pages/dispatch/DispatchDetail')),
   qc: lazy(() => import('@/pages/qc/QcQueue')),
-  'qc/model': lazy(() => import('@/pages/qc/ModelCard')),
+  'qc/model': lazy(() => import('@/pages/qc/VisionModel')),
   'qc/:rollCode': lazy(() => import('@/pages/qc/QcInspect')),
   floor: lazy(() => import('@/pages/floor/FloorBoard')),
   'floor/machines/:code': lazy(() => import('@/pages/floor/MachineDetail')),
@@ -55,6 +57,7 @@ const SCREENS: Record<string, ComponentType> = {
 export const routeObjects: RouteObject[] = [
   { path: '/', element: <LandingGate /> },
   { path: '/login', element: <LoginScreen /> },
+  { path: '/signup', element: <SignupScreen /> },
   {
     element: <AppLayout />,
     children: [

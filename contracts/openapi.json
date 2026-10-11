@@ -383,6 +383,53 @@
         "title": "BuyerIn",
         "type": "object"
       },
+      "BuyerInviteOut": {
+        "properties": {
+          "buyer_id": {
+            "title": "Buyer Id",
+            "type": "integer"
+          },
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "has_account": {
+            "title": "Has Account",
+            "type": "boolean"
+          },
+          "invite_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite Code"
+          }
+        },
+        "required": [
+          "buyer_id",
+          "buyer_name",
+          "email",
+          "invite_code",
+          "has_account"
+        ],
+        "title": "BuyerInviteOut",
+        "type": "object"
+      },
       "BuyerOut": {
         "properties": {
           "contact_name": {
@@ -593,6 +640,68 @@
         "title": "ChangePasswordIn",
         "type": "object"
       },
+      "ChannelOut": {
+        "description": "How the message would also reach this buyer on WhatsApp, shown to the owner before sending.",
+        "properties": {
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To"
+          },
+          "tracking_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tracking Url"
+          },
+          "whatsapp_ready": {
+            "title": "Whatsapp Ready",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "whatsapp_ready",
+          "to",
+          "phone",
+          "problem",
+          "tracking_url"
+        ],
+        "title": "ChannelOut",
+        "type": "object"
+      },
       "ChatIn": {
         "properties": {
           "history": {
@@ -603,6 +712,23 @@
             "maxItems": 12,
             "title": "History",
             "type": "array"
+          },
+          "language": {
+            "default": "English",
+            "enum": [
+              "English",
+              "Hindi",
+              "Kannada",
+              "Tamil",
+              "Telugu",
+              "Marathi",
+              "Bengali",
+              "Gujarati",
+              "Malayalam",
+              "Punjabi"
+            ],
+            "title": "Language",
+            "type": "string"
           },
           "question": {
             "maxLength": 1000,
@@ -1016,37 +1142,6 @@
           "started_at"
         ],
         "title": "DowntimeOut",
-        "type": "object"
-      },
-      "DraftOut": {
-        "properties": {
-          "model": {
-            "title": "Model",
-            "type": "string"
-          },
-          "provider": {
-            "title": "Provider",
-            "type": "string"
-          },
-          "sources": {
-            "items": {
-              "$ref": "#/components/schemas/SourceOut"
-            },
-            "title": "Sources",
-            "type": "array"
-          },
-          "text": {
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "text",
-          "sources",
-          "provider",
-          "model"
-        ],
-        "title": "DraftOut",
         "type": "object"
       },
       "EtaOut": {
@@ -1664,6 +1759,213 @@
           "roll_codes"
         ],
         "title": "LoadRollsIn",
+        "type": "object"
+      },
+      "LogCounts": {
+        "properties": {
+          "overrode_ai": {
+            "title": "Overrode Ai",
+            "type": "integer"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "rejected": {
+            "title": "Rejected",
+            "type": "integer"
+          },
+          "rework": {
+            "title": "Rework",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "passed",
+          "rework",
+          "rejected",
+          "overrode_ai"
+        ],
+        "title": "LogCounts",
+        "type": "object"
+      },
+      "LogFilters": {
+        "properties": {
+          "lots": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lots",
+            "type": "array"
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/OrderOption"
+            },
+            "title": "Orders",
+            "type": "array"
+          }
+        },
+        "required": [
+          "orders",
+          "lots"
+        ],
+        "title": "LogFilters",
+        "type": "object"
+      },
+      "LogItem": {
+        "properties": {
+          "ai": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AiSuggestion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "colour": {
+            "title": "Colour",
+            "type": "string"
+          },
+          "defects": {
+            "items": {
+              "$ref": "#/components/schemas/DefectOut"
+            },
+            "title": "Defects",
+            "type": "array"
+          },
+          "fabric": {
+            "title": "Fabric",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "inspected_at": {
+            "format": "date-time",
+            "title": "Inspected At",
+            "type": "string"
+          },
+          "inspector": {
+            "title": "Inspector",
+            "type": "string"
+          },
+          "lots": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lots",
+            "type": "array"
+          },
+          "metres": {
+            "title": "Metres",
+            "type": "number"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "overrode_ai": {
+            "title": "Overrode Ai",
+            "type": "boolean"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
+          "remark": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remark"
+          },
+          "roll_code": {
+            "title": "Roll Code",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "pass",
+              "rework",
+              "reject"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "roll_code",
+          "order_code",
+          "buyer_name",
+          "fabric",
+          "colour",
+          "metres",
+          "lots",
+          "inspector",
+          "inspected_at",
+          "verdict",
+          "overrode_ai",
+          "defects",
+          "remark",
+          "photo_url",
+          "ai"
+        ],
+        "title": "LogItem",
+        "type": "object"
+      },
+      "LogPage": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/LogCounts"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LogItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "counts",
+          "limit",
+          "offset"
+        ],
+        "title": "LogPage",
         "type": "object"
       },
       "LoginIn": {
@@ -2403,6 +2705,148 @@
         "title": "Me",
         "type": "object"
       },
+      "MessagingSettingsIn": {
+        "properties": {
+          "account_sid": {
+            "anyOf": [
+              {
+                "maxLength": 60,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Sid"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token"
+          },
+          "content_sid": {
+            "anyOf": [
+              {
+                "maxLength": 60,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Sid"
+          },
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "from_number": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Number"
+          },
+          "public_url": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Url"
+          }
+        },
+        "title": "MessagingSettingsIn",
+        "type": "object"
+      },
+      "MessagingSettingsOut": {
+        "properties": {
+          "account_sid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Sid"
+          },
+          "content_sid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Sid"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "from_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Number"
+          },
+          "public_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Url"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "token_set": {
+            "title": "Token Set",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_sid",
+          "token_set",
+          "from_number",
+          "content_sid",
+          "public_url",
+          "enabled",
+          "ready"
+        ],
+        "title": "MessagingSettingsOut",
+        "type": "object"
+      },
       "ModelCard": {
         "properties": {
           "available": {
@@ -2517,6 +2961,23 @@
       },
       "MonthIn": {
         "properties": {
+          "language": {
+            "default": "English",
+            "enum": [
+              "English",
+              "Hindi",
+              "Kannada",
+              "Tamil",
+              "Telugu",
+              "Marathi",
+              "Bengali",
+              "Gujarati",
+              "Malayalam",
+              "Punjabi"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
           "month": {
             "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
             "title": "Month",
@@ -2665,6 +3126,153 @@
           "note"
         ],
         "title": "MovementOut",
+        "type": "object"
+      },
+      "NoticeIn": {
+        "properties": {
+          "message": {
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "yarn_shortage",
+              "machine_breakdown",
+              "power_cut",
+              "staff_shortage",
+              "quality_rework",
+              "dye_delay",
+              "transport",
+              "buyer_change",
+              "other"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "message"
+        ],
+        "title": "NoticeIn",
+        "type": "object"
+      },
+      "NoticeOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "delay",
+              "dispatch"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "order_code": {
+            "title": "Order Code",
+            "type": "string"
+          },
+          "read": {
+            "title": "Read",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yarn_shortage",
+                  "machine_breakdown",
+                  "power_cut",
+                  "staff_shortage",
+                  "quality_rework",
+                  "dye_delay",
+                  "transport",
+                  "buyer_change",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "dispatched",
+                "type": "string"
+              }
+            ],
+            "title": "Reason"
+          },
+          "reason_label": {
+            "title": "Reason Label",
+            "type": "string"
+          },
+          "whatsapp_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Detail"
+          },
+          "whatsapp_status": {
+            "enum": [
+              "not_sent",
+              "sent",
+              "failed",
+              "skipped"
+            ],
+            "title": "Whatsapp Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "order_code",
+          "reason",
+          "reason_label",
+          "message",
+          "created_at",
+          "read",
+          "whatsapp_status",
+          "whatsapp_detail"
+        ],
+        "title": "NoticeOut",
+        "type": "object"
+      },
+      "NotificationsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NoticeOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "unread": {
+            "title": "Unread",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "unread",
+          "items"
+        ],
+        "title": "NotificationsOut",
         "type": "object"
       },
       "OrderCost": {
@@ -2858,6 +3466,24 @@
           "profit"
         ],
         "title": "OrderMonth",
+        "type": "object"
+      },
+      "OrderOption": {
+        "properties": {
+          "buyer_name": {
+            "title": "Buyer Name",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "buyer_name"
+        ],
+        "title": "OrderOption",
         "type": "object"
       },
       "OrderOut": {
@@ -3605,6 +4231,30 @@
           "rolls"
         ],
         "title": "QcQueue",
+        "type": "object"
+      },
+      "ReasonIn": {
+        "properties": {
+          "reason": {
+            "enum": [
+              "yarn_shortage",
+              "machine_breakdown",
+              "power_cut",
+              "staff_shortage",
+              "quality_rework",
+              "dye_delay",
+              "transport",
+              "buyer_change",
+              "other"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ReasonIn",
         "type": "object"
       },
       "RecallBuyer": {
@@ -4672,6 +5322,35 @@
         "title": "ShortageOut",
         "type": "object"
       },
+      "SignupIn": {
+        "properties": {
+          "email": {
+            "maxLength": 120,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "invite_code": {
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Invite Code",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 72,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "invite_code",
+          "password"
+        ],
+        "title": "SignupIn",
+        "type": "object"
+      },
       "SourceOut": {
         "properties": {
           "input": {
@@ -4907,6 +5586,63 @@
           "paid_on"
         ],
         "title": "SupplierPaymentIn",
+        "type": "object"
+      },
+      "TestIn": {
+        "properties": {
+          "to": {
+            "maxLength": 40,
+            "minLength": 5,
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to"
+        ],
+        "title": "TestIn",
+        "type": "object"
+      },
+      "TestOut": {
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "status": {
+            "enum": [
+              "sent",
+              "failed",
+              "skipped"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To"
+          }
+        },
+        "required": [
+          "status",
+          "detail",
+          "to"
+        ],
+        "title": "TestOut",
         "type": "object"
       },
       "TimelineEvent": {
@@ -5667,6 +6403,59 @@
         ],
         "title": "YarnTypeRef",
         "type": "object"
+      },
+      "app__modules__llm__schemas__DraftOut": {
+        "properties": {
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceOut"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "sources",
+          "provider",
+          "model"
+        ],
+        "title": "DraftOut",
+        "type": "object"
+      },
+      "app__modules__notices__schemas__DraftOut": {
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/ChannelOut"
+          },
+          "drafted_by_ai": {
+            "title": "Drafted By Ai",
+            "type": "boolean"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "drafted_by_ai",
+          "channel"
+        ],
+        "title": "DraftOut",
+        "type": "object"
       }
     }
   },
@@ -5778,7 +6567,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DraftOut"
+                  "$ref": "#/components/schemas/app__modules__llm__schemas__DraftOut"
                 }
               }
             },
@@ -5841,7 +6630,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DraftOut"
+                  "$ref": "#/components/schemas/app__modules__llm__schemas__DraftOut"
                 }
               }
             },
@@ -6109,6 +6898,32 @@
         ]
       }
     },
+    "/api/auth/buyer-invites": {
+      "get": {
+        "description": "For the owner: each buyer's email, whether they have a login yet, and the invite code to give them.",
+        "operationId": "buyer_invites_api_auth_buyer_invites_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BuyerInviteOut"
+                  },
+                  "title": "Response Buyer Invites Api Auth Buyer Invites Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Buyer Invites",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/auth/change-password": {
       "post": {
         "description": "Changes the logged-in user's own password. Every other session of theirs stops working; this one carries on.",
@@ -6222,6 +7037,48 @@
           }
         },
         "summary": "Me",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/signup": {
+      "post": {
+        "description": "A buyer makes their own login with the email the mill holds for them and the invite code the owner gave them.",
+        "operationId": "signup_api_auth_signup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Signup",
         "tags": [
           "auth"
         ]
@@ -7491,6 +8348,108 @@
         ]
       }
     },
+    "/api/messaging/settings": {
+      "get": {
+        "operationId": "get_messaging_settings_api_messaging_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagingSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Messaging Settings",
+        "tags": [
+          "notices"
+        ]
+      },
+      "put": {
+        "description": "Saves the WhatsApp connection. The token is encrypted before it is stored and is never sent back.",
+        "operationId": "put_messaging_settings_api_messaging_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessagingSettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagingSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Messaging Settings",
+        "tags": [
+          "notices"
+        ]
+      }
+    },
+    "/api/messaging/test": {
+      "post": {
+        "operationId": "test_message_api_messaging_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Message",
+        "tags": [
+          "notices"
+        ]
+      }
+    },
     "/api/money/payables": {
       "get": {
         "operationId": "payables_api_money_payables_get",
@@ -7948,6 +8907,111 @@
         ]
       }
     },
+    "/api/orders/{order_code}/delay-notice": {
+      "post": {
+        "operationId": "send_notice_api_orders__order_code__delay_notice_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_code",
+            "required": true,
+            "schema": {
+              "title": "Order Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoticeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoticeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Notice",
+        "tags": [
+          "notices"
+        ]
+      }
+    },
+    "/api/orders/{order_code}/delay-notice/draft": {
+      "post": {
+        "description": "A sentence for the buyer, for the owner to read and edit before sending, and how it would also reach them on WhatsApp.",
+        "operationId": "draft_notice_api_orders__order_code__delay_notice_draft_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_code",
+            "required": true,
+            "schema": {
+              "title": "Order Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__modules__notices__schemas__DraftOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Draft Notice",
+        "tags": [
+          "notices"
+        ]
+      }
+    },
     "/api/orders/{order_code}/eta": {
       "get": {
         "operationId": "order_eta_api_orders__order_code__eta_get",
@@ -8156,6 +9220,48 @@
         ]
       }
     },
+    "/api/portal/notifications": {
+      "get": {
+        "operationId": "my_notifications_api_portal_notifications_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Notifications",
+        "tags": [
+          "notices"
+        ]
+      }
+    },
+    "/api/portal/notifications/read": {
+      "post": {
+        "operationId": "read_notifications_api_portal_notifications_read_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Notifications",
+        "tags": [
+          "notices"
+        ]
+      }
+    },
     "/api/portal/orders": {
       "get": {
         "operationId": "my_orders_api_portal_orders_get",
@@ -8300,6 +9406,235 @@
           }
         },
         "summary": "Record Inspection",
+        "tags": [
+          "qc"
+        ]
+      }
+    },
+    "/api/qc/log": {
+      "get": {
+        "operationId": "photo_log_api_qc_log_get",
+        "parameters": [
+          {
+            "description": "order code, buyer or fabric",
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "order code, buyer or fabric",
+              "title": "Order"
+            }
+          },
+          {
+            "description": "yarn lot (batch) code",
+            "in": "query",
+            "name": "lot",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 30,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "yarn lot (batch) code",
+              "title": "Lot"
+            }
+          },
+          {
+            "in": "query",
+            "name": "verdict",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "pass",
+                    "rework",
+                    "reject"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Verdict"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "overrode_ai",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Overrode Ai"
+            }
+          },
+          {
+            "in": "query",
+            "name": "with_photo",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "With Photo",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "newest",
+              "enum": [
+                "newest",
+                "oldest",
+                "order",
+                "batch"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Photo Log",
+        "tags": [
+          "qc"
+        ]
+      }
+    },
+    "/api/qc/log/filters": {
+      "get": {
+        "operationId": "log_filters_api_qc_log_filters_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogFilters"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Log Filters",
         "tags": [
           "qc"
         ]

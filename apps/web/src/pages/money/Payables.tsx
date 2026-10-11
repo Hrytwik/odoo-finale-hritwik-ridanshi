@@ -10,6 +10,7 @@ import { Reveal } from '@/components/motion/Reveal'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Table } from '@/components/ui/Table'
+import { useI18n } from '@/i18n/I18nContext'
 import { api, call, type components } from '@/lib/api'
 import { formatDate, formatMoney } from '@/lib/format'
 import { PaymentDialog } from './PaymentDialog'
@@ -17,15 +18,16 @@ import { PaymentDialog } from './PaymentDialog'
 type Row = components['schemas']['PayableRow']
 
 export default function Payables() {
+  const { t } = useI18n()
   const rows = useQuery({ queryKey: ['money', 'payables'], queryFn: () => call(api.GET('/api/money/payables')) })
   const [paying, setPaying] = useState<Row | null>(null)
 
   return (
     <>
-      <PageHeader eyebrow="Money" title="Payables" description="What we owe suppliers for yarn, bill by bill. Overdue bills come first." />
+      <PageHeader eyebrow={t('nav.group.Money')} title={t('nav.payables')} description={t('money.pay.description')} />
       <QueryBoundary query={rows}>
         {(list) => {
-          if (list.length === 0) return <EmptyState title="No supplier bills yet" description="A bill appears here when yarn is received with a bill." />
+          if (list.length === 0) return <EmptyState title={t('money.pay.emptyTitle')} description={t('money.pay.emptyDescription')} />
           // overdue first, then the earliest due date: the order a clerk would pay in
           const sorted = [...list].sort((a, b) => Number(b.overdue) - Number(a.overdue) || a.due_date.localeCompare(b.due_date))
           const owed = list.reduce((t, r) => t + r.balance, 0)
@@ -33,22 +35,22 @@ export default function Payables() {
           return (
             <div className="stack">
               <AnimatedGroup className="grid-cards">
-                <KpiCard label="Still to pay" value={owed} format={formatMoney} />
-                <KpiCard label="Overdue" value={overdue} format={formatMoney} tone={overdue > 0 ? 'danger' : undefined} hint={overdue > 0 ? 'pay these first' : 'none'} />
+                <KpiCard label={t('money.toPay')} value={owed} format={formatMoney} />
+                <KpiCard label={t('money.overdue')} value={overdue} format={formatMoney} tone={overdue > 0 ? 'danger' : undefined} hint={overdue > 0 ? t('money.payFirst') : t('money.none')} />
               </AnimatedGroup>
               <Reveal>
                 <Table>
                   <thead>
                     <tr>
-                      <th>Bill</th>
-                      <th>Supplier</th>
-                      <th>Yarn lot</th>
-                      <th>Due</th>
-                      <th className="num">Amount</th>
-                      <th className="num">Paid</th>
-                      <th className="num">Balance</th>
+                      <th>{t('money.col.bill')}</th>
+                      <th>{t('money.col.supplier')}</th>
+                      <th>{t('money.col.lot')}</th>
+                      <th>{t('money.col.due')}</th>
+                      <th className="num">{t('common.amount')}</th>
+                      <th className="num">{t('money.col.paid')}</th>
+                      <th className="num">{t('money.col.balance')}</th>
                       <th>
-                        <span className="sr-only">Actions</span>
+                        <span className="sr-only">{t('money.actions')}</span>
                       </th>
                     </tr>
                   </thead>
@@ -67,7 +69,7 @@ export default function Payables() {
                           {formatDate(r.due_date)}
                           {r.overdue && (
                             <div>
-                              <Badge tone="red">Overdue</Badge>
+                              <Badge tone="red">{t('money.overdue')}</Badge>
                             </div>
                           )}
                         </td>
@@ -78,11 +80,11 @@ export default function Payables() {
                         </td>
                         <td>
                           {r.balance > 0 ? (
-                            <Button variant="secondary" onClick={() => setPaying(r)} aria-label={`Record payment for bill ${r.bill_no}`}>
-                              Record payment
+                            <Button variant="secondary" onClick={() => setPaying(r)} aria-label={t('money.recordForBill', { no: r.bill_no })}>
+                              {t('money.recordPayment')}
                             </Button>
                           ) : (
-                            <Badge tone="green">Paid</Badge>
+                            <Badge tone="green">{t('money.paid')}</Badge>
                           )}
                         </td>
                       </tr>
@@ -96,15 +98,15 @@ export default function Payables() {
       </QueryBoundary>
       {paying && (
         <PaymentDialog
-          title="Record a payment to a supplier"
-          subject={`Bill ${paying.bill_no} · ${paying.supplier.name}`}
+          title={t('money.dialogSupplier')}
+          subject={t('money.billSubject', { no: paying.bill_no, name: paying.supplier.name })}
           balance={paying.balance}
-          dateLabel="Paid on"
+          dateLabel={t('money.paidOn')}
           invalidate={[['money']]}
           send={(v) =>
             call(api.POST('/api/payments/supplier', { body: { bill_id: paying.bill_id, amount: v.amount, paid_on: v.date, ...(v.reference ? { reference: v.reference } : {}) } }))
           }
-          successMessage={(v) => `${formatMoney(v.amount)} paid to ${paying.supplier.name}`}
+          successMessage={(v) => t('money.paidToast', { amount: formatMoney(v.amount), name: paying.supplier.name })}
           onClose={() => setPaying(null)}
         />
       )}

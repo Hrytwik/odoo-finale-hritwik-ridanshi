@@ -10,6 +10,7 @@ import { Reveal } from '@/components/motion/Reveal'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Table } from '@/components/ui/Table'
+import { useI18n } from '@/i18n/I18nContext'
 import { api, call, type components } from '@/lib/api'
 import { formatDate, formatMoney } from '@/lib/format'
 import { PaymentDialog } from './PaymentDialog'
@@ -19,36 +20,37 @@ type Row = components['schemas']['ReceivableRow']
 const sum = (rows: Row[], key: 'total' | 'paid' | 'balance') => rows.reduce((t, r) => t + r[key], 0)
 
 export default function Receivables() {
+  const { t } = useI18n()
   const rows = useQuery({ queryKey: ['money', 'receivables'], queryFn: () => call(api.GET('/api/money/receivables')) })
   const [paying, setPaying] = useState<Row | null>(null)
 
   return (
     <>
-      <PageHeader eyebrow="Money" title="Receivables" description="What buyers owe us, invoice by invoice. Record a payment when money arrives." />
+      <PageHeader eyebrow={t('nav.group.Money')} title={t('nav.receivables')} description={t('money.recv.description')} />
       <QueryBoundary query={rows}>
         {(list) =>
           list.length === 0 ? (
-            <EmptyState title="No invoices yet" description="An invoice appears here when a dispatch is sent." />
+            <EmptyState title={t('money.recv.emptyTitle')} description={t('money.recv.emptyDescription')} />
           ) : (
             <div className="stack">
               <AnimatedGroup className="grid-cards">
-                <KpiCard label="Invoiced" value={sum(list, 'total')} format={formatMoney} />
-                <KpiCard label="Received" value={sum(list, 'paid')} format={formatMoney} />
-                <KpiCard label="Still to receive" value={sum(list, 'balance')} format={formatMoney} tone={sum(list, 'balance') > 0 ? 'danger' : undefined} />
+                <KpiCard label={t('money.invoiced')} value={sum(list, 'total')} format={formatMoney} />
+                <KpiCard label={t('money.received')} value={sum(list, 'paid')} format={formatMoney} />
+                <KpiCard label={t('money.toReceive')} value={sum(list, 'balance')} format={formatMoney} tone={sum(list, 'balance') > 0 ? 'danger' : undefined} />
               </AnimatedGroup>
               <Reveal>
                 <Table>
                   <thead>
                     <tr>
-                      <th>Invoice</th>
-                      <th>Buyer</th>
-                      <th>Issued</th>
-                      <th className="num">Total</th>
-                      <th className="num">Received</th>
-                      <th className="num">Balance</th>
-                      <th>Status</th>
+                      <th>{t('money.col.invoice')}</th>
+                      <th>{t('qc.col.buyer')}</th>
+                      <th>{t('money.col.issued')}</th>
+                      <th className="num">{t('money.col.total')}</th>
+                      <th className="num">{t('money.received')}</th>
+                      <th className="num">{t('money.col.balance')}</th>
+                      <th>{t('qc.col.status')}</th>
                       <th>
-                        <span className="sr-only">Actions</span>
+                        <span className="sr-only">{t('money.actions')}</span>
                       </th>
                     </tr>
                   </thead>
@@ -72,8 +74,8 @@ export default function Receivables() {
                         </td>
                         <td>
                           {r.balance > 0 && (
-                            <Button variant="secondary" onClick={() => setPaying(r)} aria-label={`Record payment for ${r.invoice_no}`}>
-                              Record payment
+                            <Button variant="secondary" onClick={() => setPaying(r)} aria-label={t('money.recordFor', { no: r.invoice_no })}>
+                              {t('money.recordPayment')}
                             </Button>
                           )}
                         </td>
@@ -88,15 +90,15 @@ export default function Receivables() {
       </QueryBoundary>
       {paying && (
         <PaymentDialog
-          title="Record a payment from a buyer"
+          title={t('money.dialogBuyer')}
           subject={`${paying.invoice_no} · ${paying.buyer.name}`}
           balance={paying.balance}
-          dateLabel="Received on"
+          dateLabel={t('money.receivedOn')}
           invalidate={[['money'], ['invoices', paying.invoice_no]]}
           send={(v) =>
             call(api.POST('/api/payments/buyer', { body: { invoice_no: paying.invoice_no, amount: v.amount, received_on: v.date, ...(v.reference ? { reference: v.reference } : {}) } }))
           }
-          successMessage={(v) => `${formatMoney(v.amount)} recorded for ${paying.invoice_no}`}
+          successMessage={(v) => t('money.recvToast', { amount: formatMoney(v.amount), no: paying.invoice_no })}
           onClose={() => setPaying(null)}
         />
       )}
@@ -105,7 +107,8 @@ export default function Receivables() {
 }
 
 function PaidBadge({ row }: { row: { paid: number; balance: number } }) {
-  if (row.balance <= 0) return <Badge tone="green">Paid</Badge>
-  if (row.paid > 0) return <Badge tone="amber">Part paid</Badge>
-  return <Badge tone="gray">Unpaid</Badge>
+  const { t } = useI18n()
+  if (row.balance <= 0) return <Badge tone="green">{t('money.paid')}</Badge>
+  if (row.paid > 0) return <Badge tone="amber">{t('money.partPaid')}</Badge>
+  return <Badge tone="gray">{t('money.unpaid')}</Badge>
 }

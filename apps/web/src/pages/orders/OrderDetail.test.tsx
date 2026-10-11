@@ -39,7 +39,7 @@ function setup(role = 'owner', order: unknown = ORDER, extra: Parameters<typeof 
   mockApi({
     GET: {
       '/api/auth/me': me(role), '/api/orders/{order_code}': order, '/api/orders/{order_code}/eta': ETA,
-      '/api/orders/{order_code}/yarn-check': YARN_CHECK, '/api/costing/orders/{order_code}': COST, ...extra.GET,
+      '/api/orders/{order_code}/yarn-check': YARN_CHECK, '/api/costing/orders/{order_code}': COST, '/api/dispatches': [], ...extra.GET,
     },
     POST: { '/api/orders/{order_code}/confirm': { ...ORDER, state: 'confirmed' }, '/api/orders/{order_code}/cancel': { ...ORDER, state: 'cancelled', stage: 'cancelled' }, ...extra.POST },
     PATCH: { '/api/orders/{order_code}': { ...ORDER, deadline: '2026-10-25' }, ...extra.PATCH },

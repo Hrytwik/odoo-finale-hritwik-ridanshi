@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Camera, Plus, ScanSearch, Trash2 } from 'lucide-react'
+import { Plus, ScanSearch, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Alert } from '@/components/common/Alert'
 import { PageHeader } from '@/components/common/PageHeader'
+import { PhotoInput } from '@/components/common/PhotoInput'
 import { PhotoWithBoxes } from '@/components/common/PhotoWithBoxes'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
 import { SubmitButton } from '@/components/common/SubmitButton'
@@ -13,8 +14,11 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input, Select, Textarea } from '@/components/ui/Field'
 import { useMe } from '@/lib/auth'
+import { useI18n } from '@/i18n/I18nContext'
 import { DEFECT_LABEL } from '@/lib/defects'
+import { useDefectLabel } from '@/lib/useDefectLabel'
 import { api, call, errorMessage, type components } from '@/lib/api'
+import type { Key } from '@/i18n/en'
 import { useSubmitLock } from '@/lib/forms'
 import { formatMetres } from '@/lib/format'
 
@@ -25,12 +29,12 @@ type Analysis = components['schemas']['AnalyzeOut']
 
 type DefectRow = { type: DefectType; count: string; fromAi: boolean }
 
-const VERDICTS: { value: Verdict; label: string; hint: string }[] = [
-  { value: 'pass', label: 'Pass', hint: 'Good to store and sell' },
-  { value: 'rework', label: 'Rework', hint: 'Can be mended or re-dyed' },
-  { value: 'reject', label: 'Reject', hint: 'Cannot be saved' },
+const VERDICTS: { value: Verdict; label: Key; hint: Key }[] = [
+  { value: 'pass', label: 'qc.verdict.pass', hint: 'qc.verdict.passHint' },
+  { value: 'rework', label: 'qc.verdict.rework', hint: 'qc.verdict.reworkHint' },
+  { value: 'reject', label: 'qc.verdict.reject', hint: 'qc.verdict.rejectHint' },
 ]
-const VERDICT_WORD: Record<Verdict, string> = { pass: 'pass', rework: 'rework', reject: 'reject' }
+const VERDICT_WORD: Record<Verdict, Key> = { pass: 'qc.verdictWord.pass', rework: 'qc.verdictWord.rework', reject: 'qc.verdictWord.reject' }
 
 /** Counts the model's boxes per defect type: three boxes, two of them holes, becomes 2 holes and 1 stain. */
 function rowsFromSuggestion(s: Suggestion): DefectRow[] {
@@ -49,7 +53,9 @@ export default function QcInspect() {
   return <QueryBoundary query={passport}>{(p) => <Inspection roll={p.roll} />}</QueryBoundary>
 }
 
-function Inspection({ roll }: { roll: components['schemas']['RollOut'] }) {
+export function Inspection({ roll, embedded = false, onRecorded }: { roll: components['schemas']['RollOut']; embedded?: boolean; onRecorded?: () => void }) {
+  const { t } = useI18n()
+  const defectLabel = useDefectLabel()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { run, pending } = useSubmitLock()
@@ -109,7 +115,7 @@ function Inspection({ roll }: { roll: components['schemas']['RollOut'] }) {
         setDefects(rowsFromSuggestion(result.suggestion))
       }
     } catch {
-      setAnalysisError('Could not analyse the photo. You can still check the roll by eye and record the verdict.')
+      setAnalysisError(t('qc.inspect.analyseFailed'))
     } finally {
       setAnalysing(false)
     }
@@ -125,8 +131,8 @@ function Inspection({ roll }: { roll: components['schemas']['RollOut'] }) {
     run(async () => {
       const next: typeof errors = {}
       const good = validDefects()
-      if (!verdict) next.verdict = 'Choose a verdict'
-      else if (verdict !== 'pass' && good.length === 0) next.defects = 'Add at least one defect for a rework or reject'
+      if (!verdict) next.verdict = t('qc.inspect.chooseVerdict')
+      else if (verdict !== 'pass' && good.length === 0) next.defects = t('qc.inspect.needDefect')
       setErrors(next)
       setFormError(null)
       if (next.verdict || next.defects || !verdict) return
@@ -144,9 +150,10 @@ function Inspection({ roll }: { roll: components['schemas']['RollOut'] }) {
             },
           }),
         )
-        toast.success(`${roll.code}: ${VERDICT_WORD[verdict]} recorded`)
+        toast.success(t('qc.inspect.recorded', { code: roll.code, verdict: t(VERDICT_WORD[verdict]) }))
         for (const queryKey of [['qc'], ['rolls'], ['orders'], ['insights']]) void queryClient.invalidateQueries({ queryKey })
-        navigate('/qc')
+        if (onRecorded) onRecorded()
+        else navigate('/qc')
       } catch (err) {
         setFormError(errorMessage(err))
       }
@@ -154,27 +161,21 @@ function Inspection({ roll }: { roll: components['schemas']['RollOut'] }) {
 
   return (
     <>
-      <PageHeader title={`Inspect ${roll.code}`} description={`${roll.order_code} · ${roll.fabric}, ${roll.colour} · ${formatMetres(roll.metres)}`} />
-      <div className="stack" style={{ maxWidth: 760 }}>
-        {!waiting && <Alert tone="info">This roll is not waiting for a quality check (it is {roll.status.replace('_', ' ')}). You can look, but the server will refuse a new verdict.</Alert>}
+      {!embedded && <PageHeader title={t('qc.inspect.title', { code: roll.code })} description={`${roll.order_code} · ${roll.fabric}, ${roll.colour} · ${formatMetres(roll.metres)}`} />}
+      <div className="stack" style={{ maxWidth: embedded ? undefined : 760 }}>
+        {!waiting && <Alert tone="info">{t('qc.inspect.notWaiting', { status: t(`status.roll.${roll.status}` as Key) })}</Alert>}
 
-        <Card title="1. Photograph the cloth (optional)">
+        <Card title={t('qc.inspect.step1')}>
           <div className="stack">
-            <Field label="Photo" hint={photo ? photo.name : 'Take a photo of the stretch you are checking'}>
-              {(c) => (
-                <label className="file-pick">
-                  <Camera size={18} aria-hidden />
-                  <span>{photo ? 'Change photo' : 'Take or choose a photo'}</span>
-                  <input {...c} type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => choosePhoto(e.target.files?.[0] ?? null)} />
-                </label>
-              )}
+            <Field label={t('qc.inspect.photo')} hint={photo ? photo.name : t('qc.inspect.photoHint')}>
+              {(c) => <PhotoInput {...c} onFile={choosePhoto} />}
             </Field>
             {preview && (
               <>
-                <PhotoWithBoxes src={preview} boxes={suggestion?.boxes ?? []} alt="Cloth under inspection" />
+                <PhotoWithBoxes src={preview} boxes={suggestion?.boxes ?? []} alt={t('qc.inspect.photoAlt')} />
                 <div>
                   <Button variant="secondary" onClick={analyse} disabled={analysing}>
-                    <ScanSearch size={16} aria-hidden /> {analysing ? 'Analysing…' : analysis ? 'Analyse photo again' : 'Analyse photo'}
+                    <ScanSearch size={16} aria-hidden /> {analysing ? t('qc.inspect.analysing') : analysis ? t('qc.inspect.analyseAgain') : t('qc.inspect.analyse')}
                   </Button>
                 </div>
               </>
@@ -192,67 +193,67 @@ function Inspection({ roll }: { roll: components['schemas']['RollOut'] }) {
             void submit()
           }}
         >
-          <Card title="2. Your verdict">
+          <Card title={t('qc.inspect.step2')}>
             <div className="stack">
-              <div role="radiogroup" aria-label="Verdict" className="verdicts">
+              <div role="radiogroup" aria-label={t('qc.inspect.verdictGroup')} className="verdicts">
                 {VERDICTS.map((v) => (
                   <label key={v.value} className={`verdict verdict-${v.value}${verdict === v.value ? ' is-picked' : ''}`}>
-                    <input type="radio" name="verdict" value={v.value} checked={verdict === v.value} onChange={() => setVerdict(v.value)} className="sr-only" aria-label={v.label} />
-                    <strong>{v.label}</strong>
-                    <span className="text-sm">{v.hint}</span>
+                    <input type="radio" name="verdict" value={v.value} checked={verdict === v.value} onChange={() => setVerdict(v.value)} className="sr-only" aria-label={t(v.label)} />
+                    <strong>{t(v.label)}</strong>
+                    <span className="text-sm">{t(v.hint)}</span>
                   </label>
                 ))}
               </div>
               {errors.verdict && <p className="field-error">{errors.verdict}</p>}
               {overriding && suggestion && (
                 <Alert tone="info">
-                  You are overriding the AI, which suggested <strong>{VERDICT_WORD[suggestion.verdict]}</strong>. Your verdict stands, and the override is recorded.
+                  {t('qc.inspect.overriding', { verdict: t(VERDICT_WORD[suggestion.verdict]) })}
                 </Alert>
               )}
             </div>
           </Card>
 
-          <Card title="3. Defects found">
+          <Card title={t('qc.inspect.step3')}>
             <div className="stack">
               {defects.map((d, i) => (
                 <div key={i} className="defect-row">
-                  <Field label="Defect type">
+                  <Field label={t('qc.inspect.defectType')}>
                     {(c) => (
                       <Select {...c} value={d.type} onChange={(e) => setDefects((rows) => rows.map((r, j) => (j === i ? { ...r, type: e.target.value as DefectType } : r)))}>
-                        {(Object.keys(DEFECT_LABEL) as DefectType[]).map((t) => (
-                          <option key={t} value={t}>
-                            {DEFECT_LABEL[t]}
+                        {(Object.keys(DEFECT_LABEL) as DefectType[]).map((dt) => (
+                          <option key={dt} value={dt}>
+                            {defectLabel(dt)}
                           </option>
                         ))}
                       </Select>
                     )}
                   </Field>
-                  <Field label="How many">
+                  <Field label={t('qc.inspect.howMany')}>
                     {(c) => <Input {...c} type="number" inputMode="numeric" min={1} value={d.count} onChange={(e) => setDefects((rows) => rows.map((r, j) => (j === i ? { ...r, count: e.target.value } : r)))} />}
                   </Field>
-                  <Button variant="ghost" icon aria-label="Remove defect" onClick={() => setDefects((rows) => rows.filter((_, j) => j !== i))}>
+                  <Button variant="ghost" icon aria-label={t('qc.inspect.removeDefect')} onClick={() => setDefects((rows) => rows.filter((_, j) => j !== i))}>
                     <Trash2 size={16} aria-hidden />
                   </Button>
                 </div>
               ))}
               <div>
                 <Button variant="secondary" onClick={() => setDefects((rows) => [...rows, { type: 'hole', count: '1', fromAi: false }])}>
-                  <Plus size={16} aria-hidden /> Add defect
+                  <Plus size={16} aria-hidden /> {t('qc.inspect.addDefect')}
                 </Button>
               </div>
               {errors.defects && <p className="field-error">{errors.defects}</p>}
-              <Field label="Notes (optional)">{(c) => <Textarea {...c} value={notes} onChange={(e) => setNotes(e.target.value)} />}</Field>
+              <Field label={t('qc.inspect.notes')}>{(c) => <Textarea {...c} value={notes} onChange={(e) => setNotes(e.target.value)} />}</Field>
             </div>
           </Card>
 
           {noInspector && (
             <Alert tone="info">
-              Your login is not linked to an inspector, so you cannot record a verdict. The owner can link a worker to this login on the Users screen.
+              {t('qc.inspect.noInspector')}
             </Alert>
           )}
           {formError && <Alert tone="error">{formError}</Alert>}
           <SubmitButton pending={pending} disabled={noInspector} block>
-            Record verdict
+            {t('qc.inspect.record')}
           </SubmitButton>
         </form>
       </div>
@@ -261,18 +262,19 @@ function Inspection({ roll }: { roll: components['schemas']['RollOut'] }) {
 }
 
 function AnalysisNote({ analysis }: { analysis: Analysis }) {
+  const { t } = useI18n()
   if (!analysis.suggestion) {
-    return <Alert tone="info">{analysis.message ?? 'The model gave no suggestion. Check the roll by eye.'}</Alert>
+    return <Alert tone="info">{analysis.message ?? t('qc.inspect.noSuggestion')}</Alert>
   }
   return (
     <div className="stack-sm">
       <p>
-        <strong>AI suggests:</strong> {VERDICT_WORD[analysis.suggestion.verdict]}, {analysis.suggestion.boxes.length} {analysis.suggestion.boxes.length === 1 ? 'defect' : 'defects'} found{' '}
+        <strong>{t('qc.inspect.aiSuggests', { verdict: t(VERDICT_WORD[analysis.suggestion.verdict]), found: t(analysis.suggestion.boxes.length === 1 ? 'defect.count.one' : 'defect.count.many', { count: analysis.suggestion.boxes.length }) })}</strong>{' '}
         <span className="muted text-sm">({analysis.suggestion.model_version})</span>
       </p>
-      {!analysis.available && <Badge tone="amber">Unvalidated suggestion</Badge>}
+      {!analysis.available && <Badge tone="amber">{t('qc.inspect.unvalidated')}</Badge>}
       {analysis.message && <p className="muted text-sm">{analysis.message}</p>}
-      <p className="muted text-sm">It is only a suggestion. You decide, and every change you make is recorded.</p>
+      <p className="muted text-sm">{t('qc.inspect.onlySuggestion')}</p>
     </div>
   )
 }

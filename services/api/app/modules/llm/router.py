@@ -77,23 +77,31 @@ def _history(body: s.ChatIn) -> list[Turn]:
 @router.post("/copilot", response_model=s.ChatOut)
 def copilot(body: s.ChatIn, db: Session = Depends(get_db), user: User = Depends(managers), rt: LlmRuntime = Depends(get_runtime)) -> s.ChatOut:
     _need_tools(rt)
-    result = engine.run_chat(rt.adapter, engine.COPILOT_SYSTEM, _history(body), body.question, tools_for(user.role, "copilot"), ToolContext(db, user))
+    result = engine.run_chat(rt.adapter, engine.COPILOT_SYSTEM, _history(body), body.question, tools_for(user.role, "copilot"), ToolContext(db, user),
+                             language=body.language)
     return s.ChatOut(answer=result.text, sources=_sources(result), provider=rt.config.provider, model=rt.config.model)
 
 
 @router.post("/buyer-assistant", response_model=s.ChatOut)
 def buyer_assistant(body: s.ChatIn, db: Session = Depends(get_db), user: User = Depends(buyers), rt: LlmRuntime = Depends(get_runtime)) -> s.ChatOut:
     _need_tools(rt)
-    result = engine.run_chat(rt.adapter, engine.BUYER_SYSTEM, _history(body), body.question, tools_for(user.role, "buyer"), ToolContext(db, user))
+    result = engine.run_chat(rt.adapter, engine.BUYER_SYSTEM, _history(body), body.question, tools_for(user.role, "buyer"), ToolContext(db, user),
+                             language=body.language)
     return s.ChatOut(answer=result.text, sources=_sources(result), provider=rt.config.provider, model=rt.config.model)
 
 
-def _write(rt: LlmRuntime, system: str, prompt: str) -> str:
+def _write(rt: LlmRuntime, system: str, prompt: str, language: str | None = None) -> str:
     """One plain model call with no tools: the model only words figures we hand it."""
+    reply = None
     try:
-        return rt.adapter.complete(system, [Turn(role="user", text=prompt)], [], {"max_tokens": 600}).text or ""
+        for budget in (700, 1500):  # a model that thinks first may need more room; a draft is never handed back cut off
+            reply = rt.adapter.complete(engine.with_language(system, language), [Turn(role="user", text=prompt)], [], {"max_tokens": budget})
+            if not reply.truncated:
+                break
     except AdapterError as exc:
         raise engine.ai_unavailable(exc) from exc
+    text = (reply.text if reply else "") or ""
+    return text + " ..." if reply and reply.truncated and text else text
 
 
 def _source(tool: str, input: dict, payload: object) -> s.SourceOut:
@@ -138,6 +146,7 @@ def month_summary(body: s.MonthIn, db: Session = Depends(get_db), user: User = D
         "You write one paragraph of four to six sentences summarising a mill's month for its owner. Use only the numbers given, "
         "copied exactly, in Indian rupees. Mention profit, cash, and anything in the warnings. Do not give advice.",
         json.dumps(report, default=str),
+        body.language,
     )
     return s.DraftOut(text=text, sources=[_source("get_month_summary", {"month": body.month}, report)], provider=rt.config.provider, model=rt.config.model)
 

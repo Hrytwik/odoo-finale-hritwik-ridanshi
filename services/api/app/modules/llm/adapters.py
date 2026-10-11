@@ -135,7 +135,7 @@ class AnthropicAdapter:
                 text += block.get("text", "")
             elif block.get("type") == "tool_use":
                 calls.append(ToolCall(id=block["id"], name=block["name"], arguments=block.get("input") or {}))
-        return Completion(text=text.strip(), tool_calls=calls)
+        return Completion(text=text.strip(), tool_calls=calls, truncated=data.get("stop_reason") == "max_tokens")
 
 
 class OpenAICompatibleAdapter:
@@ -169,6 +169,9 @@ class OpenAICompatibleAdapter:
         options = options or {}
         payload: dict = {"model": self.model, "messages": self._messages(system, turns),
                          "max_tokens": options.get("max_tokens", 1024)}
+        if "gpt-oss" in self.model.lower():
+            # these models think before they answer, and the thinking uses the same token budget: keep it short
+            payload["reasoning_effort"] = "low"
         if tools:
             payload["tools"] = [{"type": "function", "function": {"name": t.name, "description": t.description,
                                                                    "parameters": t.schema}} for t in tools]
@@ -188,4 +191,5 @@ class OpenAICompatibleAdapter:
                 args = {}
             calls.append(ToolCall(id=c.get("id") or c["function"]["name"], name=c["function"]["name"],
                                   arguments=args if isinstance(args, dict) else {}))
-        return Completion(text=(message.get("content") or "").strip(), tool_calls=calls)
+        return Completion(text=(message.get("content") or "").strip(), tool_calls=calls,
+                          truncated=data["choices"][0].get("finish_reason") == "length")

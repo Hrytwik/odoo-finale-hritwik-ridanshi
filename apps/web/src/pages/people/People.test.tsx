@@ -7,10 +7,11 @@ import { api } from '@/lib/api/client'
 import { mockApi, renderPage } from '@/test/utils'
 import Attendance from './Attendance'
 import Wages from './Wages'
+import { todayIso } from '@/lib/dates'
 
 const post = vi.mocked(api.POST)
 const get = vi.mocked(api.GET)
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => todayIso()
 
 const SHIFTS = [
   { id: 1, name: 'A', start_time: '06:00:00', end_time: '14:00:00' },
@@ -128,7 +129,7 @@ describe('Attendance', () => {
 })
 
 const WAGES = {
-  month: new Date().toISOString().slice(0, 7),
+  month: todayIso().slice(0, 7),
   rows: [
     { worker_id: 1, worker_code: 'W-01', worker_name: 'Asha Patel', daily_wage: 800, present: 20, half_days: 2, absent: 1, earned: 16800, paid: 6800, owed: 10000 },
     { worker_id: 2, worker_code: 'W-02', worker_name: 'Bhanu Singh', daily_wage: 700, present: 10, half_days: 0, absent: 0, earned: 7000, paid: 7000, owed: 0 },

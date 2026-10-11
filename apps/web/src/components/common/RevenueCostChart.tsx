@@ -1,3 +1,4 @@
+import { useI18n } from '@/i18n/I18nContext'
 import { niceScale, yFor } from '@/lib/chart'
 import { formatLakh, formatMoney } from '@/lib/format'
 
@@ -12,6 +13,7 @@ const PAD = { top: 44, right: 16, bottom: 34, left: 64 }
  * Plain SVG: it follows the light and dark colours and has a table for screen readers.
  */
 export function RevenueCostChart({ data, caption }: { data: OrderPoint[]; caption: string }) {
+  const { t } = useI18n()
   const scale = niceScale(data.flatMap((d) => [d.revenue, d.cost]))
   const plotW = W - PAD.left - PAD.right
   const plotH = H - PAD.top - PAD.bottom
@@ -36,21 +38,21 @@ export function RevenueCostChart({ data, caption }: { data: OrderPoint[]; captio
         {data.map((d, i) => (
           <g key={d.label}>
             <g>
-              <title>{`${d.label}: revenue ${formatMoney(d.revenue)}`}</title>
+              <title>{t('chart.revenueTitle', { label: d.label, amount: formatMoney(d.revenue) })}</title>
               <rect x={cx(i) - group / 2} y={y(d.revenue)} width={barW} height={Math.max(base - y(d.revenue), 0)} rx={4} className="chart-bar is-revenue" />
               <text x={cx(i) - group / 2 + barW / 2} y={y(d.revenue) - 6} textAnchor="middle" className="chart-value">
                 {formatLakh(d.revenue)}
               </text>
             </g>
             <g>
-              <title>{`${d.label}: cost ${formatMoney(d.cost)}`}</title>
+              <title>{t('chart.costTitle', { label: d.label, amount: formatMoney(d.cost) })}</title>
               <rect x={cx(i) + 3} y={y(d.cost)} width={barW} height={Math.max(base - y(d.cost), 0)} rx={4} className="chart-bar is-cost" />
               <text x={cx(i) + 3 + barW / 2} y={y(d.cost) - 6} textAnchor="middle" className="chart-value">
                 {formatLakh(d.cost)}
               </text>
             </g>
             <text x={cx(i)} y={20} textAnchor="middle" className={d.profit < 0 ? 'chart-profit is-loss' : 'chart-profit'}>
-              {d.profit < 0 ? `Loss ${formatLakh(-d.profit)}` : `Profit ${formatLakh(d.profit)}`}
+              {d.profit < 0 ? t('chart.loss', { amount: formatLakh(-d.profit) }) : t('chart.profit', { amount: formatLakh(d.profit) })}
             </text>
             <text x={cx(i)} y={H - 10} textAnchor="middle" className="chart-tick">
               {d.label}
@@ -60,21 +62,21 @@ export function RevenueCostChart({ data, caption }: { data: OrderPoint[]; captio
       </svg>
       <figcaption className="chart-legend">
         <span>
-          <i className="chart-key is-revenue" aria-hidden /> Revenue
+          <i className="chart-key is-revenue" aria-hidden /> {t('chart.revenue')}
         </span>
         <span>
-          <i className="chart-key is-cost" aria-hidden /> Cost
+          <i className="chart-key is-cost" aria-hidden /> {t('chart.cost')}
         </span>
-        <span className="muted">Profit or loss is written above each order</span>
+        <span className="muted">{t('chart.note')}</span>
       </figcaption>
       <table className="sr-only">
         <caption>{caption}</caption>
         <thead>
           <tr>
-            <th>Order</th>
-            <th>Revenue</th>
-            <th>Cost</th>
-            <th>Profit</th>
+            <th>{t('qc.col.order')}</th>
+            <th>{t('chart.revenue')}</th>
+            <th>{t('chart.cost')}</th>
+            <th>{t('chart.profitWord')}</th>
           </tr>
         </thead>
         <tbody>

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Toaster } from 'sonner'
+import { I18nProvider } from '@/i18n/I18nProvider'
 import { ApiError, setUnauthorizedHandler } from '@/lib/api'
 
 /** Do not retry client mistakes (4xx); retry network and server hiccups twice. */
@@ -18,7 +19,7 @@ export function Providers({ children }: { children: ReactNode }) {
   useEffect(() => {
     setUnauthorizedHandler(() => {
       const { pathname, search } = window.location
-      if (pathname === '/' || pathname.startsWith('/login')) return
+      if (pathname === '/' || pathname.startsWith('/login') || pathname.startsWith('/signup')) return
       window.location.assign(`/login?next=${encodeURIComponent(pathname + search)}`)
     })
     return () => setUnauthorizedHandler(null)
@@ -26,8 +27,10 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={client}>
-      {children}
-      <Toaster position="top-center" richColors closeButton />
+      <I18nProvider>
+        {children}
+        <Toaster position="top-center" richColors closeButton />
+      </I18nProvider>
     </QueryClientProvider>
   )
 }

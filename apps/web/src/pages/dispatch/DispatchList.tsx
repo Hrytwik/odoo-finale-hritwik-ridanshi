@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Field, Input, Select } from '@/components/ui/Field'
 import { Table } from '@/components/ui/Table'
+import { useI18n } from '@/i18n/I18nContext'
 import { ApiError, api, call, errorMessage, type components } from '@/lib/api'
 import { useSubmitLock } from '@/lib/forms'
 import { formatDateTime, formatMetres } from '@/lib/format'
@@ -21,23 +22,24 @@ import { formatDateTime, formatMetres } from '@/lib/format'
 type Dispatch = components['schemas']['DispatchOut']
 
 export default function DispatchList() {
+  const { t } = useI18n()
   const [creating, setCreating] = useState(false)
   const dispatches = useQuery({ queryKey: ['dispatches'], queryFn: () => call(api.GET('/api/dispatches')) })
   return (
     <>
       <PageHeader
-        title="Dispatch"
-        description="Trucks being loaded and sent. A roll can leave only once, and only to its own buyer."
+        title={t('nav.dispatch')}
+        description={t('dispatch.description')}
         actions={
           <Button onClick={() => setCreating(true)}>
-            <Plus size={16} aria-hidden /> New dispatch
+            <Plus size={16} aria-hidden /> {t('dispatch.new')}
           </Button>
         }
       />
       <QueryBoundary query={dispatches}>
         {(list) =>
           list.length === 0 ? (
-            <EmptyState title="No dispatches yet" description="Create one when a truck arrives, then scan the rolls onto it." />
+            <EmptyState title={t('dispatch.emptyTitle')} description={t('dispatch.emptyDescription')} />
           ) : (
             <Reveal>
               <DispatchTable list={list} />
@@ -51,19 +53,20 @@ export default function DispatchList() {
 }
 
 function DispatchTable({ list }: { list: Dispatch[] }) {
+  const { t } = useI18n()
   // trucks still being loaded come first: that is where the clerk is working
   const sorted = [...list].sort((a, b) => Number(b.state === 'loading') - Number(a.state === 'loading') || b.created_at.localeCompare(a.created_at))
   return (
     <Table>
       <thead>
         <tr>
-          <th>Dispatch</th>
-          <th>Buyer</th>
-          <th>Vehicle</th>
-          <th className="num">Rolls</th>
-          <th className="num">Metres</th>
-          <th>State</th>
-          <th>Invoice</th>
+          <th>{t('dispatch.col.dispatch')}</th>
+          <th>{t('qc.col.buyer')}</th>
+          <th>{t('dispatch.col.vehicle')}</th>
+          <th className="num">{t('dispatch.col.rolls')}</th>
+          <th className="num">{t('dispatch.col.metres')}</th>
+          <th>{t('dispatch.col.state')}</th>
+          <th>{t('dispatch.col.invoice')}</th>
         </tr>
       </thead>
       <tbody>
@@ -79,10 +82,10 @@ function DispatchTable({ list }: { list: Dispatch[] }) {
               {d.driver_name && <div className="muted text-sm">{d.driver_name}</div>}
             </td>
             <td className="num">
-              {d.rolls.length} {d.rolls.length === 1 ? 'roll' : 'rolls'}
+              {t(d.rolls.length === 1 ? 'dispatch.rolls.one' : 'dispatch.rolls.many', { count: d.rolls.length })}
             </td>
             <td className="num">{formatMetres(d.total_metres)}</td>
-            <td>{d.state === 'loading' ? <Badge tone="amber">Loading</Badge> : <Badge tone="green">Dispatched</Badge>}</td>
+            <td>{d.state === 'loading' ? <Badge tone="amber">{t('status.roll.loading')}</Badge> : <Badge tone="green">{t('status.roll.dispatched')}</Badge>}</td>
             <td>{d.invoice_no ? <Link to={`/invoices/${d.invoice_no}`}>{d.invoice_no}</Link> : <span className="muted">-</span>}</td>
           </tr>
         ))}
@@ -94,6 +97,7 @@ function DispatchTable({ list }: { list: Dispatch[] }) {
 type Form = { buyer: string; vehicle: string; driver: string }
 
 function NewDispatchDialog({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { run, pending } = useSubmitLock()
@@ -106,8 +110,8 @@ function NewDispatchDialog({ onClose }: { onClose: () => void }) {
   const submit = () =>
     run(async () => {
       const next: typeof errors = {}
-      if (!form.buyer) next.buyer = 'Choose the buyer'
-      if (!form.vehicle.trim()) next.vehicle = 'Enter the vehicle number'
+      if (!form.buyer) next.buyer = t('dispatch.chooseBuyer')
+      if (!form.vehicle.trim()) next.vehicle = t('dispatch.enterVehicle')
       setErrors(next)
       setFormError(null)
       if (Object.keys(next).length) return
@@ -117,7 +121,7 @@ function NewDispatchDialog({ onClose }: { onClose: () => void }) {
             body: { buyer_id: Number(form.buyer), vehicle_no: form.vehicle.trim(), ...(form.driver.trim() ? { driver_name: form.driver.trim() } : {}) },
           }),
         )
-        toast.success(`${d.code} created`)
+        toast.success(t('dispatch.created', { code: d.code }))
         void queryClient.invalidateQueries({ queryKey: ['dispatches'] })
         navigate(`/dispatch/${d.code}`)
       } catch (err) {
@@ -134,7 +138,7 @@ function NewDispatchDialog({ onClose }: { onClose: () => void }) {
     })
 
   return (
-    <Dialog open onClose={onClose} title="New dispatch">
+    <Dialog open onClose={onClose} title={t('dispatch.new')}>
       <form
         className="stack"
         noValidate
@@ -143,10 +147,10 @@ function NewDispatchDialog({ onClose }: { onClose: () => void }) {
           void submit()
         }}
       >
-        <Field label="Buyer" error={errors.buyer}>
+        <Field label={t('qc.col.buyer')} error={errors.buyer}>
           {(c) => (
             <Select {...c} value={form.buyer} onChange={(e) => set('buyer', e.target.value)}>
-              <option value="">Select a buyer</option>
+              <option value="">{t('dispatch.selectBuyer')}</option>
               {(buyers.data ?? []).map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
@@ -155,17 +159,17 @@ function NewDispatchDialog({ onClose }: { onClose: () => void }) {
             </Select>
           )}
         </Field>
-        <Field label="Vehicle number" error={errors.vehicle}>
+        <Field label={t('dispatch.vehicleNo')} error={errors.vehicle}>
           {(c) => <Input {...c} autoCapitalize="characters" autoComplete="off" value={form.vehicle} onChange={(e) => set('vehicle', e.target.value)} />}
         </Field>
-        <Field label="Driver (optional)" error={errors.driver}>
+        <Field label={t('dispatch.driver')} error={errors.driver}>
           {(c) => <Input {...c} autoComplete="off" value={form.driver} onChange={(e) => set('driver', e.target.value)} />}
         </Field>
         {formError && <Alert tone="error">{formError}</Alert>}
         <div className="row">
-          <SubmitButton pending={pending}>Create dispatch</SubmitButton>
+          <SubmitButton pending={pending}>{t('dispatch.createButton')}</SubmitButton>
           <Button variant="secondary" onClick={onClose}>
-            Cancel
+            {t('dispatch.cancel')}
           </Button>
         </div>
       </form>

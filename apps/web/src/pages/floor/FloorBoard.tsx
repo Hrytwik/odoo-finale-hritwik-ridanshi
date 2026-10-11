@@ -7,39 +7,39 @@ import { QueryBoundary } from '@/components/common/QueryBoundary'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { AnimatedNumber } from '@/components/motion/AnimatedNumber'
 import { Reveal } from '@/components/motion/Reveal'
+import { useI18n } from '@/i18n/I18nContext'
+import type { Key } from '@/i18n/en'
 import { api, call, type components } from '@/lib/api'
 import { formatDateTime, formatQty } from '@/lib/format'
 import { SPEED, useLiveSpeed } from '@/lib/liveReading'
 
 type Machine = components['schemas']['MachineCard']
 
-const STAGES = [
-  { stage: 'spinning', title: 'Spinning' },
-  { stage: 'weaving', title: 'Weaving' },
-  { stage: 'dyeing', title: 'Dyeing' },
-] as const
+const STAGES = ['spinning', 'weaving', 'dyeing'] as const
 
 export default function FloorBoard() {
   // the key starts with "floor", so machine and run events from the live stream refetch the board
+  const { t } = useI18n()
   const board = useQuery({ queryKey: ['floor'], queryFn: () => call(api.GET('/api/floor')) })
   return (
     <>
-      <PageHeader eyebrow="Production" title="Floor board" description="Every machine, live. A breakdown on the phone shows here within a second." />
+      <PageHeader eyebrow={t('floor.eyebrow')} title={t('floor.title')} description={t('floor.description')} />
       <QueryBoundary query={board}>
         {(b) =>
           b.machines.length === 0 ? (
-            <EmptyState title="No machines yet" description="The owner adds machines under Master data." />
+            <EmptyState title={t('floor.emptyTitle')} description={t('floor.emptyDescription')} />
           ) : (
             <div className="stack">
-              <div className="live-strip" aria-label="Machines now">
+              <div className="live-strip" aria-label={t('floor.machinesNow')}>
                 <span className="live-tag">
-                  <i className="live-dot" aria-hidden /> LIVE
+                  <i className="live-dot" aria-hidden /> {t('floor.live')}
                 </span>
-                <LiveCount label="running" value={b.running} />
-                <LiveCount label="idle" value={b.idle} />
-                <LiveCount label="down" value={b.down} />
+                <LiveCount label={t('floor.running')} value={b.running} />
+                <LiveCount label={t('floor.idle')} value={b.idle} />
+                <LiveCount label={t('floor.down')} value={b.down} />
               </div>
-              {STAGES.map(({ stage, title }) => {
+              {STAGES.map((stage) => {
+                const title = t(`floor.stage.${stage}` as Key)
                 const machines = b.machines.filter((m) => m.stage === stage)
                 if (machines.length === 0) return null
                 return (
@@ -75,6 +75,7 @@ function LiveCount({ label, value }: { label: string; value: number }) {
 }
 
 function MachineTile({ machine: m }: { machine: Machine }) {
+  const { t } = useI18n()
   const running = m.status === 'running'
   const speed = useLiveSpeed(m.code, m.stage, running)
   const run = m.current_run
@@ -93,14 +94,14 @@ function MachineTile({ machine: m }: { machine: Machine }) {
         {run ? ` · ${run.operator.name}` : ''}
       </p>
 
-      <p className="machine-speed" title={running ? 'Simulated reading until machine sensors are connected' : undefined}>
+      <p className="machine-speed" title={running ? t('floor.simulated') : undefined}>
         <strong>{speed === null ? '—' : speed.toLocaleString('en-IN')}</strong>
         <small>{SPEED[m.stage].unit}</small>
       </p>
       <div
         className="machine-thread"
         role={run ? 'progressbar' : undefined}
-        aria-label={run ? 'Order progress' : undefined}
+        aria-label={run ? t('floor.orderProgress') : undefined}
         aria-valuemin={run ? 0 : undefined}
         aria-valuemax={run ? 100 : undefined}
         aria-valuenow={run ? Math.round(pct) : undefined}
@@ -114,15 +115,15 @@ function MachineTile({ machine: m }: { machine: Machine }) {
           <span>
             <strong>{m.downtime.reason}</strong>
             <br />
-            <span className="text-sm">Down since {formatDateTime(m.downtime.started_at)}</span>
+            <span className="text-sm">{t('floor.downSince', { time: formatDateTime(m.downtime.started_at) })}</span>
           </span>
         </div>
       )}
 
       <p className="machine-foot">
-        <span>{run ? run.order_code : m.status === 'idle' ? 'Waiting for a job.' : 'Stopped'}</span>
+        <span>{run ? run.order_code : m.status === 'idle' ? t('floor.waitingForJob') : t('floor.stopped')}</span>
         <span>
-          Today <strong>{formatQty(m.output_today, m.output_unit)}</strong>
+          {t('floor.today')} <strong>{formatQty(m.output_today, m.output_unit)}</strong>
         </span>
       </p>
     </article>

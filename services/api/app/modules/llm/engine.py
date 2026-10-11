@@ -61,10 +61,18 @@ def with_today(system: str, today: dt.date | None = None) -> str:
     return f"{system} Today is {day.isoformat()} (India time), so this month is {day:%Y-%m}."
 
 
+def with_language(system: str, language: str | None) -> str:
+    """Asks for the answer in the language the person reads. Names, codes and numbers stay exactly as the mill's data has them."""
+    if not language or language == "English":
+        return system
+    return (f"{system} Write your answer in {language}. Keep order codes, roll codes, names, dates and numbers exactly as the tools return them, "
+            f"and do not translate them.")
+
+
 def run_chat(adapter: LlmAdapter, system: str, history: list[Turn], question: str, tools: list[Tool], ctx: ToolContext,
-             options: dict | None = None) -> ChatResult:
+             options: dict | None = None, language: str | None = None) -> ChatResult:
     """Answers one question. Raises AppError AI_UNAVAILABLE when the provider cannot be used."""
-    system = with_today(system)
+    system = with_language(with_today(system), language)
     by_name = {t.name: t for t in tools}
     specs = [t.spec() for t in tools]
     turns = [*history, Turn(role="user", text=question)]
@@ -72,7 +80,10 @@ def run_chat(adapter: LlmAdapter, system: str, history: list[Turn], question: st
     for _ in range(MAX_STEPS):
         completion = _complete(adapter, system, turns, specs, options)
         if not completion.tool_calls:
-            return ChatResult(text=completion.text or "I could not find an answer.", sources=sources)
+            text = completion.text or "I could not find an answer."
+            if completion.truncated:
+                text += " (The answer was cut short. Ask a narrower question to see the rest.)"
+            return ChatResult(text=text, sources=sources)
         turns.append(Turn(role="assistant", text=completion.text, tool_calls=completion.tool_calls))
         results = [_run_tool(call, by_name, ctx, sources) for call in completion.tool_calls]
         turns.append(Turn(role="tool", tool_results=results))

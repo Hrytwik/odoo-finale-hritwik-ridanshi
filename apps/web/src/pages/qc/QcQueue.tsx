@@ -14,6 +14,7 @@ import { Reveal } from '@/components/motion/Reveal'
 import { Button } from '@/components/ui/Button'
 import { Field, Select } from '@/components/ui/Field'
 import { Table } from '@/components/ui/Table'
+import { useI18n } from '@/i18n/I18nContext'
 import { api, call, type components } from '@/lib/api'
 import { formatMetres } from '@/lib/format'
 import { useAction } from '@/lib/useAction'
@@ -21,6 +22,7 @@ import { useAction } from '@/lib/useAction'
 type Roll = components['schemas']['RollOut']
 
 export default function QcQueue() {
+  const { t } = useI18n()
   const queue = useQuery({ queryKey: ['qc', 'queue'], queryFn: () => call(api.GET('/api/qc/queue')) })
   const navigate = useNavigate()
   const [scanning, setScanning] = useState(false)
@@ -29,11 +31,11 @@ export default function QcQueue() {
   return (
     <>
       <PageHeader
-        title="Quality check"
-        description="Rolls waiting to be checked. Photograph the cloth, review the suggestion, record the verdict."
+        title={t('qc.title')}
+        description={t('qc.description')}
         actions={
           <Button variant="secondary" onClick={() => setScanning(true)}>
-            <ScanLine size={16} aria-hidden /> Scan a roll
+            <ScanLine size={16} aria-hidden /> {t('qc.scan')}
           </Button>
         }
       />
@@ -49,25 +51,25 @@ export default function QcQueue() {
         {(q) => (
           <div className="stack">
             <AnimatedGroup className="grid-cards">
-              <KpiCard label="Waiting for QC" value={q.counts.awaiting_qc} tone={q.counts.awaiting_qc > 0 ? 'danger' : undefined} />
-              <KpiCard label="Needs rework" value={q.counts.awaiting_rework} />
-              <KpiCard label="In rework" value={q.counts.in_rework} />
-              <KpiCard label="Passed" value={q.counts.passed} />
-              <KpiCard label="Rejected" value={q.counts.rejected} />
+              <KpiCard label={t('qc.waiting')} value={q.counts.awaiting_qc} tone={q.counts.awaiting_qc > 0 ? 'danger' : undefined} />
+              <KpiCard label={t('qc.needsRework')} value={q.counts.awaiting_rework} />
+              <KpiCard label={t('qc.inRework')} value={q.counts.in_rework} />
+              <KpiCard label={t('qc.passed')} value={q.counts.passed} />
+              <KpiCard label={t('qc.rejected')} value={q.counts.rejected} />
             </AnimatedGroup>
             <Reveal>
               {q.rolls.length === 0 ? (
-                <EmptyState title="Nothing is waiting" description="New rolls appear here as soon as they come off dyeing." />
+                <EmptyState title={t('qc.nothingWaiting')} description={t('qc.nothingWaitingDescription')} />
               ) : (
                 <Table>
                   <thead>
                     <tr>
-                      <th>Roll</th>
-                      <th>Order</th>
-                      <th>Buyer</th>
-                      <th>Fabric</th>
-                      <th className="num">Length</th>
-                      <th>Status</th>
+                      <th>{t('qc.col.roll')}</th>
+                      <th>{t('qc.col.order')}</th>
+                      <th>{t('qc.col.buyer')}</th>
+                      <th>{t('qc.col.fabric')}</th>
+                      <th className="num">{t('qc.col.length')}</th>
+                      <th>{t('qc.col.status')}</th>
                       <th />
                     </tr>
                   </thead>
@@ -90,11 +92,11 @@ export default function QcQueue() {
                         <td>
                           {r.status === 'awaiting_rework' ? (
                             <Button variant="secondary" onClick={() => setReworkFor(r)}>
-                              <Wrench size={16} aria-hidden /> Start rework
+                              <Wrench size={16} aria-hidden /> {t('qc.startRework')}
                             </Button>
                           ) : (
                             <Link to={`/qc/${r.code}`}>
-                              <Button>Inspect</Button>
+                              <Button>{t('qc.inspect')}</Button>
                             </Link>
                           )}
                         </td>
@@ -113,6 +115,7 @@ export default function QcQueue() {
 }
 
 function ReworkDialog({ roll, onClose }: { roll: Roll; onClose: () => void }) {
+  const { t } = useI18n()
   const [operator, setOperator] = useState('')
   const [machine, setMachine] = useState('')
   const [err, setErr] = useState<string | undefined>()
@@ -123,21 +126,21 @@ function ReworkDialog({ roll, onClose }: { roll: Roll; onClose: () => void }) {
   const dyers = (machines.data ?? []).filter((m) => m.stage === 'dyeing' && m.active)
 
   function submit() {
-    if (!operator) return setErr('Choose who does the rework')
+    if (!operator) return setErr(t('qc.rework.chooseOperator'))
     setErr(undefined)
     return act(
       () => call(api.POST('/api/rework-runs', { body: { roll_code: roll.code, operator_worker_id: Number(operator), ...(machine ? { machine_code: machine } : {}) } })),
-      `Rework started for ${roll.code}`,
+      t('qc.rework.started', { code: roll.code }),
     )
   }
 
   return (
-    <ActionDialog open onClose={onClose} title={`Start rework for ${roll.code}`} confirmLabel="Start rework" onConfirm={submit} pending={pending} error={error}>
-      <p>Re-dye it on a dyeing machine, or mend it by hand. The cost of the rework is charged to this roll.</p>
-      <Field label="Operator" error={err}>
+    <ActionDialog open onClose={onClose} title={t('qc.rework.title', { code: roll.code })} confirmLabel={t('qc.startRework')} onConfirm={submit} pending={pending} error={error}>
+      <p>{t('qc.rework.explain')}</p>
+      <Field label={t('qc.rework.operator')} error={err}>
         {(c) => (
           <Select {...c} value={operator} onChange={(e) => setOperator(e.target.value)}>
-            <option value="">Select an operator</option>
+            <option value="">{t('qc.rework.selectOperator')}</option>
             {operators.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.name}
@@ -146,10 +149,10 @@ function ReworkDialog({ roll, onClose }: { roll: Roll; onClose: () => void }) {
           </Select>
         )}
       </Field>
-      <Field label="Machine">
+      <Field label={t('qc.rework.machine')}>
         {(c) => (
           <Select {...c} value={machine} onChange={(e) => setMachine(e.target.value)}>
-            <option value="">Mend by hand (no machine)</option>
+            <option value="">{t('qc.rework.byHand')}</option>
             {dyers.map((m) => (
               <option key={m.code} value={m.code}>
                 {m.name} ({m.code})
