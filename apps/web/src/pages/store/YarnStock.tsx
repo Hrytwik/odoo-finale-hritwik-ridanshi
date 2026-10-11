@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Alert } from '@/components/common/Alert'
 import { EmptyState } from '@/components/common/EmptyState'
+import { ListToolbar, NoMatch } from '@/components/common/ListToolbar'
 import { KpiCard } from '@/components/common/KpiCard'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
@@ -13,6 +14,7 @@ import { Table } from '@/components/ui/Table'
 import { useI18n } from '@/i18n/I18nContext'
 import { api, call, type components } from '@/lib/api'
 import { formatDate, formatKg } from '@/lib/format'
+import { useListView } from '@/lib/useListView'
 
 type StockRow = components['schemas']['StockRow']
 type Shortage = components['schemas']['ShortageOut']
@@ -60,10 +62,36 @@ function Summary({ rows }: { rows: StockRow[] }) {
   )
 }
 
-function StockTable({ rows }: { rows: StockRow[] }) {
+function StockTable({ rows: all }: { rows: StockRow[] }) {
   const { t } = useI18n()
+  const view = useListView(all, {
+    text: (r) => `${r.yarn_type.name} ${r.yarn_type.code} ${r.yarn_type.colour}`,
+    sorts: [
+      { key: 'name', label: t('store.receive.yarnType'), value: (r) => r.yarn_type.name },
+      { key: 'onHand', label: t('store.stock.onHand'), value: (r) => r.on_hand_kg },
+      { key: 'needed', label: t('store.stock.neededByOrders'), value: (r) => r.outstanding_kg },
+      { key: 'free', label: t('store.stock.free'), value: (r) => r.free_kg },
+      { key: 'level', label: t('store.stock.reorderLevel'), value: (r) => r.reorder_level_kg },
+    ],
+    filters: [
+      {
+        key: 'status',
+        label: t('qc.col.status'),
+        options: [
+          { value: 'reorder', label: t('store.stock.reorderNow') },
+          { value: 'ok', label: t('store.stock.ok') },
+        ],
+        test: (r, v) => (v === 'reorder' ? r.below_reorder : !r.below_reorder),
+      },
+    ],
+    defaultSort: 'name',
+  })
+  const rows = view.rows
   return (
-    <Table>
+    <div className="stack">
+      <ListToolbar view={view} placeholder={t('list.searchHint.stock')} />
+      <NoMatch view={view} />
+      <Table>
       <thead>
         <tr>
           <th>{t('store.receive.yarnType')}</th>
@@ -93,7 +121,8 @@ function StockTable({ rows }: { rows: StockRow[] }) {
           </tr>
         ))}
       </tbody>
-    </Table>
+      </Table>
+    </div>
   )
 }
 

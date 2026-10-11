@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { Alert } from '@/components/common/Alert'
 import { EmptyState } from '@/components/common/EmptyState'
+import { ListToolbar, NoMatch } from '@/components/common/ListToolbar'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
 import { SubmitButton } from '@/components/common/SubmitButton'
@@ -15,6 +16,7 @@ import { Table } from '@/components/ui/Table'
 import { useI18n } from '@/i18n/I18nContext'
 import { ApiError, errorMessage } from '@/lib/api'
 import { useSubmitLock } from '@/lib/forms'
+import { useListView } from '@/lib/useListView'
 
 export type FieldDef = {
   name: string
@@ -82,49 +84,96 @@ export function MasterScreen<T extends { id: number }>(props: Props<T>) {
             <EmptyState title={empty.title} description={empty.description} />
           ) : (
             <Reveal>
-              <Table>
-                <thead>
-                  <tr>
-                    {columns.map((c) => (
-                      <th key={c.header} className={c.num ? 'num' : undefined}>
-                        {c.header}
-                      </th>
-                    ))}
-                    {canEdit && (
-                      <th>
-                        <span className="sr-only">{t('money.actions')}</span>
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.id}>
-                      {columns.map((c) => (
-                        <td key={c.header} className={c.num ? 'num' : undefined}>
-                          {c.cell(row)}
-                        </td>
-                      ))}
-                      {canEdit && (
-                        <td>
-                          <span className="row">
-                            <Button variant="secondary" onClick={() => setEditing(row)} aria-label={t('admin.editAria', { noun: singular, id: row.id })}>
-                              <Pencil size={14} aria-hidden /> {t('admin.editButton')}
-                            </Button>
-                            {props.rowActions?.(row)}
-                          </span>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
+              <MasterTable all={rows} columns={columns} canEdit={canEdit} singular={singular} onEdit={setEditing} rowActions={props.rowActions} />
             </Reveal>
           )
         }
       </QueryBoundary>
       {editing && <MasterDialog {...props} row={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
     </>
+  )
+}
+
+/** Every piece of text and number in a row (and in the objects inside it), so a search can find it. */
+function rowText(value: unknown, depth = 0): string {
+  if (value == null || depth > 2) return ''
+  if (typeof value === 'string' || typeof value === 'number') return String(value)
+  if (Array.isArray(value)) return value.map((v) => rowText(v, depth + 1)).join(' ')
+  if (typeof value === 'object') return Object.values(value).map((v) => rowText(v, depth + 1)).join(' ')
+  return ''
+}
+
+/** The list itself, with a search box and a sort on every column whose cell is plain text or a number. */
+function MasterTable<T extends { id: number }>({
+  all,
+  columns,
+  canEdit,
+  singular,
+  onEdit,
+  rowActions,
+}: {
+  all: T[]
+  columns: Props<T>['columns']
+  canEdit: boolean
+  singular: string
+  onEdit: (row: T) => void
+  rowActions?: (row: T) => ReactNode
+}) {
+  const { t } = useI18n()
+  const view = useListView(all, {
+    text: (row) => rowText(row),
+    sorts: columns.map((c) => ({
+      key: c.header,
+      label: c.header,
+      value: (row: T) => {
+        const cell = c.cell(row)
+        return typeof cell === 'string' || typeof cell === 'number' ? cell : null
+      },
+    })),
+  })
+  const rows = view.rows
+  return (
+    <div className="stack">
+      <ListToolbar view={view} />
+      <NoMatch view={view} />
+      <Table>
+        <thead>
+          <tr>
+            {columns.map((c) => (
+              <th key={c.header} className={c.num ? 'num' : undefined}>
+                {c.header}
+              </th>
+            ))}
+            {canEdit && (
+              <th>
+                <span className="sr-only">{t('money.actions')}</span>
+              </th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id}>
+              {columns.map((c) => (
+                <td key={c.header} className={c.num ? 'num' : undefined}>
+                  {c.cell(row)}
+                </td>
+              ))}
+              {canEdit && (
+                <td>
+                  <span className="row">
+                    <Button variant="secondary" onClick={() => onEdit(row)} aria-label={t('admin.editAria', { noun: singular, id: row.id })}>
+                      <Pencil size={14} aria-hidden /> {t('admin.editButton')}
+                    </Button>
+                    {rowActions?.(row)}
+                  </span>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </div>
   )
 }
 
