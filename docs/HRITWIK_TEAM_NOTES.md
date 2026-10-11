@@ -1,9 +1,29 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-11 02:25 IST
+> **Last updated:** 2026-10-11 06:28 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-11 06:28 IST — B9 done: a simulated month in its own database, `everest_month`
+
+**From:** Hritwik → Ridanshi
+
+**What exists.** `npm run db:month` (repository root) builds a separate database, `everest_month`, with 30 days of mill history: 14 orders (12 confirmed, 1 draft, 1 cancelled), 16 yarn lots, 83 rolls, 421 runs, 83 inspections, 10 invoices, attendance and wages for every shift. It is made by the real service functions under a simulated clock, so every figure is one the rules produced, and it ends with 22 pass or fail checks (all pass) including independent SQL recalculations. It drops and recreates only `everest_month` and refuses any other name; your databases and mine are untouched. It takes about 10 seconds, and the month always ends five minutes before you run it, so rebuild right before a demo.
+
+**To look at it.** macOS or Linux: `DATABASE_URL=postgresql+psycopg://localhost:5432/everest_month npm run dev` (stop your normal dev server first, same ports). Windows PowerShell: `$env:DATABASE_URL = "postgresql+psycopg://localhost:5432/everest_month"; npm run dev`. Logins are the same (password `everest123`). `docs/demo.md` lists the real numbers and the page to open for each story.
+
+**The stories your list asked for** (your 00:05 note, item 2), all checked through the real endpoints: attendance for every shift so labour costs show and the month report has no "hours not covered" warning for finished runs; runs that last hours; invoiced and paid orders so September's profit is **+₹7,72,783**; a bad yarn lot (**L-0009**) whose rolls went to both buyers, so the recall lights up and the defect-causes screen flags it; a loss-making order (**ORD-0007**, −₹27,576, rework in its cost); one genuinely late order (**ORD-0012**, 5 days late, bottleneck dyeing); low cotton (56 kg short, order 400 kg); a down machine (SPIN-02), an idle one (LOOM-06); an overdue supplier bill; a truck still loading; 4 rolls waiting in the QC queue. Not done from your list: `npm run db:reset` (rebuilding with `db:month` does the same job for the month database).
+
+**Changes to shared files, please review.** `seed_dev.py`: the two buyers now have emails (`accounts@sharmafabrics.example`, `orders@kavyagarments.example`) so buyer sign-up works; this affects databases seeded from now on, not your existing one. `package.json`: a new `db:month` script. Nothing under `app/` or `contracts/` changed.
+
+**Things worth knowing when you click through.**
+- Orders with a machine still running show their cost as *provisional* (true: they are costed up to now), and October's month report lists "is still open, so its cost is provisional" for the 3 or 4 runs open at the end.
+- A rejected roll is re-made, because an order is only complete when its good metres reach the ordered metres and there is no "close short" feature. If you ever want to show a rejected roll without a replacement, that needs a product decision.
+- Invoices have no due date in the data, so receivables has no "overdue"; only supplier bills do.
+- Nobody has looked at these screens in a browser. I read every figure through the real API as owner, accountant, supervisor, qc, store, dispatch and buyer (the buyer is refused the floor board and the money screens). The seed of this month is also a good base for your Playwright demo script.
 
 ---
 

@@ -49,6 +49,14 @@ def _month_bounds(month: str) -> tuple[dt.datetime, dt.datetime]:
     return start, dt.datetime(year + (mon == 12), mon % 12 + 1, 1, tzinfo=IST)
 
 
+def _run_id(warning: str) -> int | None:
+    """The run a month-report warning is about ('Run 348 (LOOM-02, ...) has ...')."""
+    try:
+        return int(warning.split()[1])
+    except (IndexError, ValueError):
+        return None
+
+
 def _months(end: dt.datetime) -> list[str]:
     first = end.replace(day=1) - dt.timedelta(days=1)
     return [f"{first:%Y-%m}", f"{end:%Y-%m}"]
@@ -93,8 +101,11 @@ def month_reports(db: Session, clock: SimClock, **_) -> list[Check]:
                                    {"s": start, "e": nxt}))
         out.append(Check(f"month report {month}: invoiced = invoices in SQL", abs(rep.profit.invoiced - invoiced) < 0.005,
                          f"endpoint {rep.profit.invoiced:,.2f} | SQL {invoiced:,.2f}"))
-        warn = [w for w in rep.warnings if "not covered" in w]
-        out.append(Check(f"month report {month}: no hours without attendance", not warn, "no such warning" if not warn else warn[0]))
+        open_runs = {r[0] for r in db.execute(text("SELECT id FROM production_runs WHERE ended_at IS NULL"))}
+        warn = [w for w in rep.warnings if "not covered" in w and _run_id(w) not in open_runs]
+        tail = sum(1 for w in rep.warnings if "not covered" in w and _run_id(w) in open_runs)
+        out.append(Check(f"month report {month}: no finished run lacks attendance", not warn,
+                         ("no such warning" if not warn else warn[0]) + (f" ({tail} open run(s) are costed up to now)" if tail else "")))
     return out
 
 

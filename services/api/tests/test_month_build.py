@@ -14,6 +14,7 @@ from scripts.month.plan import IST, ORDERS, build_plan
 from scripts.month.runner import Runner
 
 URL = "postgresql+psycopg://localhost:5432/everest_month_test"
+USED = ORDERS[:6]            # the first six orders: includes the rework-heavy loss order
 END = dt.datetime(2026, 10, 11, 2, 0, tzinfo=IST)
 
 
@@ -39,8 +40,8 @@ def test_recreate_and_drop_refuse_a_wrong_name_before_connecting():
 
 def test_orders_yarn_runs_and_rolls_are_made_by_the_real_services_and_no_timestamp_leaks(built):
     plan, clock, runner, db = built
-    assert db.scalar(select(func.count()).select_from(Order)) == 3
-    assert db.scalar(select(func.count()).select_from(YarnLot)) == 3
+    assert db.scalar(select(func.count()).select_from(Order)) == len(USED)
+    assert db.scalar(select(func.count()).select_from(YarnLot)) == count(plan, "receive_lot") >= len(USED)   # a lot per order, and one per re-made batch
     assert db.scalar(select(func.count()).select_from(ProductionRun)) > 6          # spin, weave, dye and the hand-overs
     assert db.scalar(select(func.count()).select_from(Roll)) >= 6
     assert clock.leaks() == [], clock.leaks()                                       # defaults, db_now and datetime.now all moved
@@ -68,13 +69,13 @@ def test_an_orders_deadline_and_dates_follow_the_simulated_calendar(built):
 
 @pytest.fixture(scope="module")
 def built():
-    """A 30-day month with the first three orders, every event played into a fresh `everest_month_test`: orders, yarn, runs,
+    """A 30-day month with the first six orders, every event played into a fresh `everest_month_test`: orders, yarn, runs,
     quality, rework, trucks, invoices, payments, attendance, wages and breakdowns."""
     database.recreate(URL)
     database.migrate(URL)
     engine = create_engine(URL)
     db = Session(engine)
-    plan = build_plan(END, seed=11, days=30, orders=ORDERS[:3])
+    plan = build_plan(END, seed=11, days=30, orders=USED)
     clock = SimClock(db, END)
     with clock.installed():
         with clock.at(plan.day0 - dt.timedelta(days=6)):
@@ -197,17 +198,17 @@ from scripts.build_month import build_month, choose_end  # noqa: E402
 E2E_URL = "postgresql+psycopg://localhost:5432/everest_month_e2e"
 
 
-def test_the_end_is_the_hour_before_now_rounded_down():
-    now = dt.datetime(2026, 10, 11, 3, 40, tzinfo=IST)
-    assert choose_end(now) == dt.datetime(2026, 10, 11, 2, 0, tzinfo=IST)
-    assert choose_end(now) <= now - dt.timedelta(hours=1)
+def test_the_end_is_five_minutes_before_now_rounded_down_to_the_minute():
+    now = dt.datetime(2026, 10, 11, 3, 40, 42, 500000, tzinfo=IST)
+    assert choose_end(now) == dt.datetime(2026, 10, 11, 3, 35, tzinfo=IST)
+    assert choose_end(now) <= now - dt.timedelta(minutes=5)
 
 
 def test_a_month_that_would_end_after_the_real_clock_is_refused():
     with pytest.raises(SystemExit):
         build_month(E2E_URL, end=dt.datetime.now(IST) + dt.timedelta(hours=2), days=3, orders=ORDERS[:1], full=False)
     with pytest.raises(SystemExit):
-        build_month(E2E_URL, end=dt.datetime.now(IST) - dt.timedelta(minutes=10), days=3, orders=ORDERS[:1], full=False)
+        build_month(E2E_URL, end=dt.datetime.now(IST) - dt.timedelta(minutes=1), days=3, orders=ORDERS[:1], full=False)
 
 
 def test_a_build_against_any_other_database_is_refused_before_anything_connects():

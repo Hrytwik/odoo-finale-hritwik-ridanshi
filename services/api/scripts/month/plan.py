@@ -27,9 +27,12 @@ RECIPE = {                                                      # kg per metre, 
     "Poplin 58in": (0.12, 0.05, "30S-COT-RAW", "Vardhman Yarns", (245, 265)),
     "Twill 58in": (0.16, 0.04, "40S-PC-RAW", "Coastal Spinners", (272, 290)),
 }
-ODDS = {"normal": (0.88, 0.08, 0.04), "bad": (0.35, 0.40, 0.25), "loss": (0.15, 0.65, 0.20)}    # pass, rework, reject
-REDYE_SHARE = {"normal": 0.5, "bad": 0.5, "loss": 0.85}         # of the reworked rolls, the share re-dyed (the rest mended by hand)
-DEFECTS = {"normal": ["hole", "stain", "thread_fault"], "bad": ["thread_fault", "hole"], "loss": ["stain", "hole"]}
+ODDS = {"normal": (0.88, 0.08, 0.04), "bad": (0.15, 0.55, 0.30), "loss": (0.15, 0.65, 0.20),    # pass, rework, reject
+        "remake": (0.95, 0.05, 0.0)}                            # the replacement batch for rejected metres: never rejects
+AFTER_REWORK = {"normal": [0.8, 0.2], "bad": [0.8, 0.2], "loss": [0.6, 0.4], "remake": [1.0, 0.0]}      # pass, reject
+REDYE_SHARE = {"normal": 0.2, "bad": 0.2, "loss": 0.5, "remake": 0.2}         # of the reworked rolls, the share re-dyed (the rest mended by hand)
+DEFECTS = {"normal": ["hole", "stain", "thread_fault"], "bad": ["thread_fault", "hole"], "loss": ["stain", "hole"],
+           "remake": ["stain"]}
 BREAKDOWNS = [("LOOM-06", 9, 10, 40, "belt snapped"), ("SPIN-01", 15, 11, 14, "bearing noise"),
               ("DYE-02", 22, 8, 20, "heater fault"), ("SPIN-02", 29, 20, 12, "drive belt slipping")]
 
@@ -126,10 +129,10 @@ ORDERS = [
     OrderSpec("O2", KAVYA, "Twill 58in", "charcoal", 3000, 150, 1, 12),
     OrderSpec("O3", SHARMA, "Poplin 58in", "white", 3500, 118, 3, 12),
     OrderSpec("O4", KAVYA, "Poplin 58in", "maroon", 2500, 110, 6, 12),
-    OrderSpec("O5", SHARMA, "Twill 58in", "grey", 3000, 148, 8, 12),
-    OrderSpec("O6", KAVYA, "Poplin 58in", "red", 3000, 65, 10, 12, story="loss"),
-    OrderSpec("O7", SHARMA, "Poplin 58in", "sky blue", 2500, 122, 13, 12, story="bad"),
-    OrderSpec("O8", KAVYA, "Poplin 58in", "teal", 2500, 118, 14, 12, story="bad"),
+    OrderSpec("O5", SHARMA, "Twill 58in", "grey", 3000, 148, 7, 12),
+    OrderSpec("O6", KAVYA, "Poplin 58in", "red", 2000, 48, 9, 12, story="loss"),      # under 5 rolls: its lot is never tested
+    OrderSpec("O7", SHARMA, "Poplin 58in", "sky blue", 3000, 122, 11, 12, story="bad"),
+    OrderSpec("O8", KAVYA, "Poplin 58in", "teal", 3000, 118, 12, 12, story="bad"),
     OrderSpec("O9", SHARMA, "Twill 58in", "olive", 3500, 150, 22, 12, hold=20),
     OrderSpec("O10", KAVYA, "Twill 58in", "black", 3000, 152, 25, 12),
     OrderSpec("O11", SHARMA, "Poplin 58in", "burgundy", 6000, 115, 26, 4, story="late"),
@@ -157,8 +160,7 @@ class Builder:
         # long: a late order's pipeline is planned well past `end` (those events are dropped, but each still names an operator)
         self.roster = Roster(self.day0.date() - dt.timedelta(days=5), days + 90, seed)
         self.events: list[Event] = []
-        self.free = {code: self.day0 for code, *_rest in MACHINES}
-        self.busy: list[tuple[str, dt.datetime, dt.datetime]] = []
+        self.busy: list[tuple[str, dt.datetime, dt.datetime]] = []        # every booked run: machine, start, end
         self.trucks = 0
 
     def at(self, day: int, hour: float = 9) -> dt.datetime:
@@ -186,9 +188,22 @@ class Builder:
         for b in boundaries(start, end):
             self.ev(b, "handover", machine=machine, operator=self.roster.operator(machine, b))
         self.ev(end, "end_run", machine=machine, run_key=None, output_kg=output_kg)
-        self.free[machine] = end
         self.busy.append((machine, start, end))
         return end
+
+    def slot(self, machines: list[str], earliest: dt.datetime, length_h: float) -> tuple[str, dt.datetime]:
+        """The machine and start time of the earliest gap, no earlier than `earliest`, that fits a run of `length_h` hours:
+        each machine's booked runs are kept as intervals, so a job planned later can still use an idle gap earlier."""
+        best: tuple[str, dt.datetime] | None = None
+        for m in machines:
+            start = earliest
+            for s, e in sorted((s, e) for mm, s, e in self.busy if mm == m):
+                if start + hours(length_h) <= s:
+                    break
+                start = max(start, e)
+            if best is None or start < best[1]:
+                best = (m, start)
+        return best
 
     def qc_time(self, ready: dt.datetime, bump: int = 0) -> dt.datetime:
         """The inspector works 07:00 to 13:30: the first moment at least two hours after `ready`, spread by `bump` minutes."""
@@ -218,6 +233,68 @@ def _split_rolls(rng: random.Random, total: int) -> list[int]:
     return lengths
 
 
+def _batch(b: Builder, o: OrderSpec, tag: str, metres_total: int, kg: float, lot: str, earliest: dt.datetime,
+           kind: str) -> list[tuple[dt.datetime, str, str, int]]:
+    """Spin, weave, dye and inspect `metres_total` of an order. Returns each roll's final result: (time, roll, verdict, metres).
+    `tag` is empty for the order's first batch and ":r" for the replacement batch that re-makes rejected metres."""
+    machine, start = b.slot(SPINNERS, earliest, kg / min(RATE[m] for m in SPINNERS) * 1.05)
+    spin_end = b.machine_run(machine, start, kg / RATE[machine] * b.rng.uniform(0.97, 1.05), order=o.key, kind="spin",
+                             run_key=f"spin:{o.key}{tag}", issue=(lot, kg), output_kg=kg)
+    n_looms = 1 if metres_total < 600 else 3 if metres_total > 4000 else 2
+    shares = [round(metres_total / n_looms)] * (n_looms - 1)
+    shares.append(metres_total - sum(shares))
+    longest = max(shares) / RATE[LOOMS[0]]
+    looms = [m for _s, m in sorted((b.slot([m], spin_end, longest)[1], m) for m in LOOMS)[:n_looms]]
+    rolls: list[tuple[str, int, dt.datetime, str]] = []         # key, metres, ready, producing operator
+    weave_end = spin_end
+    for loom, share in zip(looms, shares):
+        wstart = b.slot([loom], spin_end, share / RATE[loom])[1]
+        offset, plan_rolls = 0.0, []
+        for i, metres in enumerate(_split_rolls(b.rng, share)):
+            offset += metres / RATE[loom]
+            plan_rolls.append((offset, metres, f"roll:{o.key}{tag}:{loom}:{i}"))
+        end = b.machine_run(loom, wstart, share / RATE[loom], order=o.key, kind="weave", input_key=f"spin:{o.key}{tag}",
+                            rolls=plan_rolls)
+        weave_end = max(weave_end, end)
+        for off, metres, key in plan_rolls:
+            t = min(wstart + hours(off), end - minutes(1))
+            rolls.append((key, metres, t, b.roster.operator(loom, t)))
+    rolls.sort(key=lambda r: (r[2], r[0]))
+    # dyeing, in two batches so both dyers work
+    batches = [rolls[0::2], rolls[1::2]] if len(rolls) >= 4 else [rolls]
+    ready_at: dict[str, dt.datetime] = {}
+    for batch in batches:
+        dyer, dstart = b.slot(DYERS, weave_end + minutes(30), sum(r[1] for r in batch) / RATE[DYERS[0]] * 1.05)
+        dend = b.machine_run(dyer, dstart, sum(r[1] for r in batch) / RATE[dyer] * b.rng.uniform(0.97, 1.05), order=o.key,
+                             kind="dye", load=[r[0] for r in batch])
+        for r in batch:
+            ready_at[r[0]] = dend
+    # quality
+    finals: list[tuple[dt.datetime, str, str, int]] = []
+    for bump, (key, metres, _t, operator) in enumerate(rolls):
+        odds = (0.78, 0.14, 0.08) if operator == UNLUCKY and kind == "normal" else ODDS[kind]
+        verdict = b.rng.choices(["pass", "rework", "reject"], odds)[0]
+        t1 = b.qc_time(ready_at[key], bump)
+        defects = [] if verdict == "pass" else [(b.rng.choice(DEFECTS[kind]), b.rng.randint(1, 3))]
+        b.ev(t1, "inspect", roll=key, verdict=verdict, defects=defects)
+        if verdict != "rework":
+            finals.append((t1, key, verdict, metres))
+            continue
+        if b.rng.random() < REDYE_SHARE[kind]:
+            dyer, rstart = b.slot(DYERS, t1 + hours(3), metres / RATE[DYERS[0]] * 1.05)
+            rend = b.machine_run(dyer, rstart, metres / RATE[dyer] * b.rng.uniform(0.97, 1.05), order=o.key, kind="rework", roll=key)
+        else:
+            rstart = (t1 + hours(3) + dt.timedelta(days=1)).replace(hour=7, minute=0)
+            rend = rstart + hours(b.rng.uniform(2.5, 5.0))
+            b.ev(rstart, "rework_start", roll=key, machine=None, operator=b.roster.present("A", rstart.date())[0])
+            b.ev(rend, "end_run", machine=None, run_key=f"rework:{key}", output_kg=None)
+        again = b.rng.choices(["pass", "reject"], AFTER_REWORK[kind])[0]
+        t2 = b.qc_time(rend, bump)
+        b.ev(t2, "inspect", roll=key, verdict=again, defects=[] if again == "pass" else [(b.rng.choice(DEFECTS[kind]), 1)])
+        finals.append((t2, key, again, metres))
+    return finals
+
+
 def _plan_order(b: Builder, o: OrderSpec, state: dict) -> None:
     t0 = b.at(o.day, 9)
     b.ev(t0, "create_order", order=o.key, buyer=o.buyer, fabric=o.fabric, colour=o.colour, metres=o.metres, price=o.price,
@@ -244,65 +321,16 @@ def _plan_order(b: Builder, o: OrderSpec, state: dict) -> None:
         when = b.day0 - dt.timedelta(days=4) + hours(10) if o.opening_lot else t0 + hours(3)
         b.ev(when, "receive_lot", lot=lot, yarn=yarn, supplier=supplier, qty_kg=math.ceil(kg * 1.08 / 10) * 10,
              cost_per_kg=b.rng.randint(lo, hi), order=None if o.opening_lot else o.key, challan=f"CH-{o.key}")
-    # spinning
-    machine = min(SPINNERS, key=lambda m: b.free[m])
-    start = max(t0 + hours(4), b.free[machine])
-    spin_end = b.machine_run(machine, start, kg / RATE[machine] * b.rng.uniform(0.97, 1.05), order=o.key, kind="spin",
-                             run_key=f"spin:{o.key}", issue=(lot, kg), output_kg=kg)
-    # weaving
-    looms = sorted(LOOMS, key=lambda m: b.free[m])[: 3 if o.metres > 4000 else 2]
-    shares = [round(o.metres / len(looms))] * (len(looms) - 1)
-    shares.append(o.metres - sum(shares))
-    rolls: list[tuple[str, int, dt.datetime, str]] = []         # key, metres, ready, producing operator
-    weave_end = spin_end
-    for loom, share in zip(looms, shares):
-        wstart = max(spin_end, b.free[loom])
-        offset, plan_rolls = 0.0, []
-        for i, metres in enumerate(_split_rolls(b.rng, share)):
-            offset += metres / RATE[loom]
-            plan_rolls.append((offset, metres, f"roll:{o.key}:{loom}:{i}"))
-        end = b.machine_run(loom, wstart, share / RATE[loom], order=o.key, kind="weave", input_key=f"spin:{o.key}",
-                            rolls=plan_rolls)
-        weave_end = max(weave_end, end)
-        for off, metres, key in plan_rolls:
-            t = min(wstart + hours(off), end - minutes(1))
-            rolls.append((key, metres, t, b.roster.operator(loom, t)))
-    rolls.sort(key=lambda r: (r[2], r[0]))
-    # dyeing, in two batches so both dyers work
-    batches = [rolls[0::2], rolls[1::2]] if len(rolls) >= 4 else [rolls]
-    ready_at: dict[str, dt.datetime] = {}
-    for batch in batches:
-        dyer = min(DYERS, key=lambda m: b.free[m])
-        dstart = max(weave_end + minutes(30), b.free[dyer])
-        dend = b.machine_run(dyer, dstart, sum(r[1] for r in batch) / RATE[dyer] * b.rng.uniform(0.97, 1.05), order=o.key,
-                             kind="dye", load=[r[0] for r in batch])
-        for r in batch:
-            ready_at[r[0]] = dend
-    # quality
     kind = o.story if o.story in ("bad", "loss") else "normal"
-    finals: list[tuple[dt.datetime, str, str, int]] = []         # time, roll, verdict, metres
-    for bump, (key, metres, _t, operator) in enumerate(rolls):
-        odds = (0.78, 0.14, 0.08) if operator == UNLUCKY and kind == "normal" else ODDS[kind]
-        verdict = b.rng.choices(["pass", "rework", "reject"], odds)[0]
-        t1 = b.qc_time(ready_at[key], bump)
-        defects = [] if verdict == "pass" else [(b.rng.choice(DEFECTS[kind]), b.rng.randint(1, 3))]
-        b.ev(t1, "inspect", roll=key, verdict=verdict, defects=defects)
-        if verdict != "rework":
-            finals.append((t1, key, verdict, metres))
-            continue
-        if b.rng.random() < REDYE_SHARE[kind]:
-            dyer = min(DYERS, key=lambda m: b.free[m])
-            rstart = max(t1 + hours(3), b.free[dyer])
-            rend = b.machine_run(dyer, rstart, metres / RATE[dyer] * b.rng.uniform(0.97, 1.05), order=o.key, kind="rework", roll=key)
-        else:
-            rstart = (t1 + hours(3) + dt.timedelta(days=1)).replace(hour=7, minute=0)
-            rend = rstart + hours(b.rng.uniform(2.5, 5.0))
-            b.ev(rstart, "rework_start", roll=key, machine=None, operator=b.roster.present("A", rstart.date())[0])
-            b.ev(rend, "end_run", machine=None, run_key=f"rework:{key}", output_kg=None)
-        again = b.rng.choices(["pass", "reject"], [0.6, 0.4] if kind == "loss" else [0.8, 0.2])[0]
-        t2 = b.qc_time(rend, bump)
-        b.ev(t2, "inspect", roll=key, verdict=again, defects=[] if again == "pass" else [(b.rng.choice(DEFECTS[kind]), 1)])
-        finals.append((t2, key, again, metres))
+    finals = _batch(b, o, "", o.metres, kg, lot, t0 + hours(4), kind)
+    # the mill re-makes what was rejected (an order is only complete when its good metres reach the ordered metres)
+    rejected = sum(f[3] for f in finals if f[2] == "reject")
+    if rejected:
+        found = max(f[0] for f in finals if f[2] == "reject")
+        redo_kg = round(rejected * per_m * (1 + waste) * 2) / 2
+        b.ev(found + hours(2), "receive_lot", lot=f"lot:{o.key}:r", yarn=yarn, supplier=supplier,
+             qty_kg=math.ceil(redo_kg * 1.08 / 10) * 10, cost_per_kg=b.rng.randint(lo, hi), order=o.key, challan=f"CH-{o.key}-R")
+        finals += _batch(b, o, ":r", rejected, redo_kg, f"lot:{o.key}:r", found + hours(4), "remake")
     # trucks: the passed rolls, one truck (two for a big order), the morning after the last of them is ready
     passed = sorted((f for f in finals if f[2] == "pass"), key=lambda f: f[0])
     groups = [passed] if len(passed) < 8 else [passed[: len(passed) // 2], passed[len(passed) // 2:]]
@@ -321,7 +349,7 @@ def _plan_order(b: Builder, o: OrderSpec, state: dict) -> None:
 
 
 def _plan_money(b: Builder, state: dict) -> None:
-    pays = [(truck, (done + dt.timedelta(days=b.rng.randint(4, 14))).replace(hour=11, minute=0))
+    pays = [(truck, (done + dt.timedelta(days=b.rng.randint(7, 21))).replace(hour=11, minute=0))
             for truck, _order, done in state.get("trucks", [])]
     happening = sorted((p for p in pays if p[1] <= b.end), key=lambda p: p[1])
     partial = happening[2][0] if len(happening) > 2 else None   # the third payment of the month is only half
@@ -336,11 +364,14 @@ def _plan_money(b: Builder, state: dict) -> None:
 
 
 def _plan_attendance(b: Builder) -> None:
+    """Marked for every shift dated up to the end's own date, so the shifts still to come today are on the sheet too (the
+    machines running "now" stay covered): a shift not yet started is marked at the end moment (an attendance row has no
+    timestamp, and a date up to today is never "in the future" for the attendance rule)."""
     day = b.day0.date()
     while day <= b.end.date():
         for shift, hour in (("A", 6), ("B", 14), ("C", 22)):
-            b.ev(dt.datetime.combine(day, dt.time(hour), tzinfo=IST), "attendance", date=day, shift=shift,
-                 entries=b.roster.sheet(shift, day))
+            when = min(dt.datetime.combine(day, dt.time(hour), tzinfo=IST), b.end)
+            b.ev(when, "attendance", date=day, shift=shift, entries=b.roster.sheet(shift, day))
         day += dt.timedelta(days=1)
 
 

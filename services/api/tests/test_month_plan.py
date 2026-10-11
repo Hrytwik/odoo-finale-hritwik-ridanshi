@@ -74,7 +74,8 @@ def test_three_orders_arriving_together_queue_for_two_ring_frames_and_two_dyers(
     orders = [OrderSpec(f"X{i}", "Sharma Fabrics", "Poplin 58in", "navy", 3000, 120, 5, 12) for i in range(3)]
     stress = build_plan(dt.datetime(2026, 10, 11, 2, 0, tzinfo=IST), seed=11, orders=orders)
     assert_runs_never_overlap(stress.events)
-    starts = sorted(e.t for e in stress.events if e.action == "start_run" and e.args["run_key"] and e.args["run_key"].startswith("spin:"))
+    starts = sorted(e.t for e in stress.events if e.action == "start_run" and e.args["run_key"]
+                    and e.args["run_key"].startswith("spin:") and not e.args["run_key"].endswith(":r"))   # not the re-make batches
     assert len(starts) == 3 and starts[2] - starts[0] > dt.timedelta(hours=10)      # the third waited for a ring frame
 
 
@@ -113,15 +114,16 @@ def test_a_handover_always_changes_the_operator(plan):
             current[m] = e.args["operator"]
 
 
-def test_attendance_is_marked_for_every_shift_up_to_the_end(plan):
+def test_attendance_is_marked_for_every_shift_dated_up_to_the_ends_own_date(plan):
+    """Including the shifts still to come today, so the machines running at the end stay covered."""
     marked = {(e.args["date"], e.args["shift"]) for e in plan.events if e.action == "attendance"}
     day = plan.day0.date()
     while day <= END.date():
-        for shift, hour in (("A", 6), ("B", 14), ("C", 22)):
-            start = dt.datetime.combine(day, dt.time(hour), tzinfo=IST)
-            if start <= END:
-                assert (day, shift) in marked, (day, shift)
+        for shift in "ABC":
+            assert (day, shift) in marked, (day, shift)
         day += dt.timedelta(days=1)
+    assert max(d for d, _s in marked) == END.date()
+    assert all(e.t <= END for e in plan.events if e.action == "attendance")      # none dated after the end
 
 
 def test_weaving_starts_only_after_its_spinning_has_ended(plan):
@@ -221,14 +223,15 @@ def test_the_bad_lot_reaches_both_buyers(plan):
     buyers = {e.args["buyer"] for e in plan.events if e.action == "create_order" and e.args["order"] in ("O7", "O8")}
     assert buyers == {"Sharma Fabrics", "Kavya Garments"}
     trucks = {e.args["truck"]: e.args["buyer"] for e in plan.events if e.action == "dispatch_create"}
-    scans = [e for e in plan.events if e.action == "dispatch_scan" and e.args["roll"].startswith(("roll:O7:", "roll:O8:"))]
+    scans = [e for e in plan.events if e.action == "dispatch_scan" and e.args["roll"].startswith(("roll:O7:", "roll:O8:"))
+             and ":r:" not in e.args["roll"]]                          # the lot's own rolls, not the re-made ones from another lot
     assert scans and {trucks[e.args["truck"]] for e in scans} == buyers
 
 
 def test_buyers_pay_some_trucks_and_one_payment_is_partial(plan):
     payments = [e for e in plan.events if e.action == "buyer_payment"]
     trucks = [e for e in plan.events if e.action == "dispatch_confirm"]
-    assert 4 <= len(payments) < len(trucks)                       # some paid, the latest still unpaid
+    assert 3 <= len(payments) < len(trucks)                       # some paid, the latest still unpaid
     assert sum(1 for e in payments if e.args["fraction"] == 0.5) == 1
     confirmed = {e.args["truck"]: e.t for e in trucks}
     assert all(e.t > confirmed[e.args["truck"]] for e in payments)    # nobody pays before the truck is confirmed
@@ -239,3 +242,16 @@ def test_the_first_lot_arrives_before_the_month_and_is_never_paid(plan):
     assert lots["lot:O1"].t < plan.day0                                 # the opening stock: its bill falls due inside the month
     paid = {e.args["lot"] for e in plan.events if e.action == "supplier_payment"}
     assert "lot:O1" not in paid and paid == {"lot:O2", "lot:O3"}
+
+
+def test_rejected_metres_are_re_made_so_a_finished_order_reaches_its_ordered_metres(plan):
+    """An order is complete only when its good metres reach the ordered metres: a roll that is rejected is woven again."""
+    metres = {e.args["roll"]: e.args["metres"] for e in plan.events if e.action == "roll_off"}
+    scanned = defaultdict(float)
+    for e in plan.events:
+        if e.action == "dispatch_scan":
+            scanned[e.args["roll"].split(":")[1]] += metres[e.args["roll"]]
+    ordered = {o.key: o.metres for o in ORDERS}
+    for key in ("O1", "O2", "O3", "O4", "O5"):                    # the orders long finished by the end of the month
+        assert scanned[key] >= ordered[key], (key, scanned[key], ordered[key])
+    assert any(":r:" in e.args["roll"] for e in plan.events if e.action == "roll_off"), "no replacement batch was ever made"

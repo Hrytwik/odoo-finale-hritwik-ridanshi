@@ -1,8 +1,8 @@
 # B9 — A Simulated Month: Design
 
-> **Summary:** A script that builds `everest_month`, a separate database holding 30 days of believable mill history ending an hour before the build, by running the real service functions under a simulated clock (about 12 orders, at least 17 yarn lots, about 150 rolls, QC, rework, dispatch, invoices, payments, attendance and wages), with seven built-in stories (a bad yarn lot, a rework-loss order, a late order, low yarn, broken and idle machines, overdue money, a mill still running now) and an audit that proves each one shows up through the real endpoints.
-> **Last updated:** 2026-10-11 03:55 IST
-> **Status:** Draft for Hritwik's review (design approved in chat section by section on 2026-10-11)
+> **Summary:** A script that builds `everest_month`, a separate database holding 30 days of believable mill history ending an hour before the build, by running the real service functions under a simulated clock (12 confirmed orders of 39,500 m, 16 yarn lots, 83 rolls, QC, rework, dispatch, invoices, payments, attendance and wages), with seven built-in stories (a bad yarn lot, a rework-loss order, a late order, low yarn, broken and idle machines, overdue money, a mill still running now) and an audit that proves each one shows up through the real endpoints.
+> **Last updated:** 2026-10-11 06:28 IST (built; section 9 added)
+> **Status:** Built and checked 2026-10-11 06:28 IST (plan `docs/plans/B9-month-simulation.md`, all 7 tasks); see section 9 for what the build changed
 
 Related: `docs/plans/README.md` (rows B9, R3), `docs/HRITWIK_TEAM_NOTES.md` (Ridanshi's 2026-10-11 00:05 note, item 2, lists what the jury screens need), `docs/specs/2026-10-10-textile-mill-design.md` (§7 costing, §8 intelligence), `docs/plans/B9a-seed-and-demo-mill.md` (the one-day demo mill this replaces for demos).
 
@@ -61,12 +61,12 @@ Machines run round the clock. At each shift change a running machine is handed t
 
 | Story | How it is made | What must be true at the end |
 |---|---|---|
-| Bad yarn lot (the 17th lot, `L-0017`) | cotton, issued to two poplin orders (one per buyer), about 14 rolls; those rolls fail QC about 65% of the time against about 12% elsewhere | the root-cause screen flags the lot; an operator with a few extra defects is not flagged (Bonferroni); recall reaches both buyers and at least one dispatched truck |
+| Bad yarn lot (a lot of its own; `L-0009` in the first build) | cotton, issued to two poplin orders (one per buyer), 12 rolls; those rolls fail QC about 85% of the time against about 12% elsewhere | the root-cause screen flags the lot; an operator with a few extra defects is not flagged (Bonferroni); recall reaches both buyers and at least one dispatched truck |
 | Order that loses money | one order gets many rework (re-dye) runs | its profit is negative and rework is a large share of its cost |
 | Late order | a large order with a tight deadline given late in the month | the delivery-date engine reports it late, with a bottleneck and a fix, on the late-orders screen |
 | Low yarn | the last cotton receipt is small while open orders still need cotton | the shortage forecast lists cotton with a supplier and a reorder quantity |
 | Broken and idle machines | 2 or 3 breakdowns with repairs; one loom barely used | utilisation shows idle and down hours |
-| Money | most orders invoiced and paid; one buyer invoice overdue, one partly paid; one supplier bill overdue; wages paid for the first two weeks | receivables and payables show them; the month report's invoiced total equals the sum of invoices |
+| Money | most orders invoiced and paid; some invoices unpaid, one partly paid (invoices have no due date, so none is "overdue"); one supplier bill overdue; wages paid for the first two weeks | receivables and payables show them; the month report's invoiced total equals the sum of invoices |
 | Mill right now | three orders in progress when the month ends | the floor board shows running, idle and down machines; the QC queue has rolls; one truck is mid-loading |
 
 Verdicts are random from the fixed seed: about 75% pass, 15% rework, 10% reject. The numbers (defect rates, order sizes, deadlines) are tuned until the audit passes; the audit is never weakened.
@@ -77,7 +77,7 @@ Not checkable from the script: how the screens look in a browser. Hritwik looks 
 
 ## 5. The cast (what the month contains)
 
-About 12 orders (roughly 6 finished, dispatched and invoiced; 3 in progress now; 1 draft; 1 cancelled; the late one among the open ones), at least 17 yarn lots (so the bad one is the 17th), about 150 rolls, 2 or 3 breakdowns, attendance and wages, supplier bills and payments, buyer invoices and payments.
+12 confirmed orders (8 finished, dispatched and invoiced; 3 in progress now and 1 waiting for yarn; plus 1 draft and 1 cancelled; the late one among the open ones), 16 yarn lots, 83 rolls, 2 or 3 breakdowns, attendance and wages, supplier bills and payments, buyer invoices and payments.
 
 ## 6. Files, commands and safety
 
@@ -105,3 +105,16 @@ Safety:
 ## 8. Build order
 
 1. The clock and mover. 2. The scheduler. 3. Orders through to rolls. 4. QC, rework, dispatch, money and people. 5. The stories and the audit. 6. The entry point, scripts, seed emails and `docs/demo.md`. 7. The real run, a look at the results, and the sync of docs and memory.
+
+## 9. What building it changed
+
+Found while planning and building (details and evidence in the plan's Status lines); they supersede the text above where they differ.
+
+1. **Invoices have no due date**, only supplier bills do (bill date plus 30 days), so there is no "overdue buyer invoice". The money story is: unpaid invoices of different ages, one part-paid, and an overdue supplier bill. For that bill to be overdue the first order's yarn lot arrives 4 days before the month begins (opening stock) and is left unpaid.
+2. **A simulated step is instantaneous.** The clock sets every timestamp written in a step to exactly the planned moment. Keeping the few real milliseconds put a hand-over planned for 14:00:00 at 14:00:00.012, a hair outside the outgoing operator's shift, and the month report warned of uncovered hours.
+3. **The end is five minutes before the build** (not an hour): the safety gap only has to exceed the seconds the build takes, and a fresher end keeps the open runs' tail short. Attendance is marked for every shift dated up to the end's own date, so the machines running now stay covered; the audit judges finished runs (an open run is costed up to the real clock, so its tail grows with wall-clock time).
+4. **Rejected metres are re-made.** An order is complete only when its good metres reach the ordered metres, and there is no "close short" feature, so without a replacement batch every order with a rejected roll stayed "partly dispatched" for ever and the late-orders screen listed seven orders, the oldest "21 days late". Each rejected metre now gets its own yarn lot, spinning, weaving, dyeing and check.
+5. **The scheduler books machine intervals, not a "free from" pointer.** A replacement batch planned days after its order was created pushed the pointer far into the future and every later order queued behind it while the machine sat idle; jobs now take the earliest gap that fits.
+6. **The month is 39,500 m** (my sum was wrong), about 61% of the dyers' capacity, 83 rolls (not about 150), 16 lots. The bad lot gets whatever number it gets. The loss-making order is small (2,000 m) so its own lot has fewer than five rolls and is never tested by the root-cause screen, and it sells at ₹48 a metre.
+7. **The quantities are tuned to the audit, not the other way round:** the bad lot needed 12 rolls at about 85% defective to clear the Bonferroni correction (p = 0.000005 against a threshold near 0.002); the loss order needed a lower price once rejected metres were re-made.
+8. **No `npm run dev:month`**: the repo has a Windows teammate, so `docs/demo.md` gives the command for both shells. `ALLOWED` database names are three fixed ones (`everest_month`, `everest_month_test`, `everest_month_e2e`).

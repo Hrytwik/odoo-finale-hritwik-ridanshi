@@ -20,12 +20,13 @@ from scripts.month.plan import IST, build_plan
 from scripts.month.runner import Runner
 
 DEFAULT_URL = "postgresql+psycopg://localhost:5432/everest_month"
-SAFETY_GAP = dt.timedelta(minutes=30)
+SAFETY_GAP = dt.timedelta(minutes=2)      # every real step happens after the build starts; the whole build takes seconds
 
 
 def choose_end(now: dt.datetime) -> dt.datetime:
-    """The simulated month ends the hour before now, rounded down: every real timestamp is then later than every simulated one."""
-    return now.astimezone(IST).replace(minute=0, second=0, microsecond=0) - dt.timedelta(hours=1)
+    """The simulated month ends five minutes before now, rounded down to the minute: every real timestamp is then later
+    than every simulated one, and the mill on screen is as fresh as the build."""
+    return (now.astimezone(IST) - dt.timedelta(minutes=5)).replace(second=0, microsecond=0)
 
 
 def build_month(url: str, end: dt.datetime | None = None, days: int = 30, orders=None, seed: int = 11, full: bool = True,
