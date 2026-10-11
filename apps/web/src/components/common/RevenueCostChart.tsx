@@ -21,7 +21,7 @@ export function RevenueCostChart({ data, caption }: { data: OrderPoint[]; captio
   const plotH = H - PAD.top - PAD.bottom
   const band = plotW / Math.max(data.length, 1)
   const group = Math.min(band * 0.7, 130)
-  const barW = (group - 6) / 2
+  const barW = (group - 14) / 2
   const cx = (i: number) => PAD.left + band * i + band / 2
   const y = (v: number) => PAD.top + yFor(v, scale, plotH)
   const base = y(0)
@@ -46,16 +46,16 @@ export function RevenueCostChart({ data, caption }: { data: OrderPoint[]; captio
               <title>{t('chart.revenueTitle', { label: d.label, amount: formatMoney(d.revenue) })}</title>
               <rect x={cx(i) - group / 2} y={y(d.revenue)} width={barW} height={Math.max(base - y(d.revenue), 0)} rx={4} className="chart-bar is-revenue" />
               {d.revenue > 0 && (
-                <text x={cx(i) - group / 2 + barW / 2} y={y(d.revenue) - 6} textAnchor="middle" className="chart-value">
+                <text x={cx(i) - group / 2 + barW / 2} y={y(d.revenue) - 9} textAnchor="middle" className="chart-value">
                   {formatLakh(d.revenue)}
                 </text>
               )}
             </g>
             <g>
               <title>{t('chart.costTitle', { label: d.label, amount: formatMoney(d.cost) })}</title>
-              <rect x={cx(i) + 3} y={y(d.cost)} width={barW} height={Math.max(base - y(d.cost), 0)} rx={4} className="chart-bar is-cost" />
+              <rect x={cx(i) + 7} y={y(d.cost)} width={barW} height={Math.max(base - y(d.cost), 0)} rx={4} className="chart-bar is-cost" />
               {d.cost > 0 && (
-                <text x={cx(i) + 3 + barW / 2} y={y(d.cost) - 6} textAnchor="middle" className="chart-value">
+                <text x={cx(i) + 7 + barW / 2} y={y(d.cost) - 9} textAnchor="middle" className="chart-value">
                   {formatLakh(d.cost)}
                 </text>
               )}
