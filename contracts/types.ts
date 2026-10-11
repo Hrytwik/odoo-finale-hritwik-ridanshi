@@ -2578,6 +2578,8 @@ export interface components {
             display_name: string;
             /** Id */
             id: number;
+            /** Must Change Password */
+            must_change_password: boolean;
             /**
              * Role
              * @enum {string}
@@ -3653,6 +3655,8 @@ export interface components {
             buyer_id: number | null;
             /** Id */
             id: number;
+            /** Must Change Password */
+            must_change_password: boolean;
             /**
              * Role
              * @enum {string}

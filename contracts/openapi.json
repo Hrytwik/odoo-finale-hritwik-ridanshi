@@ -2680,6 +2680,10 @@
             "title": "Id",
             "type": "integer"
           },
+          "must_change_password": {
+            "title": "Must Change Password",
+            "type": "boolean"
+          },
           "role": {
             "enum": [
               "owner",
@@ -2715,7 +2719,8 @@
           "role",
           "display_name",
           "worker_id",
-          "buyer_id"
+          "buyer_id",
+          "must_change_password"
         ],
         "title": "Me",
         "type": "object"
@@ -5850,6 +5855,10 @@
             "title": "Id",
             "type": "integer"
           },
+          "must_change_password": {
+            "title": "Must Change Password",
+            "type": "boolean"
+          },
           "role": {
             "enum": [
               "owner",
@@ -5884,7 +5893,8 @@
           "username",
           "role",
           "worker_id",
-          "buyer_id"
+          "buyer_id",
+          "must_change_password"
         ],
         "title": "UserOut",
         "type": "object"

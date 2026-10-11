@@ -64,7 +64,8 @@ def session_user_id(request: Request) -> int:
     return user_id
 
 
-def current_user(request: Request, db: Session = Depends(get_db)) -> User:
+def session_user(request: Request, db: Session = Depends(get_db)) -> User:
+    """The person behind a valid login, even one who still has to choose a new password (see current_user)."""
     user = db.get(User, session_user_id(request))
     if user is None:
         raise _not_authenticated()
@@ -72,6 +73,14 @@ def current_user(request: Request, db: Session = Depends(get_db)) -> User:
     # a session made before the password was last changed is no longer good
     if "pwd" in claims and claims["pwd"] != fingerprint(user.password_hash):
         raise _not_authenticated()
+    return user
+
+
+def current_user(user: User = Depends(session_user)) -> User:
+    """Every guarded endpoint's login check. Someone who still has the temporary password the owner gave them may only see who
+    they are, change it and sign out (those use session_user); everything else waits until they have chosen their own."""
+    if user.must_change_password:
+        raise AppError("PASSWORD_CHANGE_REQUIRED", "Choose your own password before you continue", status=403)
     return user
 
 
