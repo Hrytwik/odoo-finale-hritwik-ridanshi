@@ -2,7 +2,7 @@
 
 One platform for a textile mill: yarn store, production floor, quality checks with a defect-detection model, dispatch, a buyer portal, wages and month-end costing. Everything runs locally against PostgreSQL. The language model is optional and every number screen works without it.
 
-Stack: React + Vite + TypeScript (`apps/web`), FastAPI + SQLAlchemy + PostgreSQL (`services/api`), and a shared API contract (`contracts/`). The design is in `docs/specs/`, the build plans are in `docs/plans/`, and `docs/HRITWIK_TEAM_NOTES.md` is the running log between the two tracks.
+Stack: React + Vite + TypeScript (`apps/web`), FastAPI + SQLAlchemy + PostgreSQL (`services/api`), and a shared API contract (`contracts/`). The design is in `docs/specs/`, the build plans are in `docs/plans/`.
 
 ## What it does
 
