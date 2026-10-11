@@ -492,12 +492,12 @@
   background: var(--color-primary);
 }
 @media print {
-  /* printing a roll prints just its QR label */
-  body * {
+  /* printing a roll prints just its QR label; only on a page that has one, so an invoice still prints in full */
+  body:has(.roll-qr) * {
     visibility: hidden;
   }
-  .roll-qr,
-  .roll-qr * {
+  body:has(.roll-qr) .roll-qr,
+  body:has(.roll-qr) .roll-qr * {
     visibility: visible;
   }
   .roll-qr {
