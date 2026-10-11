@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.config import settings
-from app.core.auth import current_user, session_user_id
+from app.core.auth import current_user
 from app.core.errors import AppError
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
@@ -56,7 +56,7 @@ async def upload(file: UploadFile) -> UploadOut:
     return UploadOut(path=f"uploads/{name}", url=f"/api/uploads/{name}")
 
 
-@router.get("/{name}", response_class=FileResponse, dependencies=[Depends(session_user_id)])
+@router.get("/{name}", response_class=FileResponse, dependencies=[Depends(current_user)])
 def download(name: str) -> FileResponse:
     if not NAME_RE.fullmatch(name):
         raise AppError("NOT_FOUND", "File not found", status=404)

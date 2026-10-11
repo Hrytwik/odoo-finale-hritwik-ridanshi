@@ -60,6 +60,8 @@ def _announce(run: ProductionRun) -> None:
 
 def start_run(db: Session, body: s.RunStartIn) -> ProductionRun:
     order = get_order_or_404(db, body.order_code, for_update=True)
+    if order.closed_short_at is not None:
+        raise AppError("ORDER_CLOSED_SHORT", "This order was closed short: nothing more is made for it", field="order_code")
     if order.state != "confirmed":
         raise AppError("ORDER_NOT_CONFIRMED", "A run can only start on a confirmed order", field="order_code")
     machine = get_machine_or_404(db, body.machine_code)

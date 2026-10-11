@@ -47,7 +47,7 @@ def stage_shift_counts() -> dict[str, int]:
 def load_open_orders(db: Session) -> list[tuple[Order, OpenOrder]]:
     """Confirmed orders with metres still to dispatch, and what is left to do for each (spec 8.1)."""
     out = []
-    for order in db.scalars(select(Order).where(Order.state == "confirmed").order_by(Order.id)):
+    for order in db.scalars(select(Order).where(Order.state == "confirmed", Order.closed_short_at.is_(None)).order_by(Order.id)):
         row = progress_row(db, order)
         if row["dispatched_m"] >= order.qty_metres:
             continue

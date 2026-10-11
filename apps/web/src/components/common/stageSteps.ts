@@ -16,6 +16,7 @@ const STEPS_DONE: Record<OrderStage, number> = {
   ready_to_ship: 5,
   partly_dispatched: 5,
   dispatched: 5,
+  closed_short: 5,
 }
 
 export const stepsDone = (stage: OrderStage) => STEPS_DONE[stage]

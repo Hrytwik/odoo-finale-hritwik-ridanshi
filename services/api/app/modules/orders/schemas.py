@@ -1,7 +1,7 @@
 import datetime as dt
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, StringConstraints
 
 from app.core.enums import OrderStage, OrderState
 from app.core.schemas import Money, NonBlank, Out, PositiveQty, Ref
@@ -15,6 +15,10 @@ class OrderIn(BaseModel):
     qty_metres: PositiveQty
     price_per_metre: Money
     deadline: dt.date
+
+
+class CloseShortIn(BaseModel):
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=200)]
 
 
 class DeadlineIn(BaseModel):
@@ -49,6 +53,8 @@ class OrderOut(Out):
     short_kg: float
     delivery_date: dt.date | None
     days_late: int | None
+    closed_short_at: dt.datetime | None
+    closed_short_reason: str | None
 
 
 class YarnCheckLine(Out):

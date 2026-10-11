@@ -118,7 +118,8 @@ def list_users(db: Session = Depends(get_db), _=Depends(owner_only)):
 def create_user(body: s.UserIn, db: Session = Depends(get_db), _=Depends(owner_only)):
     data = body.model_dump()
     _check_password(data["password"], data["username"])
-    user = User(password_hash=hash_password(data.pop("password")), **data)
+    # the owner chose this password, so its owner must replace it before doing anything else
+    user = User(password_hash=hash_password(data.pop("password")), must_change_password=True, **data)
     db.add(user)
     commit(db)
     db.refresh(user)
@@ -126,12 +127,14 @@ def create_user(body: s.UserIn, db: Session = Depends(get_db), _=Depends(owner_o
 
 
 @router.patch("/users/{item_id}", response_model=s.UserOut)
-def update_user(item_id: int, body: s.UserPatch, db: Session = Depends(get_db), _=Depends(owner_only)):
+def update_user(item_id: int, body: s.UserPatch, db: Session = Depends(get_db), owner: User = Depends(owner_only)):
     user = _get_or_404(db, User, item_id)
     data = body.model_dump(exclude_unset=True)
     if "password" in data:
         _check_password(data["password"], user.username)
         user.password_hash = hash_password(data.pop("password"))
+        if user.id != owner.id:           # a reset for someone else is a temporary password; the owner's own is their choice
+            user.must_change_password = True
     for key, value in data.items():
         setattr(user, key, value)
     commit(db)

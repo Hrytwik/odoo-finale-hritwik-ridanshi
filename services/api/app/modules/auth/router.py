@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.core.auth import COOKIE_NAME, create_token, current_user, hash_password, require_roles, verify_password
+from app.core.auth import COOKIE_NAME, create_token, hash_password, require_roles, session_user, verify_password
 from app.core.enums import Role
 from app.core.errors import AppError, commit
 from app.core.login_guard import client_ip, guard
@@ -38,12 +38,14 @@ class Me(BaseModel):
     display_name: str
     worker_id: int | None
     buyer_id: int | None
+    must_change_password: bool
 
 
 def to_me(user: User) -> Me:
     display = user.worker.name if user.worker else user.buyer.name if user.buyer else user.username
     return Me(id=user.id, username=user.username, role=user.role, display_name=display,
-              worker_id=user.worker_id, buyer_id=user.buyer_id)
+              worker_id=user.worker_id, buyer_id=user.buyer_id,
+              must_change_password=user.must_change_password)
 
 
 def _start_session(response: Response, user: User) -> None:
@@ -98,7 +100,7 @@ def buyer_invites(db: Session = Depends(get_db)) -> list[signup_service.BuyerInv
 
 @router.post("/change-password", response_model=Me)
 def change_password(body: ChangePasswordIn, request: Request, response: Response, db: Session = Depends(get_db),
-                    user: User = Depends(current_user)) -> Me:
+                    user: User = Depends(session_user)) -> Me:
     """Changes the logged-in user's own password. Every other session of theirs stops working; this one carries on."""
     ip = client_ip(request)
     guard.check(user.username, ip)  # someone on a stolen session cannot guess the old password freely either
@@ -113,6 +115,7 @@ def change_password(body: ChangePasswordIn, request: Request, response: Response
     if verify_password(body.new_password, user.password_hash):
         raise AppError("SAME_PASSWORD", "Choose a password different from the current one", field="new_password", status=422)
     user.password_hash = hash_password(body.new_password)
+    user.must_change_password = False
     commit(db)
     guard.success(user.username)
     _start_session(response, user)
@@ -127,5 +130,5 @@ def logout(response: Response) -> Response:
 
 
 @router.get("/me", response_model=Me)
-def me(user: User = Depends(current_user)) -> Me:
+def me(user: User = Depends(session_user)) -> Me:
     return to_me(user)

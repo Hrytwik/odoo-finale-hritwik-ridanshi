@@ -13,7 +13,7 @@ from app.core.events import broadcaster
 from app.core.money import dec, q_kg, q_money, to_float
 from app.core.schemas import Ref
 from app.core.validate import exact_positive, not_found
-from app.db.models import Buyer, FabricType, Order, ProductionRun, YarnType
+from app.db.models import Buyer, FabricType, Order, ProductionRun, User, YarnType
 from app.modules.orders import schemas as s
 from app.modules.store.schemas import YarnTypeRef
 
@@ -81,6 +81,40 @@ def cancel_order(db: Session, code: str) -> Order:
     commit(db)
     db.refresh(order)
     _announce(order, stock=True)         # its reservation is released
+    return order
+
+
+_IN_PROGRESS_SQL = text("""
+SELECT
+  EXISTS (SELECT 1 FROM production_runs WHERE order_id = :oid AND ended_at IS NULL) AS run_going,
+  EXISTS (SELECT 1 FROM rolls r JOIN dispatch_items di ON di.roll_id = r.id JOIN dispatches d ON d.id = di.dispatch_id
+          WHERE r.order_id = :oid AND d.state = 'loading') AS on_a_truck
+""")
+
+
+def close_short(db: Session, user: User, code: str, body: s.CloseShortIn) -> Order:
+    """The owner ends an order that will never reach its ordered metres. It stays a confirmed order (its invoices stand);
+    `closed_short_at` makes its stage "closed_short" and takes it out of the schedule and the yarn reservation."""
+    order = get_order_or_404(db, code, for_update=True)
+    if order.closed_short_at is not None:
+        raise AppError("ORDER_ALREADY_CLOSED_SHORT", "This order is already closed short", field="order_code")
+    if order.state != "confirmed":
+        raise AppError("ORDER_NOT_CONFIRMED", "Only a confirmed order can be closed short", field="order_code")
+    row = progress_row(db, order)
+    if row["dispatched_m"] <= 0:
+        raise AppError("NOTHING_DISPATCHED", "Nothing has been dispatched on this order: cancel it, or let it finish",
+                       field="order_code")
+    if row["dispatched_m"] >= order.qty_metres:
+        raise AppError("ORDER_FULLY_DISPATCHED", "This order has already been dispatched in full", field="order_code")
+    busy = db.execute(_IN_PROGRESS_SQL, {"oid": order.id}).mappings().one()
+    if busy["run_going"] or busy["on_a_truck"] or db.execute(_STAGE_SQL, {"oid": order.id}).mappings().one()["needs_quality_check"]:
+        raise AppError("ORDER_STILL_IN_PROGRESS",
+                       "A run is going, a roll is waiting for its quality check or rework, or a roll is on a truck not yet "
+                       "confirmed: finish that first", field="order_code")
+    order.closed_short_at, order.closed_short_by, order.closed_short_reason = dt.datetime.now(dt.UTC), user.id, body.reason
+    commit(db)
+    db.refresh(order)
+    _announce(order, stock=True)         # its yarn reservation is released
     return order
 
 
@@ -169,6 +203,8 @@ def stage(db: Session, order: Order, row: dict[str, Decimal]) -> str:
     `row` is the exact (Decimal) progress from progress_row, so metres are compared without float rounding."""
     if order.state in ("draft", "cancelled"):
         return order.state
+    if order.closed_short_at is not None:
+        return "closed_short"
     if row["dispatched_m"] >= order.qty_metres:
         return "dispatched"
     if row["dispatched_m"] > 0:
@@ -210,8 +246,8 @@ def yarn_check(db: Session, order: Order) -> s.YarnCheckOut:
 def order_out(db: Session, order: Order) -> s.OrderOut:
     row = progress_row(db, order)
     lines = _yarn_lines(db, order)
-    short = sum((line["short_kg"] for line in lines), ZERO)
-    if order.state == "cancelled" or all(line["outstanding_kg"] == 0 for line in lines):
+    short = ZERO if order.closed_short_at is not None else sum((line["short_kg"] for line in lines), ZERO)
+    if order.state == "cancelled" or order.closed_short_at is not None or all(line["outstanding_kg"] == 0 for line in lines):
         yarn_status = "not_needed"
     else:
         yarn_status = "short" if short > 0 else "can_start"
@@ -221,7 +257,8 @@ def order_out(db: Session, order: Order) -> s.OrderOut:
         qty_metres=to_float(order.qty_metres), price_per_metre=to_float(order.price_per_metre),
         deadline=order.deadline, state=order.state, stage=stage(db, order, row), created_at=order.created_at,
         confirmed_at=order.confirmed_at, progress=_progress_out(row), yarn_status=yarn_status,
-        short_kg=to_float(short), delivery_date=None, days_late=None)
+        short_kg=to_float(short), delivery_date=None, days_late=None,
+        closed_short_at=order.closed_short_at, closed_short_reason=order.closed_short_reason)
 
 
 def list_orders(db: Session, state: str | None = None, buyer_id: int | None = None) -> list[s.OrderOut]:

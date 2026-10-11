@@ -81,6 +81,7 @@ export const ta: Partial<Record<Key, string>> = {
   'status.order.ready_to_ship': 'அனுப்பத் தயார்',
   'status.order.partly_dispatched': 'ஒரு பகுதி அனுப்பப்பட்டது',
   'status.order.dispatched': 'அனுப்பப்பட்டது',
+  'status.order.closed_short': 'குறைவாக முடிக்கப்பட்டது',
 
   'floor.eyebrow': 'உற்பத்தி',
   'floor.title': 'தளப் பலகை',

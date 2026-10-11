@@ -1,9 +1,119 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-11 02:25 IST
+> **Last updated:** 2026-10-11 07:13 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-11 07:13 IST — Your branch is merged; close-short and the forced password change are on `main`
+
+**From:** Hritwik → Ridanshi
+
+**Merged.** `a/web-textile` is merged into local `main` (merge commit `1ae5f23`), after `origin/main` (your notes) was merged first. The two sides touched only `package.json` in common, and it merged without a conflict. Your four migrations sit straight on top of my last one and the chain has one head. After my two changes below the checks are: backend 1,712 passed (4 skipped), web 605 passed, `tsc -b` clean, contracts regenerated and committed. I will push as soon as the pre-jury steps allow; pull `main` after that and merge it into your branch before you build on it.
+
+**1. Close an order short: backend done.** Everything in your 04:02 list, except the buyer notice, which is a one-line TODO in `orders/router.py` for you to call (`notify_closed_short`).
+- `POST /api/orders/{order_code}/close-short`, owner only, body `{ "reason": "..." }` (trimmed, 3 to 200 characters). It answers with the normal `OrderOut`. Migration `e1a7b3c5d648` adds `closed_short_at`, `closed_short_by`, `closed_short_reason` (the database refuses a half-filled set).
+- Refusals, each with its code (409): `ORDER_NOT_CONFIRMED`, `ORDER_ALREADY_CLOSED_SHORT`, `NOTHING_DISPATCHED` (cancel instead), `ORDER_FULLY_DISPATCHED`, `ORDER_STILL_IN_PROGRESS` (a run going, a roll awaiting QC or in rework, or a roll on a truck not yet confirmed). A rejected roll, or a passed roll left in store, does not block closing.
+- The new stage is `closed_short`. `OrderOut` and `PortalOrder` carry `closed_short_at` and `closed_short_reason`; the user who closed it is never sent to the buyer. **The reason is shown to the buyer as written**, so your dialog should say so next to the box. In the buyer portal the progress is the share of the ordered metres that was actually dispatched (400 of 1,000 m shows 40 %), and the timeline gets a line "Order closed short: the rest will not be made".
+- What "finished" means in the reads: it leaves the late-orders list and the delivery estimate (`/eta` answers `NOT_SCHEDULED`), its yarn is no longer reserved (the shortage forecast and the stock screen's "outstanding" ignore it, and other orders' yarn checks see the freed yarn), and no new run, yarn issue or truck loading is accepted for it (`ORDER_CLOSED_SHORT`). Invoices and costs are untouched.
+- **Your files I had to touch** (the new stage value broke `tsc -b`, and the language test needs every key in all nine languages): `statusMaps.ts`, `stageSteps.ts` (`closed_short` counts as all five steps done), `status.order.closed_short` in `en.ts`, and a short draft translation in each of the nine other language files. **Please check those nine wordings** (I wrote them; you know them better). I also raised the stage count in `StatusBadge.test.tsx` from 10 to 11.
+
+**2. Forced password change: backend done.** Migration `f2b8c4d6e759` adds `users.must_change_password`.
+- Set when the owner creates a login (`POST /api/users`) or resets **someone else's** password (`PATCH /api/users/{id}` with a password; the owner choosing their own is not flagged). Cleared by a successful `POST /api/auth/change-password` (a wrong current password or a weak or same password leaves it set).
+- `GET /api/auth/me`, the login answer and `GET /api/users` now carry `must_change_password`.
+- **Enforced on the server, not only on your screen.** While it is set, every guarded route answers **403 with code `PASSWORD_CHANGE_REQUIRED`**. Open to such a person: `/auth/me`, `/auth/change-password`, `/auth/logout`, login, sign-up, health, and the live event stream (which carries only event names and row numbers). A test walks every route in the API to prove it. So your screen is: after login or on any `PASSWORD_CHANGE_REQUIRED`, show the change-password form and nothing else; after success the same session carries on.
+- While your screen does not exist, a newly created login cannot use the app (every page shows the 403). The 7 existing logins are not flagged, so nothing changes for them. Please build the screen before the owner creates a demo login.
+- I also moved the photo download (`GET /api/uploads/{name}`) onto the full login check; it used to look only at the cookie. A deleted user or an old session can no longer fetch photos.
+
+**3. Still open from your list.** The clean-cloth photos for the model card (parked, R9), and waste and yield tracking (yours, read only).
+
+**4. Shared test I changed.** `test_contract_portal.py` lists exactly which fields a buyer may receive; I added the two closing fields on purpose. `test_auth_security.py` forbids the word "password" in any answer; it now allows only the flag's own name.
+
+---
+
+## 2026-10-11 06:28 IST — B9 done: a simulated month in its own database, `everest_month`
+
+**From:** Hritwik → Ridanshi
+
+**What exists.** `npm run db:month` (repository root) builds a separate database, `everest_month`, with 30 days of mill history: 14 orders (12 confirmed, 1 draft, 1 cancelled), 16 yarn lots, 83 rolls, 421 runs, 83 inspections, 10 invoices, attendance and wages for every shift. It is made by the real service functions under a simulated clock, so every figure is one the rules produced, and it ends with 22 pass or fail checks (all pass) including independent SQL recalculations. It drops and recreates only `everest_month` and refuses any other name; your databases and mine are untouched. It takes about 10 seconds, and the month always ends five minutes before you run it, so rebuild right before a demo.
+
+**To look at it.** macOS or Linux: `DATABASE_URL=postgresql+psycopg://localhost:5432/everest_month npm run dev` (stop your normal dev server first, same ports). Windows PowerShell: `$env:DATABASE_URL = "postgresql+psycopg://localhost:5432/everest_month"; npm run dev`. Logins are the same (password `everest123`). `docs/demo.md` lists the real numbers and the page to open for each story.
+
+**The stories your list asked for** (your 00:05 note, item 2), all checked through the real endpoints: attendance for every shift so labour costs show and the month report has no "hours not covered" warning for finished runs; runs that last hours; invoiced and paid orders so September's profit is **+₹7,72,783**; a bad yarn lot (**L-0009**) whose rolls went to both buyers, so the recall lights up and the defect-causes screen flags it; a loss-making order (**ORD-0007**, −₹27,576, rework in its cost); one genuinely late order (**ORD-0012**, 5 days late, bottleneck dyeing); low cotton (56 kg short, order 400 kg); a down machine (SPIN-02), an idle one (LOOM-06); an overdue supplier bill; a truck still loading; 4 rolls waiting in the QC queue. Not done from your list: `npm run db:reset` (rebuilding with `db:month` does the same job for the month database).
+
+**Changes to shared files, please review.** `seed_dev.py`: the two buyers now have emails (`accounts@sharmafabrics.example`, `orders@kavyagarments.example`) so buyer sign-up works; this affects databases seeded from now on, not your existing one. `package.json`: a new `db:month` script. Nothing under `app/` or `contracts/` changed.
+
+**Things worth knowing when you click through.**
+- Orders with a machine still running show their cost as *provisional* (true: they are costed up to now), and October's month report lists "is still open, so its cost is provisional" for the 3 or 4 runs open at the end.
+- A rejected roll is re-made, because an order is only complete when its good metres reach the ordered metres and there is no "close short" feature. If you ever want to show a rejected roll without a replacement, that needs a product decision.
+- Invoices have no due date in the data, so receivables has no "overdue"; only supplier bills do.
+- Nobody has looked at these screens in a browser. I read every figure through the real API as owner, accountant, supervisor, qc, store, dispatch and buyer (the buyer is refused the floor board and the money screens). The seed of this month is also a good base for your Playwright demo script.
+
+---
+
+## 2026-10-11 04:02 IST — REQUEST: let the owner close an order short ("Partly dispatched" never ends today)
+
+**From:** Ridanshi → Hritwik
+
+**The problem, in one sentence.** An order that will never reach its ordered metres stays "Partly dispatched" for ever, and the owner has no way to end it.
+
+**How the status works today (so we are looking at the same thing).** `orders/service.py`, `stage()`: nobody sets "Partly dispatched". It is computed from three numbers on the order: ordered metres, passed metres, dispatched metres. If dispatched metres are more than 0 and less than the ordered metres, the stage is `partly_dispatched`. When dispatched metres reach the ordered metres it becomes `dispatched`. Each confirmed truck moves the number, and the screens refresh by the live event.
+
+**Real example from our demo mill: ORD-0001.** Ordered 5,000 m. Passed quality check 1,800 m. Dispatched 1,800 m. The other 3,200 m was never woven. Nothing in the app can ever move this order out of "Partly dispatched". The same happens in real life when rolls are rejected and the buyer agrees to take less.
+
+**What I already built (web only, nothing for you to do for this part).** A **Shipments** card on the owner's order page: sent, ready in store, still being made, rejected, and a table of the trucks. When nothing more is being made and the order will fall short, it shows a red warning. It can only warn. It cannot close the order.
+
+**What I need from you (backend, your area):** a way for the owner to close the order short.
+
+1. **A field, not a new order state.** Add to `orders`: `closed_short_at` (timestamp, null), `closed_short_by` (user id), `closed_short_reason` (text). Migration is yours.
+2. **`POST /api/orders/{order_code}/close-short`**, owner only, body `{ "reason": "..." }` (3 to 200 characters, trimmed). Rules, each with a clear error code:
+   - the order must be `confirmed` and not already closed short;
+   - dispatched metres must be more than 0 (otherwise the owner should cancel, not close short);
+   - nothing may still be in progress for this order: no running production run, no roll awaiting QC, in rework, or loaded on a dispatch that is not yet confirmed (`ORDER_STILL_IN_PROGRESS`).
+3. **What it does.** Sets the three fields, publishes `order.changed`, and never changes an invoice that already exists.
+4. **The stage.** Please add a new stage value `closed_short` (shown to people as "Closed short"). `stage()` returns it when `closed_short_at` is set. It is a new value in the `OrderStage` enum, so the contract changes. I will add the label in all ten languages on my side.
+5. **Reads that must treat a closed-short order as finished.** The late-orders list and the delivery estimate (`/api/orders/{code}/eta`), the yarn need and shortage forecast (`v_order_yarn_need`: it must not ask for yarn for metres that will never be made), and the machine queue and floor planning. Receivables are not affected (invoices exist only for what was sent).
+6. **`OrderOut`** gets `closed_short_at` and `closed_short_reason` (the buyer portal's `PortalOrder` gets them too, without the internal user id).
+7. **The buyer is told.** After closing, call the notices hook I already added in `modules/notices/hooks.py`. If you prefer, leave a one-line TODO and I will add `notify_closed_short(db, order_code)`; the sentence will be: "Your order ORD-0001 is complete at 1,800 m of 5,000 m. The rest will not be made. Reason: ...".
+8. **Tests I would like to see:** closing works for the owner only; refused with a running run, with a roll awaiting QC, with zero dispatched, when already closed; stage becomes `closed_short`; the order leaves the late-orders list and the yarn shortage; a closed order cannot get a new run or yarn issue.
+
+**What I do once the endpoint is merged:** a "Close order short" button and dialog on the order page (owner only, with the reason box), the new stage label in all languages, and the buyer portal wording. Please tell me when `close-short` and the contract are on `main`.
+
+**Also, still open from my earlier note (03:55 IST):** first-login password change flag, and clean-cloth photos for the model card. Those are unchanged.
+
+---
+
+## 2026-10-11 03:55 IST — Track A status: what I added that touches you, what I need from you
+
+**From:** Ridanshi → Hritwik
+
+**Where things are.** Everything of mine is on `a/web-textile` (pushed to GitHub; the newest commit on that branch is the one to review). It contains your B8 merge. Web tests 605 pass; the backend suites I touched pass. Nothing of mine is on `main` yet; please review and merge when you are ready.
+
+**1. Your B8 vision work is wired in and running here.** I installed the `ml` group on my machine and the detector answers on `/api/qc/analyze`. The Vision model page (`/qc/model`) is now two tabs: **Photo log** (new) and **Model accuracy** (your model card, in `ModelCard.tsx`, still exported as `ModelAccuracy`).
+
+**2. One decision of mine inside your file, please do not revert it.** I removed the "Where the training photos came from" card from `ModelCard.tsx` (and its test), because the product screen should not list dataset credits. The credits are still in `model_card.json` and in the docs. The Roboflow set is CC BY 4.0, which asks for attribution, so please keep the credit in the README or the docs where it belongs.
+
+**3. New backend module, read only, no migration: `app/modules/qclog/`** (`router.py`, `service.py`, `schemas.py`, plus `tests/test_qclog.py`, 22 tests). One line added to `app/main.py` to register it. It reads your `qc_inspections` table.
+- `GET /api/qc/log` filters by order (code, buyer or fabric), yarn lot (the batch), result, date range, "inspector overrode the model", free text; sorts by newest, oldest, order or batch; pages with `limit` and `offset`; returns the photo URL, the model's guess, the verdict, the defects and the inspector's note (shown as "remark").
+- `GET /api/qc/log/filters` lists the orders and lots that have a checked roll.
+- Roles: qc, owner, supervisor. Contracts regenerated.
+- "Batch" is the yarn lot, found the same way the roll passport finds it (net-issued lots of the spinning run that fed the weaving run).
+
+**4. Earlier additions you have not seen yet (all on my branch).**
+- Migrations I wrote, in order: `a7c3d9e1b204` (buyer notices), `b8d4e0f2c315` (WhatsApp settings and delivery status), `c9e5f1a3d426` (message template id), `d0f6a2b4e537` (allow dispatch notices). The head on my branch is `d0f6a2b4e537`. Please check that it does not clash with any migration you have on `main` and tell me if it does.
+- `modules/notices/` (delay and dispatch notices, the buyer's bell), `modules/auth/signup.py` (buyer sign-up with invite codes: `POST /api/auth/signup`, `GET /api/auth/buyer-invites`), and a two-line hook in `modules/dispatch/router.py` that calls `notices.hooks.after_dispatch_confirmed` after a dispatch is confirmed. The hook never blocks the dispatch if it fails.
+- The Twilio settings screen is now removed from the web app (a free Twilio account cannot send to buyers on its own). The backend code behind it stays, switched off, in case a paid account comes later. The buyer still gets the in-app bell, and the owner has a "Send from my WhatsApp" button.
+- `modules/llm`: the Copilot and the month summary take a `language` field (a fixed list of ten languages) and answer in it. 26 read-only tools, Groq working.
+- The web app now shows English plus Hindi, Kannada, Tamil, Telugu, Marathi, Bengali, Gujarati, Malayalam and Punjabi, with voice input and read-aloud. Nothing for you to do; mentioned so the contract change (`language` on `ChatIn` and `MonthIn`) is not a surprise.
+
+**5. Please, from you (small, in your area).**
+- **First-login password change.** The owner can generate a login and a temporary password for a worker. A `must_change_password` flag on users, set when the owner creates or resets a login and cleared by `POST /api/auth/change-password`, would let me force the change on first login. Mine would be the screen; the column and the check are yours (migration).
+- **Close an order short.** After rejects, some orders can never reach their ordered metres and stay "partly dispatched" for ever. The owner now sees this in a new Shipments card on the order page, but there is no way to close it. A `POST /api/orders/{code}/close-short` (owner only, only when the order is confirmed and nothing more is being made, recording who closed it and why) would finish the story, including what the invoice and the buyer notice say.
+- **Clean-cloth photos** for the model card (your R9 item), so the false-alarm rate can be measured. Until then the page says "Not measured", which is honest.
+
+**6. Not done on my side.** Waste and yield tracking (spun kg against woven metres against rejects, per order and machine) is a read-only report I can build on the data you already have; I have not started it. Some owner screens (orders, wages, master data, AI settings) are still English only.
 
 ---
 
@@ -637,4 +747,5 @@ Tests over the internet are slower. Time one run of `npm run test:api`; if it is
 **Questions** — add them below with your name and I'll answer here.
 
 ---
+
 

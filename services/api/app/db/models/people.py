@@ -1,7 +1,7 @@
 import datetime as dt
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, String, UniqueConstraint, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import MONEY, Base, IdMixin, nonblank
@@ -31,6 +31,9 @@ class User(IdMixin, Base):
     role: Mapped[str] = mapped_column(String(20))
     worker_id: Mapped[int | None] = mapped_column(ForeignKey("workers.id"))
     buyer_id: Mapped[int | None] = mapped_column(ForeignKey("buyers.id"))
+    # true while the password is one the owner chose for them: set when the owner creates a login or resets someone else's
+    # password, cleared when its owner changes it
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     worker: Mapped[Worker | None] = relationship()
     buyer: Mapped[Buyer | None] = relationship()
     __table_args__ = (

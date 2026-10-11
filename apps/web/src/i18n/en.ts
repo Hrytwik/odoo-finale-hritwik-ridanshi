@@ -108,6 +108,7 @@ const core = {
   'status.order.ready_to_ship': 'Ready to ship',
   'status.order.partly_dispatched': 'Partly dispatched',
   'status.order.dispatched': 'Dispatched',
+  'status.order.closed_short': 'Closed short',
 
   // ---- floor board
   'floor.eyebrow': 'Production',

@@ -10,7 +10,7 @@ RollStatus = Literal[
 OrderState = Literal["draft", "confirmed", "cancelled"]
 OrderStage = Literal[
     "draft", "cancelled", "waiting_to_start", "spinning", "weaving", "dyeing",
-    "quality_check", "ready_to_ship", "partly_dispatched", "dispatched",
+    "quality_check", "ready_to_ship", "partly_dispatched", "dispatched", "closed_short",
 ]
 Verdict = Literal["pass", "rework", "reject"]
 DefectType = Literal["hole", "stain", "thread_fault", "colour_mismatch", "other"]

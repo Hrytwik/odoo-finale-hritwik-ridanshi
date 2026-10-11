@@ -81,6 +81,7 @@ export const bn: Partial<Record<Key, string>> = {
   'status.order.ready_to_ship': 'পাঠানোর জন্য প্রস্তুত',
   'status.order.partly_dispatched': 'আংশিক পাঠানো হয়েছে',
   'status.order.dispatched': 'পাঠানো হয়েছে',
+  'status.order.closed_short': 'কম পরিমাণে বন্ধ',
 
   'floor.eyebrow': 'উৎপাদন',
   'floor.title': 'ফ্লোর বোর্ড',

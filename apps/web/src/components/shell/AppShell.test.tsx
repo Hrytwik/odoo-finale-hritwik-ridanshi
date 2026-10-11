@@ -7,7 +7,7 @@ vi.mock('@/lib/live', () => ({ useLiveEvents: vi.fn() }))
 import { mockApi, renderPage } from '@/test/utils'
 import { AppShell } from './AppShell'
 
-const me = { id: 3, username: 'supervisor', role: 'supervisor' as const, display_name: 'Arjun Rao', worker_id: 3, buyer_id: null }
+const me = { id: 3, username: 'supervisor', role: 'supervisor' as const, display_name: 'Arjun Rao', worker_id: 3, buyer_id: null, must_change_password: false }
 
 function renderShell() {
   mockApi({ GET: { '/api/health': { status: 'ok', demo_data: false } } })

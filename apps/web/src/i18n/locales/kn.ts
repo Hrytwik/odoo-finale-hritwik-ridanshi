@@ -81,6 +81,7 @@ export const kn: Partial<Record<Key, string>> = {
   'status.order.ready_to_ship': 'ಕಳುಹಿಸಲು ಸಿದ್ಧ',
   'status.order.partly_dispatched': 'ಭಾಗಶಃ ಕಳುಹಿಸಲಾಗಿದೆ',
   'status.order.dispatched': 'ಕಳುಹಿಸಲಾಗಿದೆ',
+  'status.order.closed_short': 'ಕಡಿಮೆ ಪ್ರಮಾಣದಲ್ಲಿ ಮುಕ್ತಾಯ',
 
   'floor.eyebrow': 'ಉತ್ಪಾದನೆ',
   'floor.title': 'ಫ್ಲೋರ್ ಬೋರ್ಡ್',

@@ -36,4 +36,5 @@ export const ORDER_STAGE = {
   ready_to_ship: { label: 'Ready to ship', tone: 'green' },
   partly_dispatched: { label: 'Partly dispatched', tone: 'blue' },
   dispatched: { label: 'Dispatched', tone: 'gray' },
+  closed_short: { label: 'Closed short', tone: 'gray' },
 } satisfies Record<OrderStage, Style>

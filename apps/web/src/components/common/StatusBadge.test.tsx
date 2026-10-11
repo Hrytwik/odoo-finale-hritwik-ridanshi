@@ -10,7 +10,7 @@ describe('StatusBadge', () => {
     }
     expect(Object.keys(MACHINE_STATUS)).toHaveLength(3)
     expect(Object.keys(ROLL_STATUS)).toHaveLength(9)
-    expect(Object.keys(ORDER_STAGE)).toHaveLength(10)
+    expect(Object.keys(ORDER_STAGE)).toHaveLength(11)
   })
 
   it('renders the human label', () => {

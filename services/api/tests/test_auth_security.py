@@ -365,4 +365,6 @@ def test_error_answers_keep_the_headers_too(client):
 def test_no_password_or_hash_ever_appears_in_an_answer(client, db):
     user = user_with(db, "ravi")
     body = login(client, "ravi", "rightpass1").text + client.get("/api/auth/me").text
-    assert "rightpass1" not in body and user.password_hash not in body and "password" not in body.lower()
+    # the one place the word may appear is the yes/no flag that tells the web app to ask for a new password
+    assert "rightpass1" not in body and user.password_hash not in body
+    assert "password" not in body.lower().replace('"must_change_password":false', "")

@@ -228,3 +228,4 @@ class UserOut(Out):
     role: Role
     worker_id: int | None
     buyer_id: int | None
+    must_change_password: bool

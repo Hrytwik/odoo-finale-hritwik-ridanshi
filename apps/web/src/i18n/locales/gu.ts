@@ -81,6 +81,7 @@ export const gu: Partial<Record<Key, string>> = {
   'status.order.ready_to_ship': 'મોકલવા તૈયાર',
   'status.order.partly_dispatched': 'અંશતઃ મોકલ્યું',
   'status.order.dispatched': 'મોકલ્યું',
+  'status.order.closed_short': 'ઓછા જથ્થા સાથે બંધ',
 
   'floor.eyebrow': 'ઉત્પાદન',
   'floor.title': 'ફ્લોર બોર્ડ',
