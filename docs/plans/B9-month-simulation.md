@@ -1,7 +1,7 @@
 # B9 — A Simulated Month Implementation Plan
 
 > **Summary:** Builds `scripts/month/` and `scripts/build_month.py`: a deterministic scheduler that turns a hand-picked set of orders into timed mill events for the 30 days ending an hour before the build, a simulated clock that moves every real-clock timestamp the services write to the simulated moment, a runner that plays the events through the real service functions, and an audit that proves seven stories show up through the real endpoints. The target is a separate database `everest_month`; `everest` is never touched.
-> **Last updated:** 2026-10-11 05:47 IST (Tasks 1-2 done)
+> **Last updated:** 2026-10-11 05:51 IST (Tasks 1-3 done)
 
 > **How this plan is executed:** inline, one task at a time (atomic-workflow): test first, the full suite twice at each boundary, the important behaviours mutation-checked. Steps use checkbox (`- [ ]`) syntax.
 
@@ -18,6 +18,8 @@
 Task 1 done and verified (2026-10-11 05:42 IST): `scripts/month/clock.py` (`SimClock`: the timestamp mover, the `today_ist` swap, the leak check) and 9 tests; passed first time. **Five of six planned mutations survived at first**, which showed the tests were weaker than the design: the older-value and window mutations needed a row with one old and one real column (the hand-over case) and the one-statement-per-table rule needed a throwaway table whose later column is declared first (a real `production_runs` row cannot show it because `started_at` precedes `ended_at`); both tests were added and every mutation now dies. Full backend suite 1,461 passed (1,452 before), twice. Nothing listening on :8000.
 
 Task 2 done and verified (2026-10-11 05:47 IST): `scripts/month/plan.py` and 21 tests (`test_month_plan.py`, no database). First run found: (1) a real bug, `ZeroDivisionError` in `Roster.operator`: the roster covered 36 days but a late order's pipeline is planned past the end and those dropped events still name an operator, so the roster now covers `days + 90`; (2) my own arithmetic: the twelve orders total **39,500 m** (not 40,000), about 61% of the dyers' capacity, and the plan makes **69 rolls** (not about 150), 66 inspections (73% passed first time), 10 trucks (one still loading at the end), 4 machines running and SPIN-02 down at the end; (3) the in-progress story: orders took 7 to 8 days each, so only O11 was open; fixed by moving O9 to day 22 and O10 to day 25 and adding `OrderSpec.hold` (hours a loaded truck waits for sign-out: O9 holds 20 h so its truck is still loading "now"); (4) only one buyer payment landed in the month because payments came 12 to 25 days after the truck; now 4 to 14 days, and the partial payment is the third payment that really happens. Mutations: nine of ten died at once; the survivor (spinning ignores the machine's free time) showed that the standard month never makes orders compete for the ring frames, so a stress test (three orders arriving together queue for two frames) was added and the mutant now dies. Full backend suite 1,482 passed (1,461 before), twice.
+
+Task 3 done and verified (2026-10-11 05:51 IST): `scripts/month/database.py`, the first half of `scripts/month/runner.py`, and 9 tests in `test_month_build.py` on a real throwaway database (`everest_month_test`, made once per module and dropped; only `everest` and `everest_test` remain afterwards). **The real services accepted every order, lot, run, hand-over, roll-off and dye load on the first run, and the leak check was empty**: the database defaults, `db_now` and `datetime.now` were all moved, and bill dates and deadlines follow the simulated calendar. The test's first-half filter had to change (play the events before the first inspection, since nothing before that involves rework). Mutations: the mover doing nothing, `today_ist` swapped only in the core module, no safety margin (which does matter), seeding outside a clock step, and the deadline taken from the real date all die; the last one first survived because no test checked deadlines, so one was added. Full backend suite 1,491 passed (1,482 before), twice.
 
 ## Spec corrections found while planning
 
@@ -909,7 +911,7 @@ git commit -m "Add the month scheduler: orders walked through the mill in timed 
 - Consumes (Task 1 and 2): `SimClock`, `build_plan`, `Event`.
 - Produces: `ALLOWED`, `database_name(url)`, `refuse_unless_allowed(url)`, `recreate(url)`, `drop(url)`, `migrate(url)`; `Runner(db, clock)`, `Runner.play(events, only=None)`, `RunnerError`, and the maps `.order`, `.lot`, `.roll`, `.run`, `.open`, `.truck`.
 
-- [ ] **Step 1: Write the failing tests.** `services/api/tests/test_month_build.py`:
+- [x] **Step 1: Write the failing tests.** `services/api/tests/test_month_build.py`:
 
 ```python
 """B9 Task 3 to 6: a small month, end to end, through the real services, in its own throwaway database."""
@@ -992,9 +994,9 @@ def test_a_lots_received_at_and_bill_dates_are_simulated_not_real(built):
         assert lot.bill.due_date == lot.bill.bill_date + dt.timedelta(days=30)
 ```
 
-- [ ] **Step 2: Run to verify it fails.** Expected: `scripts.month.database` does not exist.
+- [x] **Step 2: Run to verify it fails.** Expected: `scripts.month.database` does not exist.
 
-- [ ] **Step 3: Implement `services/api/scripts/month/database.py`:**
+- [x] **Step 3: Implement `services/api/scripts/month/database.py`:**
 
 ```python
 """Making, migrating and dropping the month's own database, and refusing every other name."""
@@ -1149,9 +1151,9 @@ class Runner:
         floor_rolls.load_rolls(self.db, self.open[machine], fs.LoadRollsIn(roll_codes=[self.roll[r] for r in rolls]))
 ```
 
-- [ ] **Step 4: Run it.** Expect real findings on the first run (a service refusing a step, or a default-`now()` value the mover missed); fix the cause in the plan, the runner or the mover, never by skipping a step or loosening a test, and record each finding in the Status line. Likely first findings: `seed_all` committing in a way the mover window misses; `do_create_order` needing the swapped `today_ist`; the opening lot received before any order exists.
-- [ ] **Step 5: Full suite twice;** green. Hritwik's server check.
-- [ ] **Step 6: Commit.**
+- [x] **Step 4: Run it.** Expect real findings on the first run (a service refusing a step, or a default-`now()` value the mover missed); fix the cause in the plan, the runner or the mover, never by skipping a step or loosening a test, and record each finding in the Status line. Likely first findings: `seed_all` committing in a way the mover window misses; `do_create_order` needing the swapped `today_ist`; the opening lot received before any order exists.
+- [x] **Step 5: Full suite twice;** green. Hritwik's server check.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add services/api/scripts/month/database.py services/api/scripts/month/runner.py services/api/tests/test_month_build.py
