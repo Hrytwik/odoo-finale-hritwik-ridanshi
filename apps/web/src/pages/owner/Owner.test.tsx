@@ -75,8 +75,9 @@ describe('Owner dashboard', () => {
     const chart = await screen.findByRole('img', { name: /revenue and cost for 2 orders/i })
     expect(chart.querySelectorAll('.chart-bar.is-revenue')).toHaveLength(2)
     expect(chart.querySelectorAll('.chart-bar.is-cost')).toHaveLength(2)
-    expect(within(chart as unknown as HTMLElement).getByText('Loss ₹1 L')).toHaveClass('is-loss')
-    expect(within(chart as unknown as HTMLElement).getByText('Profit ₹1.2 L')).not.toHaveClass('is-loss')
+    // the word and the amount sit on two lines so neighbouring labels never run into each other
+    expect(chart.querySelector('.chart-profit.is-loss')).toHaveTextContent(/Loss\s*₹1 L/)
+    expect(chart.querySelector('.chart-profit:not(.is-loss)')).toHaveTextContent(/Profit\s*₹1\.2 L/)
   })
 
   it('gives the chart a table for screen readers', async () => {
