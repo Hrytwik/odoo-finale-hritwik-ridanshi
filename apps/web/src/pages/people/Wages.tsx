@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { EmptyState } from '@/components/common/EmptyState'
+import { Filtered } from '@/components/common/ListToolbar'
 import { KpiCard } from '@/components/common/KpiCard'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
@@ -55,6 +56,30 @@ export default function Wages() {
                 <KpiCard label={t('wages.stillOwed')} value={s.total_owed} format={formatMoney} tone={s.total_owed > 0 ? 'danger' : undefined} />
               </AnimatedGroup>
               <Reveal>
+                <Filtered
+                  rows={s.rows}
+                  options={{
+                    text: (r) => `${r.worker_name} ${r.worker_code}`,
+                    sorts: [
+                      { key: 'worker', label: t('wages.col.worker'), value: (r) => r.worker_name },
+                      { key: 'earned', label: t('wages.earned'), value: (r) => r.earned },
+                      { key: 'paid', label: t('money.col.paid'), value: (r) => r.paid },
+                      { key: 'owed', label: t('wages.col.owed'), value: (r) => r.owed },
+                    ],
+                    filters: [
+                      {
+                        key: 'owed',
+                        label: t('qc.col.status'),
+                        options: [
+                          { value: 'owed', label: t('wages.stillOwed') },
+                          { value: 'paid', label: t('money.paid') },
+                        ],
+                        test: (r, v) => (v === 'owed' ? r.owed > 0 : r.owed <= 0),
+                      },
+                    ],
+                  }}
+                >
+                  {(shown) => (
                 <Table>
                   <thead>
                     <tr>
@@ -72,7 +97,7 @@ export default function Wages() {
                     </tr>
                   </thead>
                   <tbody>
-                    {s.rows.map((r) => (
+                    {shown.map((r) => (
                       <tr key={r.worker_id}>
                         <td>
                           <span className="code-text">{r.worker_name}</span>
@@ -100,6 +125,8 @@ export default function Wages() {
                     ))}
                   </tbody>
                 </Table>
+                  )}
+                </Filtered>
               </Reveal>
             </div>
           )

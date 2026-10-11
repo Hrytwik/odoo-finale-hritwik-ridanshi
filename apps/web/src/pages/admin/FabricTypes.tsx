@@ -3,6 +3,7 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Alert } from '@/components/common/Alert'
+import { Filtered } from '@/components/common/ListToolbar'
 import { EmptyState } from '@/components/common/EmptyState'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
@@ -43,6 +44,18 @@ export default function FabricTypes() {
             <EmptyState title={t('fabric.emptyTitle')} description={t('fabric.emptyDescription')} />
           ) : (
             <Reveal>
+              <Filtered
+                rows={rows}
+                options={{
+                  text: (f) => `${f.name} ${f.recipe.map((l) => l.yarn_type_code).join(' ')}`,
+                  sorts: [
+                    { key: 'name', label: t('common.name'), value: (f) => f.name },
+                    { key: 'width', label: t('fabric.col.width'), value: (f) => f.width_in },
+                    { key: 'wastage', label: t('fabric.col.wastage'), value: (f) => f.wastage_pct },
+                  ],
+                }}
+              >
+                {(shown) => (
               <Table>
                 <thead>
                   <tr>
@@ -56,7 +69,7 @@ export default function FabricTypes() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((f) => (
+                  {shown.map((f) => (
                     <tr key={f.id}>
                       <td>
                         <strong>{f.name}</strong>
@@ -73,6 +86,8 @@ export default function FabricTypes() {
                   ))}
                 </tbody>
               </Table>
+                )}
+              </Filtered>
             </Reveal>
           )
         }

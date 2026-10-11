@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ActionDialog } from '@/components/common/ActionDialog'
 import { EmptyState } from '@/components/common/EmptyState'
+import { Filtered } from '@/components/common/ListToolbar'
+import type { Key } from '@/i18n/en'
 import { KpiCard } from '@/components/common/KpiCard'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QrScanner } from '@/components/common/QrScanner'
@@ -61,6 +63,27 @@ export default function QcQueue() {
               {q.rolls.length === 0 ? (
                 <EmptyState title={t('qc.nothingWaiting')} description={t('qc.nothingWaitingDescription')} />
               ) : (
+                <Filtered
+                  rows={q.rolls}
+                  options={{
+                    text: (r) => `${r.code} ${r.order_code} ${r.buyer_name} ${r.fabric} ${r.colour}`,
+                    sorts: [
+                      { key: 'roll', label: t('qc.col.roll'), value: (r) => r.code },
+                      { key: 'order', label: t('qc.col.order'), value: (r) => r.order_code },
+                      { key: 'buyer', label: t('qc.col.buyer'), value: (r) => r.buyer_name },
+                      { key: 'length', label: t('qc.col.length'), value: (r) => r.metres },
+                    ],
+                    filters: [
+                      {
+                        key: 'status',
+                        label: t('qc.col.status'),
+                        options: [...new Set(q.rolls.map((r) => r.status))].map((st) => ({ value: st, label: t(`status.roll.${st}` as Key) })),
+                        test: (r, v) => r.status === v,
+                      },
+                    ],
+                  }}
+                >
+                  {(shown) => (
                 <Table>
                   <thead>
                     <tr>
@@ -74,7 +97,7 @@ export default function QcQueue() {
                     </tr>
                   </thead>
                   <tbody>
-                    {q.rolls.map((r) => (
+                    {shown.map((r) => (
                       <tr key={r.code}>
                         <td>
                           <Link to={`/r/${r.code}`}>{r.code}</Link>
@@ -104,6 +127,8 @@ export default function QcQueue() {
                     ))}
                   </tbody>
                 </Table>
+                  )}
+                </Filtered>
               )}
             </Reveal>
           </div>

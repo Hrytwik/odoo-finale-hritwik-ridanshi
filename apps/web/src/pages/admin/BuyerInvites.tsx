@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Copy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
+import { Filtered } from '@/components/common/ListToolbar'
 import { EmptyState } from '@/components/common/EmptyState'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
@@ -44,6 +45,25 @@ export default function BuyerInvites() {
             <EmptyState title={t('invites.emptyTitle')} description={t('invites.emptyDescription')} />
           ) : (
             <Reveal>
+              <Filtered
+                rows={rows}
+                options={{
+                  text: (r) => `${r.buyer_name} ${r.email ?? ''} ${r.invite_code ?? ''}`,
+                  sorts: [{ key: 'buyer', label: t('qc.col.buyer'), value: (r) => r.buyer_name }],
+                  filters: [
+                    {
+                      key: 'login',
+                      label: t('invites.col.login'),
+                      options: [
+                        { value: 'yes', label: t('invites.hasLogin') },
+                        { value: 'no', label: t('invites.notSignedUp') },
+                      ],
+                      test: (r, v) => (v === 'yes') === r.has_account,
+                    },
+                  ],
+                }}
+              >
+                {(shown) => (
               <Table>
                 <thead>
                   <tr>
@@ -54,7 +74,7 @@ export default function BuyerInvites() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
+                  {shown.map((r) => (
                     <tr key={r.buyer_id}>
                       <td>{r.buyer_name}</td>
                       <td>{r.email ?? <span className="muted">{t('invites.none')}</span>}</td>
@@ -86,6 +106,8 @@ export default function BuyerInvites() {
                   ))}
                 </tbody>
               </Table>
+                )}
+              </Filtered>
             </Reveal>
           )
         }
