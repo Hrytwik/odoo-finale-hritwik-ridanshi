@@ -88,7 +88,7 @@ describe('Vision model photo log', () => {
 
   it('has a second tab for how accurate the model has been', async () => {
     setup()
-    await userEvent.click(await screen.findByRole('tab', { name: 'Model accuracy' }))
+    await userEvent.click(await screen.findByRole('tab', { name: 'Model metrics' }))
     expect(await screen.findByText(/no vision model has been evaluated yet/i)).toBeInTheDocument()
   })
 })
