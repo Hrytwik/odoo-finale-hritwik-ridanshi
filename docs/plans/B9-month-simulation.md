@@ -1,7 +1,7 @@
 # B9 — A Simulated Month Implementation Plan
 
 > **Summary:** Builds `scripts/month/` and `scripts/build_month.py`: a deterministic scheduler that turns a hand-picked set of orders into timed mill events for the 30 days ending an hour before the build, a simulated clock that moves every real-clock timestamp the services write to the simulated moment, a runner that plays the events through the real service functions, and an audit that proves seven stories show up through the real endpoints. The target is a separate database `everest_month`; `everest` is never touched.
-> **Last updated:** 2026-10-11 04:06 IST (written, nothing built yet)
+> **Last updated:** 2026-10-11 05:42 IST (Task 1 done)
 
 > **How this plan is executed:** inline, one task at a time (atomic-workflow): test first, the full suite twice at each boundary, the important behaviours mutation-checked. Steps use checkbox (`- [ ]`) syntax.
 
@@ -12,6 +12,10 @@
 **Tech Stack:** Python 3.12, SQLAlchemy 2, PostgreSQL 16, pytest (`uv run python -m pytest -p no:warnings -o addopts=` from `services/api`), the existing service functions. No new dependencies.
 
 **Spec:** `docs/specs/2026-10-11-month-simulation-design.md` (read it first). The corrections below were found while writing this plan and supersede the spec where they differ; Task 7 folds them into the spec.
+
+## Status
+
+Task 1 done and verified (2026-10-11 05:42 IST): `scripts/month/clock.py` (`SimClock`: the timestamp mover, the `today_ist` swap, the leak check) and 9 tests; passed first time. **Five of six planned mutations survived at first**, which showed the tests were weaker than the design: the older-value and window mutations needed a row with one old and one real column (the hand-over case) and the one-statement-per-table rule needed a throwaway table whose later column is declared first (a real `production_runs` row cannot show it because `started_at` precedes `ended_at`); both tests were added and every mutation now dies. Full backend suite 1,461 passed (1,452 before), twice. Nothing listening on :8000.
 
 ## Spec corrections found while planning
 
@@ -75,7 +79,7 @@ The conditions the spec implies but does not spell out, most likely first, each 
 **Interfaces:**
 - Produces: `SimClock(db, end)` with `.now` (the current simulated moment), `.at(moment)` (a context manager), `.installed()` (a context manager that swaps `today_ist`), `.leaks() -> list[str]`; `timestamp_columns(db) -> dict[str, list[str]]`.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 `services/api/tests/test_month_clock.py`:
 
@@ -170,9 +174,9 @@ def test_the_leak_check_is_quiet_when_everything_is_before_the_end(db):
 
 The tests in this file run inside the usual rolled-back test transaction, where a database default `now()` is frozen at the start of the test. They therefore write their "real" timestamps explicitly with `clock_timestamp()` inside the step. The default-`now()` columns are proved in Task 3 on a real throwaway database.
 
-- [ ] **Step 2: Run to verify it fails.** `cd services/api && uv run python -m pytest -p no:warnings -o addopts= tests/test_month_clock.py -q` — Expected: collection error, `scripts.month` does not exist.
+- [x] **Step 2: Run to verify it fails.** `cd services/api && uv run python -m pytest -p no:warnings -o addopts= tests/test_month_clock.py -q` — Expected: collection error, `scripts.month` does not exist.
 
-- [ ] **Step 3: Implement.** `services/api/scripts/month/__init__.py` empty. `services/api/scripts/month/clock.py`:
+- [x] **Step 3: Implement.** `services/api/scripts/month/__init__.py` empty. `services/api/scripts/month/clock.py`:
 
 ```python
 """The simulated clock for the month build.
@@ -263,10 +267,10 @@ class SimClock:
         return out
 ```
 
-- [ ] **Step 4: Run it.** Expected: all pass.
-- [ ] **Step 5: Mutation checks:** narrow the window to `real_start` exactly (`MARGIN = 0`) is not testable here (it only matters for `now()` defaults), so instead: remove the `ELSE "{c}"` branch (the older-value test fails); move the two columns in two statements (the CHECK test fails); drop the `installed` restore (the "only inside" test fails); drop the view filter (`test_columns_known` fails).
-- [ ] **Step 6: Full suite twice;** both green.
-- [ ] **Step 7: Commit.**
+- [x] **Step 4: Run it.** Expected: all pass.
+- [x] **Step 5: Mutation checks:** narrow the window to `real_start` exactly (`MARGIN = 0`) is not testable here (it only matters for `now()` defaults), so instead: remove the `ELSE "{c}"` branch (the older-value test fails); move the two columns in two statements (the CHECK test fails); drop the `installed` restore (the "only inside" test fails); drop the view filter (`test_columns_known` fails).
+- [x] **Step 6: Full suite twice;** both green.
+- [x] **Step 7: Commit.**
 
 ```bash
 git add services/api/scripts/month services/api/tests/test_month_clock.py
