@@ -40,7 +40,7 @@ After `npm run db:seed` (or `db:month`) every login has the password `everest123
 
 ## Phone camera over HTTPS
 
-Phone browsers only open the camera on HTTPS. With `npm run dev` running, on **Windows**: `npm run https` (needs Caddy: `winget install CaddyServer.Caddy`); it prints the address to open on the phone, which must be on the same Wi-Fi. On **macOS** (not yet tried on this project): `brew install caddy`, then `LAN_IP=$(ipconfig getifaddr en0) caddy run --config Caddyfile` and open `https://<that address>:8443`. The phone warns about the certificate the first time; accept it.
+Phone browsers only open the camera on HTTPS. With `npm run dev` running, on **Windows**: `npm run https` (needs Caddy: `winget install CaddyServer.Caddy`); it prints the address to open on the phone, which must be on the same Wi-Fi. On **macOS** (not yet tried on this project): `brew install caddy`, then `LAN_IP=$(ipconfig getifaddr en0) caddy run --config Caddyfile` and open `https://<that address>:8443`. The phone warns about the certificate the first time; accept it. On a Mac, macOS may ask whether `caddy` and `python` may accept incoming connections: answer Allow, or the phone cannot connect (seen on this project's Mac: the HTTPS front answered on `localhost` but connections to the Mac's own Wi-Fi address stalled until allowed).
 
 ## Vision model
 
