@@ -27,6 +27,70 @@
 
 ---
 
+## 2026-10-11 04:02 IST — REQUEST: let the owner close an order short ("Partly dispatched" never ends today)
+
+**From:** Ridanshi → Hritwik
+
+**The problem, in one sentence.** An order that will never reach its ordered metres stays "Partly dispatched" for ever, and the owner has no way to end it.
+
+**How the status works today (so we are looking at the same thing).** `orders/service.py`, `stage()`: nobody sets "Partly dispatched". It is computed from three numbers on the order: ordered metres, passed metres, dispatched metres. If dispatched metres are more than 0 and less than the ordered metres, the stage is `partly_dispatched`. When dispatched metres reach the ordered metres it becomes `dispatched`. Each confirmed truck moves the number, and the screens refresh by the live event.
+
+**Real example from our demo mill: ORD-0001.** Ordered 5,000 m. Passed quality check 1,800 m. Dispatched 1,800 m. The other 3,200 m was never woven. Nothing in the app can ever move this order out of "Partly dispatched". The same happens in real life when rolls are rejected and the buyer agrees to take less.
+
+**What I already built (web only, nothing for you to do for this part).** A **Shipments** card on the owner's order page: sent, ready in store, still being made, rejected, and a table of the trucks. When nothing more is being made and the order will fall short, it shows a red warning. It can only warn. It cannot close the order.
+
+**What I need from you (backend, your area):** a way for the owner to close the order short.
+
+1. **A field, not a new order state.** Add to `orders`: `closed_short_at` (timestamp, null), `closed_short_by` (user id), `closed_short_reason` (text). Migration is yours.
+2. **`POST /api/orders/{order_code}/close-short`**, owner only, body `{ "reason": "..." }` (3 to 200 characters, trimmed). Rules, each with a clear error code:
+   - the order must be `confirmed` and not already closed short;
+   - dispatched metres must be more than 0 (otherwise the owner should cancel, not close short);
+   - nothing may still be in progress for this order: no running production run, no roll awaiting QC, in rework, or loaded on a dispatch that is not yet confirmed (`ORDER_STILL_IN_PROGRESS`).
+3. **What it does.** Sets the three fields, publishes `order.changed`, and never changes an invoice that already exists.
+4. **The stage.** Please add a new stage value `closed_short` (shown to people as "Closed short"). `stage()` returns it when `closed_short_at` is set. It is a new value in the `OrderStage` enum, so the contract changes. I will add the label in all ten languages on my side.
+5. **Reads that must treat a closed-short order as finished.** The late-orders list and the delivery estimate (`/api/orders/{code}/eta`), the yarn need and shortage forecast (`v_order_yarn_need`: it must not ask for yarn for metres that will never be made), and the machine queue and floor planning. Receivables are not affected (invoices exist only for what was sent).
+6. **`OrderOut`** gets `closed_short_at` and `closed_short_reason` (the buyer portal's `PortalOrder` gets them too, without the internal user id).
+7. **The buyer is told.** After closing, call the notices hook I already added in `modules/notices/hooks.py`. If you prefer, leave a one-line TODO and I will add `notify_closed_short(db, order_code)`; the sentence will be: "Your order ORD-0001 is complete at 1,800 m of 5,000 m. The rest will not be made. Reason: ...".
+8. **Tests I would like to see:** closing works for the owner only; refused with a running run, with a roll awaiting QC, with zero dispatched, when already closed; stage becomes `closed_short`; the order leaves the late-orders list and the yarn shortage; a closed order cannot get a new run or yarn issue.
+
+**What I do once the endpoint is merged:** a "Close order short" button and dialog on the order page (owner only, with the reason box), the new stage label in all languages, and the buyer portal wording. Please tell me when `close-short` and the contract are on `main`.
+
+**Also, still open from my earlier note (03:55 IST):** first-login password change flag, and clean-cloth photos for the model card. Those are unchanged.
+
+---
+
+## 2026-10-11 03:55 IST — Track A status: what I added that touches you, what I need from you
+
+**From:** Ridanshi → Hritwik
+
+**Where things are.** Everything of mine is on `a/web-textile` (pushed to GitHub; the newest commit on that branch is the one to review). It contains your B8 merge. Web tests 605 pass; the backend suites I touched pass. Nothing of mine is on `main` yet; please review and merge when you are ready.
+
+**1. Your B8 vision work is wired in and running here.** I installed the `ml` group on my machine and the detector answers on `/api/qc/analyze`. The Vision model page (`/qc/model`) is now two tabs: **Photo log** (new) and **Model accuracy** (your model card, in `ModelCard.tsx`, still exported as `ModelAccuracy`).
+
+**2. One decision of mine inside your file, please do not revert it.** I removed the "Where the training photos came from" card from `ModelCard.tsx` (and its test), because the product screen should not list dataset credits. The credits are still in `model_card.json` and in the docs. The Roboflow set is CC BY 4.0, which asks for attribution, so please keep the credit in the README or the docs where it belongs.
+
+**3. New backend module, read only, no migration: `app/modules/qclog/`** (`router.py`, `service.py`, `schemas.py`, plus `tests/test_qclog.py`, 22 tests). One line added to `app/main.py` to register it. It reads your `qc_inspections` table.
+- `GET /api/qc/log` filters by order (code, buyer or fabric), yarn lot (the batch), result, date range, "inspector overrode the model", free text; sorts by newest, oldest, order or batch; pages with `limit` and `offset`; returns the photo URL, the model's guess, the verdict, the defects and the inspector's note (shown as "remark").
+- `GET /api/qc/log/filters` lists the orders and lots that have a checked roll.
+- Roles: qc, owner, supervisor. Contracts regenerated.
+- "Batch" is the yarn lot, found the same way the roll passport finds it (net-issued lots of the spinning run that fed the weaving run).
+
+**4. Earlier additions you have not seen yet (all on my branch).**
+- Migrations I wrote, in order: `a7c3d9e1b204` (buyer notices), `b8d4e0f2c315` (WhatsApp settings and delivery status), `c9e5f1a3d426` (message template id), `d0f6a2b4e537` (allow dispatch notices). The head on my branch is `d0f6a2b4e537`. Please check that it does not clash with any migration you have on `main` and tell me if it does.
+- `modules/notices/` (delay and dispatch notices, the buyer's bell), `modules/auth/signup.py` (buyer sign-up with invite codes: `POST /api/auth/signup`, `GET /api/auth/buyer-invites`), and a two-line hook in `modules/dispatch/router.py` that calls `notices.hooks.after_dispatch_confirmed` after a dispatch is confirmed. The hook never blocks the dispatch if it fails.
+- The Twilio settings screen is now removed from the web app (a free Twilio account cannot send to buyers on its own). The backend code behind it stays, switched off, in case a paid account comes later. The buyer still gets the in-app bell, and the owner has a "Send from my WhatsApp" button.
+- `modules/llm`: the Copilot and the month summary take a `language` field (a fixed list of ten languages) and answer in it. 26 read-only tools, Groq working.
+- The web app now shows English plus Hindi, Kannada, Tamil, Telugu, Marathi, Bengali, Gujarati, Malayalam and Punjabi, with voice input and read-aloud. Nothing for you to do; mentioned so the contract change (`language` on `ChatIn` and `MonthIn`) is not a surprise.
+
+**5. Please, from you (small, in your area).**
+- **First-login password change.** The owner can generate a login and a temporary password for a worker. A `must_change_password` flag on users, set when the owner creates or resets a login and cleared by `POST /api/auth/change-password`, would let me force the change on first login. Mine would be the screen; the column and the check are yours (migration).
+- **Close an order short.** After rejects, some orders can never reach their ordered metres and stay "partly dispatched" for ever. The owner now sees this in a new Shipments card on the order page, but there is no way to close it. A `POST /api/orders/{code}/close-short` (owner only, only when the order is confirmed and nothing more is being made, recording who closed it and why) would finish the story, including what the invoice and the buyer notice say.
+- **Clean-cloth photos** for the model card (your R9 item), so the false-alarm rate can be measured. Until then the page says "Not measured", which is honest.
+
+**6. Not done on my side.** Waste and yield tracking (spun kg against woven metres against rejects, per order and machine) is a read-only report I can build on the data you already have; I have not started it. Some owner screens (orders, wages, master data, AI settings) are still English only.
+
+---
+
 ## 2026-10-11 02:25 IST — B8 done: `/qc/analyze` and `/qc/model-card` are real
 
 **From:** Hritwik → Ridanshi
@@ -657,4 +721,5 @@ Tests over the internet are slower. Time one run of `npm run test:api`; if it is
 **Questions** — add them below with your name and I'll answer here.
 
 ---
+
 
