@@ -10,8 +10,10 @@ import { AnimatedGroup } from '@/components/motion/AnimatedGroup'
 import { Reveal } from '@/components/motion/Reveal'
 import { Card } from '@/components/ui/Card'
 import { Table } from '@/components/ui/Table'
-import { DEFECT_LABEL } from '@/lib/defects'
+import { useI18n } from '@/i18n/I18nContext'
+import { useDefectLabel } from '@/lib/useDefectLabel'
 import { api, call, type components } from '@/lib/api'
+import { DEFECT_LABEL, type DefectType } from '@/lib/defects'
 import { formatDate } from '@/lib/format'
 
 type Card_ = components['schemas']['ModelCard']
@@ -20,6 +22,7 @@ type Card_ = components['schemas']['ModelCard']
 const HOLE_RECALL_BAR = 0.8
 const FALSE_ALARM_BAR = 0.2
 
+const DEFECT_TYPES = DEFECT_LABEL
 const pct = (n: number | null) => (n === null ? '-' : `${Math.round(n * 100)}%`)
 
 function meetsBar(c: Card_) {
@@ -43,48 +46,52 @@ export default function ModelCard() {
 }
 
 function NotYet() {
+  const { t } = useI18n()
   return (
     <EmptyState
-      title="No vision model has been evaluated yet"
-      description="Quality checking works fully without it: the inspector looks at the cloth and records the verdict. When a model is trained and tested, its results appear here."
+      title={t('mc.notYetTitle')}
+      description={t('mc.notYetBody')}
     />
   )
 }
 
 function Evaluated({ c }: { c: Card_ }) {
+  const { t } = useI18n()
+  const defectLabel = useDefectLabel()
   const good = meetsBar(c)
+  const rowLabel = (l: string) => (l === 'clean' ? t('mc.cleanLabel') : l in DEFECT_TYPES ? defectLabel(l as DefectType) : l)
   return (
     <div className="stack">
       <Alert tone={c.clean_false_alarm_rate === null || good ? 'info' : 'error'}>
         {c.clean_false_alarm_rate === null
-          ? 'Not yet validated: false alarms on clean cloth have not been measured (the test photos had no clean cloth), so this model is offered as an unvalidated suggestion only.'
+          ? t('mc.unvalidated')
           : good
-            ? `This model meets the bar: it finds at least ${pct(HOLE_RECALL_BAR)} of holes with no more than ${pct(FALSE_ALARM_BAR)} false alarms on clean cloth.`
-            : `This model is below the bar (holes found at least ${pct(HOLE_RECALL_BAR)}, false alarms at most ${pct(FALSE_ALARM_BAR)}), so it is offered as a supporting suggestion only.`}
+            ? t('mc.meetsBar', { recall: pct(HOLE_RECALL_BAR), alarm: pct(FALSE_ALARM_BAR) })
+            : t('mc.belowBar', { recall: pct(HOLE_RECALL_BAR), alarm: pct(FALSE_ALARM_BAR) })}
       </Alert>
 
       <AnimatedGroup className="grid-cards">
         <div className="kpi">
-          <span className="kpi-label">Model</span>
+          <span className="kpi-label">{t('mc.model')}</span>
           <span className="kpi-value">{c.model_version}</span>
-          <span className="muted text-sm">{c.trained_at ? `trained ${formatDate(c.trained_at)}` : ''}</span>
+          <span className="muted text-sm">{c.trained_at ? t('mc.trained', { date: formatDate(c.trained_at) }) : ''}</span>
         </div>
         <div className="kpi">
-          <span className="kpi-label">Held-out test photos</span>
+          <span className="kpi-label">{t('mc.heldOut')}</span>
           <span className="kpi-value">{c.test_defective + c.test_clean}</span>
           <span className="muted text-sm">
-            {c.test_defective} defective and {c.test_clean} clean, never seen in training
+            {t('mc.heldOutHint', { defective: c.test_defective, clean: c.test_clean })}
           </span>
         </div>
         {c.clean_false_alarm_rate === null ? (
           <div className="kpi">
-            <span className="kpi-label">False alarms on clean cloth</span>
-            <span className="kpi-value">Not measured</span>
-            <span className="muted text-sm">no clean test photos yet</span>
+            <span className="kpi-label">{t('mc.falseAlarms')}</span>
+            <span className="kpi-value">{t('mc.notMeasured')}</span>
+            <span className="muted text-sm">{t('mc.noCleanYet')}</span>
           </div>
         ) : (
           <KpiCard
-            label="False alarms on clean cloth"
+            label={t('mc.falseAlarms')}
             value={c.clean_false_alarm_rate * 100}
             format={(n) => `${Math.round(n)}%`}
             tone={c.clean_false_alarm_rate > FALSE_ALARM_BAR ? 'danger' : undefined}
@@ -93,22 +100,22 @@ function Evaluated({ c }: { c: Card_ }) {
       </AnimatedGroup>
 
       <Reveal>
-        <Card title="Per defect type">
+        <Card title={t('mc.perDefect')}>
           <Table>
             <thead>
               <tr>
-                <th>Defect</th>
-                <th className="num">Found</th>
-                <th className="num">Missed</th>
-                <th className="num">False alarms</th>
-                <th className="num">Precision</th>
-                <th className="num">Recall</th>
+                <th>{t('mc.col.defect')}</th>
+                <th className="num">{t('mc.col.found')}</th>
+                <th className="num">{t('mc.col.missed')}</th>
+                <th className="num">{t('mc.col.falseAlarms')}</th>
+                <th className="num">{t('mc.col.precision')}</th>
+                <th className="num">{t('mc.col.recall')}</th>
               </tr>
             </thead>
             <tbody>
               {c.per_class.map((p) => (
                 <tr key={p.defect_type}>
-                  <td>{DEFECT_LABEL[p.defect_type]}</td>
+                  <td>{defectLabel(p.defect_type)}</td>
                   <td className="num">{p.found}</td>
                   <td className="num">{p.missed}</td>
                   <td className="num">{p.false_alarms}</td>
@@ -122,17 +129,17 @@ function Evaluated({ c }: { c: Card_ }) {
       </Reveal>
 
       <Reveal>
-        <Card title="Confusion matrix">
+        <Card title={t('mc.confusion')}>
           <p className="muted text-sm" style={{ marginBottom: 'var(--space-3)' }}>
-            Rows are what was really on the photo; columns are what the model said.
+            {t('mc.confusionNote')}
           </p>
           <Table>
             <thead>
               <tr>
-                <th>Actual \ Model said</th>
+                <th>{t('mc.actualVsSaid')}</th>
                 {c.confusion_labels.map((l) => (
                   <th key={l} className="num">
-                    {l}
+                    {rowLabel(l)}
                   </th>
                 ))}
               </tr>
@@ -140,7 +147,7 @@ function Evaluated({ c }: { c: Card_ }) {
             <tbody>
               {c.confusion_matrix.map((row, i) => (
                 <tr key={c.confusion_labels[i] ?? i}>
-                  <th scope="row">{c.confusion_labels[i]}</th>
+                  <th scope="row">{rowLabel(c.confusion_labels[i] ?? '')}</th>
                   {row.map((n, j) => (
                     <Fragment key={j}>
                       <td className={i === j ? 'num matrix-hit' : 'num'}>{n}</td>

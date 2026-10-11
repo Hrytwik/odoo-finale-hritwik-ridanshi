@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Table } from '@/components/ui/Table'
 import { api, call, errorMessage, type components } from '@/lib/api'
+import { useI18n } from '@/i18n/I18nContext'
 import { formatDateTime } from '@/lib/format'
 import { useSubmitLock } from '@/lib/forms'
 
@@ -19,6 +20,7 @@ type Run = components['schemas']['ReportCardOut']
 
 /** Asks the configured model questions whose right answers are read from the data just now, and marks it. */
 export default function ReportCard() {
+  const { t } = useI18n()
   const queryClient = useQueryClient()
   const runs = useQuery({ queryKey: ['ai', 'report-card'], queryFn: () => call(api.GET('/api/ai/report-card')) })
   const { run, pending } = useSubmitLock()
@@ -41,15 +43,15 @@ export default function ReportCard() {
     <>
       <PageHeader
         eyebrow="AI"
-        title="Report card"
-        description="The model answers questions about the mill's current numbers. An answer passes when it contains the figure the mill's own calculations give."
+        title={t('rc.title')}
+        description={t('rc.description')}
         actions={
           <>
             <Link to="/settings/ai">
-              <Button variant="secondary">AI settings</Button>
+              <Button variant="secondary">{t('nav.aiSettings')}</Button>
             </Link>
             <SubmitButton pending={pending} onClick={() => void start()}>
-              <Play size={16} aria-hidden /> Run the report card
+              <Play size={16} aria-hidden /> {t('rc.run')}
             </SubmitButton>
           </>
         }
@@ -57,14 +59,14 @@ export default function ReportCard() {
       <div className="stack">
         {pending && (
           <Alert tone="info">
-            Asking the model each question. This can take a minute.
+            {t('rc.asking')}
           </Alert>
         )}
         {error && <Alert tone="error">{error}</Alert>}
         <QueryBoundary query={runs}>
           {(list) =>
             list.length === 0 ? (
-              <EmptyState title="No runs yet" description="Run the report card to see how the chosen model does on questions about your own data." />
+              <EmptyState title={t('rc.noRuns')} description={t('rc.noRunsHint')} />
             ) : (
               <Reveal>
                 <ul className="runs">
@@ -93,19 +95,20 @@ export default function ReportCard() {
 }
 
 function Details({ run }: { run: Run }) {
+  const { t } = useI18n()
   const failed = run.details.filter((d) => !d.passed).length
   return (
-    <section className="stack-sm" aria-label={`Answers from ${run.model}`}>
+    <section className="stack-sm" aria-label={t('rc.answersFrom', { model: run.model })}>
       <h2>
-        {run.model}: {run.score} of {run.total} right {failed === 0 ? <Badge tone="green">Full marks</Badge> : <Badge tone="amber">{failed} wrong</Badge>}
+        {t('rc.score', { model: run.model, score: run.score, total: run.total })} {failed === 0 ? <Badge tone="green">{t('rc.fullMarks')}</Badge> : <Badge tone="amber">{t('rc.nWrong', { n: failed })}</Badge>}
       </h2>
       <Table>
         <thead>
           <tr>
-            <th>Question</th>
-            <th>The right figure</th>
-            <th>The model said</th>
-            <th>Result</th>
+            <th>{t('rc.col.question')}</th>
+            <th>{t('rc.col.expected')}</th>
+            <th>{t('rc.col.said')}</th>
+            <th>{t('log.result')}</th>
           </tr>
         </thead>
         <tbody>
@@ -119,11 +122,11 @@ function Details({ run }: { run: Run }) {
               <td>
                 {d.passed ? (
                   <Badge tone="green">
-                    <Check size={12} aria-hidden /> Right
+                    <Check size={12} aria-hidden /> {t('rc.right')}
                   </Badge>
                 ) : (
                   <Badge tone="red">
-                    <X size={12} aria-hidden /> Wrong
+                    <X size={12} aria-hidden /> {t('rc.wrong')}
                   </Badge>
                 )}
               </td>

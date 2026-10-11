@@ -306,4 +306,16 @@ export const ai = {
     en: 'Model found {found} ({types}) and suggests {verdict}.', hi: 'मॉडल ने {found} पाए ({types}) और {verdict} सुझाया।', kn: 'ಮಾದರಿ {found} ಕಂಡುಹಿಡಿದಿದೆ ({types}) ಮತ್ತು {verdict} ಸೂಚಿಸಿದೆ.', ta: 'மாடல் {found} கண்டறிந்தது ({types}) மற்றும் {verdict} எனப் பரிந்துரைத்தது.', te: 'మోడల్ {found} కనుగొంది ({types}) మరియు {verdict} అని సూచించింది.',
     mr: 'मॉडेलला {found} आढळले ({types}) आणि {verdict} सुचवले.', bn: 'মডেল {found} পেয়েছে ({types}) এবং {verdict} প্রস্তাব করেছে।', gu: 'મૉડેલને {found} મળ્યા ({types}) અને {verdict} સૂચવ્યું.', ml: 'മോഡൽ {found} കണ്ടെത്തി ({types}), {verdict} നിർദേശിച്ചു.', pa: 'ਮਾਡਲ ਨੂੰ {found} ਮਿਲੇ ({types}) ਅਤੇ {verdict} ਸੁਝਾਇਆ।',
   },
+  'qc.inspect.aiVerdictTitle': {
+    en: '2. AI verdict', hi: '2. एआई का फ़ैसला', kn: '2. ಎಐ ತೀರ್ಪು', ta: '2. ஏஐ முடிவு', te: '2. ఏఐ నిర్ణయం',
+    mr: '2. एआयचा निर्णय', bn: '2. এআইয়ের সিদ্ধান্ত', gu: '2. એઆઈનો નિર્ણય', ml: '2. എഐ തീരുമാനം', pa: '2. ਏਆਈ ਦਾ ਫ਼ੈਸਲਾ',
+  },
+  'qc.inspect.aiVerdict': {
+    en: 'AI verdict: {verdict}', hi: 'एआई का फ़ैसला: {verdict}', kn: 'ಎಐ ತೀರ್ಪು: {verdict}', ta: 'ஏஐ முடிவு: {verdict}', te: 'ఏఐ నిర్ణయం: {verdict}',
+    mr: 'एआयचा निर्णय: {verdict}', bn: 'এআইয়ের সিদ্ধান্ত: {verdict}', gu: 'એઆઈનો નિર્ણય: {verdict}', ml: 'എഐ തീരുമാനം: {verdict}', pa: 'ਏਆਈ ਦਾ ਫ਼ੈਸਲਾ: {verdict}',
+  },
+  'qc.inspect.changeVerdict': {
+    en: 'Disagree? Change the verdict', hi: 'असहमत? फ़ैसला बदलें', kn: 'ಒಪ್ಪುವುದಿಲ್ಲವೇ? ತೀರ್ಪು ಬದಲಿಸಿ', ta: 'உடன்படவில்லையா? முடிவை மாற்று', te: 'ఒప్పుకోలేదా? నిర్ణయం మార్చండి',
+    mr: 'असहमत? निर्णय बदला', bn: 'একমত নন? সিদ্ধান্ত বদলান', gu: 'અસહમત? નિર્ણય બદલો', ml: 'യോജിക്കുന്നില്ലേ? തീരുമാനം മാറ്റുക', pa: 'ਅਸਹਿਮਤ? ਫ਼ੈਸਲਾ ਬਦਲੋ',
+  },
 } satisfies Area

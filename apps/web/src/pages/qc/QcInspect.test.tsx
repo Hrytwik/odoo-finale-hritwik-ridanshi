@@ -157,7 +157,8 @@ describe('QcInspect: with the photo and the AI suggestion', () => {
     setup()
     await analyse()
     await screen.findByTestId('box-0')
-    expect(screen.getByRole('radio', { name: /rework/i })).toBeChecked()
+    expect(screen.getByText(/ai verdict: rework/i)).toBeInTheDocument()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
     const types = screen.getAllByLabelText(/defect type/i).map((s) => (s as HTMLSelectElement).value)
     expect(types.sort()).toEqual(['hole', 'stain'])
     const holeRow = screen.getAllByLabelText(/defect type/i).find((s) => (s as HTMLSelectElement).value === 'hole')!.closest('.defect-row')!
@@ -190,6 +191,7 @@ describe('QcInspect: with the photo and the AI suggestion', () => {
     setup()
     await analyse()
     await screen.findByTestId('box-0')
+    await userEvent.click(screen.getByRole('button', { name: /change the verdict/i }))
     await userEvent.click(screen.getByRole('radio', { name: /pass/i }))
     const notice = await screen.findByText(/you are overriding the ai/i)
     expect(notice).toHaveTextContent(/override is recorded/i)
