@@ -64,8 +64,9 @@ describe('buyer invites (owner)', () => {
     })
     renderPage(<BuyerInvites />)
     expect(await screen.findByText('ABCD-2FGH')).toBeInTheDocument()
-    expect(screen.getByText('Has a login')).toBeInTheDocument()
-    expect(screen.getByText('Not signed up')).toBeInTheDocument()
+    // the filter also offers an option with this label, so look for the badge on the row itself
+    expect(screen.getAllByText('Has a login').some((el) => el.tagName !== 'OPTION')).toBe(true)
+    expect(screen.getAllByText('Not signed up').some((el) => el.tagName !== 'OPTION')).toBe(true)
     expect(screen.getByRole('link', { name: 'Buyers' })).toHaveAttribute('href', '/admin/buyers')
     expect(screen.getByRole('button', { name: 'Copy the invite code for Sharma Fabrics' })).toBeInTheDocument()
   })
