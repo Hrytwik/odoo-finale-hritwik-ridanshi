@@ -1,7 +1,7 @@
 # Everest Textile Mills — System Design
 
 > **Summary:** Full design for the textile mill platform: architecture (React + Vite + FastAPI + Postgres), 29-table data model, business rules, per-roll costing, delay/shortage/root-cause engines, vision QC, provider-agnostic LLM layer, screens, API surface, two-track split, testing and demo.
-> **Last updated:** 2026-10-11 02:24 IST (§9 vision QC built and live-checked as B8; earlier: §7 costing and §8 intelligence built and live-checked)
+> **Last updated:** 2026-10-11 07:15 IST (stage "Closed short" and the temporary-password flag added; earlier: §9 vision QC built and live-checked as B8; earlier: §7 costing and §8 intelligence built and live-checked)
 > **Status:** Draft for team review
 
 ---
@@ -146,7 +146,7 @@ Total: 29 tables.
 4. Latest inspection verdict = rework → look at the **latest** rework run linked after that inspection: if it has ended → **awaiting_qc**; if it is open → **in_rework**; if there is none → **awaiting_rework**.
 5. No inspection yet → look at the roll's **latest** dye run: if it has ended → **awaiting_qc**; if it is open → **dyeing**; if there is none → **woven**. (A hand-over of a dyeing run, or of a rework run on a machine, copies the loaded rolls to the new run, so a roll is not finished until its latest run is.)
 
-**Order buyer-facing stage** (furthest reached): cancelled → draft → *Waiting to start* (confirmed, no runs) → *Spinning* → *Weaving* → *Dyeing* → *Quality check* (any roll awaiting_qc / in rework) → *Ready to ship* (passed metres ≥ ordered) → *Partly dispatched* → *Dispatched* (dispatched metres ≥ ordered).
+**Order buyer-facing stage** (furthest reached): cancelled → draft → *Closed short* (the owner ended the order with `closed_short_at` set; only possible once something was dispatched, nothing is in progress and the order is not fully dispatched; it leaves the schedule and the yarn reservation and its invoices stand) → *Waiting to start* (confirmed, no runs) → *Spinning* → *Weaving* → *Dyeing* → *Quality check* (any roll awaiting_qc / in rework) → *Ready to ship* (passed metres ≥ ordered) → *Partly dispatched* → *Dispatched* (dispatched metres ≥ ordered).
 
 **Machine "output today"**: spinning = sum of `output_kg` of runs ended today; weaving = metres of rolls produced today; dyeing = metres of rolls whose latest dye run ended today.
 

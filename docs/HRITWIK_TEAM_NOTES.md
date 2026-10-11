@@ -1,9 +1,35 @@
 # Team Notes
 
 > **Summary:** Running notes between Track A (Ridanshi) and Track B (Hritwik): current status, the next task for each track, and open questions. Newest entry at the top.
-> **Last updated:** 2026-10-11 06:28 IST
+> **Last updated:** 2026-10-11 07:16 IST
 
 **Format:** every entry heading is `## YYYY-MM-DD HH:MM IST — title`, newest at the top, with `From: X → Y`. Entries before 2026-10-10 12:07 have a date only.
+
+---
+
+## 2026-10-11 07:16 IST — Your branch is merged; close-short and the forced password change are on `main`
+
+**From:** Hritwik → Ridanshi
+
+**Merged.** `a/web-textile` is merged into local `main` (merge commit `1ae5f23`), after `origin/main` (your notes) was merged first. The two sides touched only `package.json` in common, and it merged without a conflict. Your four migrations sit straight on top of my last one and the chain has one head. After my two changes below the checks are: backend 1,712 passed (4 skipped), web 605 passed, `tsc -b` clean, contracts regenerated and committed. I will push as soon as the pre-jury steps allow; pull `main` after that and merge it into your branch before you build on it.
+
+**1. Close an order short: backend done.** Everything in your 04:02 list, except the buyer notice, which is a one-line TODO in `orders/router.py` for you to call (`notify_closed_short`).
+- `POST /api/orders/{order_code}/close-short`, owner only, body `{ "reason": "..." }` (trimmed, 3 to 200 characters). It answers with the normal `OrderOut`. Migration `e1a7b3c5d648` adds `closed_short_at`, `closed_short_by`, `closed_short_reason` (the database refuses a half-filled set).
+- Refusals, each with its code (409): `ORDER_NOT_CONFIRMED`, `ORDER_ALREADY_CLOSED_SHORT`, `NOTHING_DISPATCHED` (cancel instead), `ORDER_FULLY_DISPATCHED`, `ORDER_STILL_IN_PROGRESS` (a run going, a roll awaiting QC or in rework, or a roll on a truck not yet confirmed). A rejected roll, or a passed roll left in store, does not block closing.
+- The new stage is `closed_short`. `OrderOut` and `PortalOrder` carry `closed_short_at` and `closed_short_reason`; the user who closed it is never sent to the buyer. **The reason is shown to the buyer as written**, so your dialog should say so next to the box. In the buyer portal the progress is the share of the ordered metres that was actually dispatched (400 of 1,000 m shows 40 %), and the timeline gets a line "Order closed short: the rest will not be made".
+- What "finished" means in the reads: it leaves the late-orders list and the delivery estimate (`/eta` answers `NOT_SCHEDULED`), its yarn is no longer reserved (the shortage forecast and the stock screen's "outstanding" ignore it, and other orders' yarn checks see the freed yarn), and no new run, yarn issue or truck loading is accepted for it (`ORDER_CLOSED_SHORT`). Invoices and costs are untouched.
+- **Your files I had to touch** (the new stage value broke `tsc -b`, and the language test needs every key in all nine languages): `statusMaps.ts`, `stageSteps.ts` (`closed_short` counts as all five steps done), `status.order.closed_short` in `en.ts`, and a short draft translation in each of the nine other language files. **Please check those nine wordings** (I wrote them; you know them better). I also raised the stage count in `StatusBadge.test.tsx` from 10 to 11.
+
+**2. Forced password change: backend done.** Migration `f2b8c4d6e759` adds `users.must_change_password`.
+- Set when the owner creates a login (`POST /api/users`) or resets **someone else's** password (`PATCH /api/users/{id}` with a password; the owner choosing their own is not flagged). Cleared by a successful `POST /api/auth/change-password` (a wrong current password or a weak or same password leaves it set).
+- `GET /api/auth/me`, the login answer and `GET /api/users` now carry `must_change_password`.
+- **Enforced on the server, not only on your screen.** While it is set, every guarded route answers **403 with code `PASSWORD_CHANGE_REQUIRED`**. Open to such a person: `/auth/me`, `/auth/change-password`, `/auth/logout`, login, sign-up, health, and the live event stream (which carries only event names and row numbers). A test walks every route in the API to prove it. So your screen is: after login or on any `PASSWORD_CHANGE_REQUIRED`, show the change-password form and nothing else; after success the same session carries on.
+- While your screen does not exist, a newly created login cannot use the app (every page shows the 403). The 7 existing logins are not flagged, so nothing changes for them. Please build the screen before the owner creates a demo login.
+- I also moved the photo download (`GET /api/uploads/{name}`) onto the full login check; it used to look only at the cookie. A deleted user or an old session can no longer fetch photos.
+
+**3. Still open from your list.** The clean-cloth photos for the model card (parked, R9), and waste and yield tracking (yours, read only).
+
+**4. Shared test I changed.** `test_contract_portal.py` lists exactly which fields a buyer may receive; I added the two closing fields on purpose. `test_auth_security.py` forbids the word "password" in any answer; it now allows only the flag's own name.
 
 ---
 

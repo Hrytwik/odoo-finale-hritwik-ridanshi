@@ -1,7 +1,7 @@
 # Implementation Plans
 
 > **Summary:** Ordered list of every implementation plan for both tracks, with status. Plans are written one at a time when a track reaches them; this index is the full backlog.
-> **Last updated:** 2026-10-11 06:28 IST (B9 done)
+> **Last updated:** 2026-10-11 07:15 IST (Ridanshi's branch merged; R11 close-short and R12 forced password change done)
 
 Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here (never delete rows) when its "Done when" list is met.
 
@@ -52,3 +52,5 @@ Order is by dependency, not by size. Build window ends 2026-10-11 10:00 IST.
 | R8 | **Pre-jury checklist**: `.env` with a random `JWT_SECRET` and `DEMO_DATA=true`; click through every screen as every role against the real backend (nobody has yet; her tests mock the API); Caddy HTTPS front for phones and QR camera (untested); a provider key or a local Ollama model and the "Wi-Fi off" step (unverified); README polish; both members have commits; final authorship scan | both | R1-R6 | not started |
 | R9 | Vision resume (parked): score the model on a clean image set | Hritwik | his decision | parked |
 | R10 | Hosted copy | both | everything else | optional, only if time |
+| R11 | **Close an order short** (Ridanshi's 04:02 request): `POST /api/orders/{code}/close-short` (owner only; reason 3 to 200 characters), `orders.closed_short_at/by/reason`, new stage `closed_short`, the yarn-need view reports such an order as `closed_short`, so the reservation, the shortage forecast and other orders' yarn check ignore it; it leaves the late list and the delivery estimate; no new run, yarn issue or truck loading; buyer portal shows it. Refusal codes: `ORDER_NOT_CONFIRMED`, `ORDER_ALREADY_CLOSED_SHORT`, `NOTHING_DISPATCHED`, `ORDER_FULLY_DISPATCHED`, `ORDER_STILL_IN_PROGRESS`, `ORDER_CLOSED_SHORT`. 40 tests in `test_close_short.py`. Her button and dialog are still to do; the buyer notice is a TODO in `orders/router.py` | Hritwik (backend), Ridanshi (button) | R1 | **backend done 2026-10-11 07:13 IST** |
+| R12 | **Forced password change** (Ridanshi's 03:55 request): `users.must_change_password`, set when the owner creates a login or resets someone else's password, cleared by `POST /api/auth/change-password`; while set every guarded route answers 403 `PASSWORD_CHANGE_REQUIRED` (only `/auth/me`, change-password, logout, login, sign-up, health and the event stream stay open); `/auth/me` and `/users` carry the flag. 13 tests in `test_must_change_password.py`, one of them a sweep of every route. Her screen is still to do | Hritwik (backend), Ridanshi (screen) | A10 | **backend done 2026-10-11 07:13 IST** |
