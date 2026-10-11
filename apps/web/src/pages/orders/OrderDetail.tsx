@@ -20,7 +20,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Table } from '@/components/ui/Table'
 import type { Key } from '@/i18n/en'
 import { useI18n } from '@/i18n/I18nContext'
-import { api, call, errorMessage, type components } from '@/lib/api'
+import { ApiError, api, call, errorMessage, type components } from '@/lib/api'
 import { useMe } from '@/lib/auth'
 import { todayIso } from '@/lib/dates'
 import { useSubmitLock } from '@/lib/forms'
@@ -117,6 +117,10 @@ function DeliveryCard({ query, deadline }: { query: ReturnType<typeof useQuery<c
   const lateText = (days: number) => (days <= 0 ? t('insight.onTime').toLowerCase() : t(days === 1 ? 'insight.dayLate' : 'insight.daysLate', { days }))
   return (
     <Card title={t('orders.delivery')}>
+      {query.error instanceof ApiError && query.error.code === 'NOT_SCHEDULED' ? (
+        // finished, shipped, closed or not confirmed yet: there is nothing to estimate, which is not a failure
+        <p className="muted">{t('orders.noEstimate')}</p>
+      ) : (
       <QueryBoundary query={query} rows={2}>
         {(eta) => (
           <div className="stack">
@@ -155,6 +159,7 @@ function DeliveryCard({ query, deadline }: { query: ReturnType<typeof useQuery<c
           </div>
         )}
       </QueryBoundary>
+      )}
     </Card>
   )
 }
