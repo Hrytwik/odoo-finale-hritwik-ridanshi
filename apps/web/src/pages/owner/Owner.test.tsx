@@ -199,15 +199,16 @@ describe('Insights', () => {
     expect(await screen.findByText(/no supplier set/i)).toBeInTheDocument()
   })
 
-  it('puts the flagged defect cause first and explains the rest could be chance', async () => {
+  it('puts the group least likely to be bad luck first, with no verdict column', async () => {
     insightsApi()
     renderPage(<Insights />)
     await screen.findByText('L-0017')
     const order = [...document.querySelectorAll('tbody .code-text')].map((e) => e.textContent).filter((t) => t === 'L-0017' || t === 'LOOM-05')
     expect(order).toEqual(['L-0017', 'LOOM-05'])
-    expect(screen.getByText('Likely cause')).toBeInTheDocument()
-    expect(screen.getByText('Could be chance')).toBeInTheDocument()
-    expect(screen.getByText('p < 0.001')).toBeInTheDocument()
+    expect(screen.queryByText('Likely cause')).not.toBeInTheDocument()
+    expect(screen.queryByText('Could be chance')).not.toBeInTheDocument()
+    expect(screen.queryByText('p < 0.001')).not.toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: /rest of the mill: defective-roll rate/i })).toBeInTheDocument()
   })
 
   it('shows the defect rate next to the rest of the mill', async () => {

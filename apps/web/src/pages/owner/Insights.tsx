@@ -156,8 +156,8 @@ function ShortageTable({ rows }: { rows: Shortage[] }) {
 
 function CauseTable({ rows }: { rows: Cause[] }) {
   const { t } = useI18n()
-  // flagged causes first, then the biggest gap to the rest of the mill
-  const sorted = [...rows].sort((a, b) => Number(b.flagged) - Number(a.flagged) || b.rate - b.rest_rate - (a.rate - a.rest_rate))
+  // the groups least likely to be bad luck first (the server's own test), then the biggest gap to the rest of the mill
+  const sorted = [...rows].sort((a, b) => a.p_value - b.p_value || b.rate - b.rest_rate - (a.rate - a.rest_rate))
   return (
     <Table>
       <thead>
@@ -167,7 +167,6 @@ function CauseTable({ rows }: { rows: Cause[] }) {
           <th className="num">{t('insight.col.defective')}</th>
           <th className="num">{t('insight.col.rate')}</th>
           <th className="num">{t('insight.col.restOfMill')}</th>
-          <th>{t('insight.col.verdict')}</th>
         </tr>
       </thead>
       <tbody>
@@ -184,10 +183,6 @@ function CauseTable({ rows }: { rows: Cause[] }) {
               <strong>{formatPercent(r.rate)}</strong>
             </td>
             <td className="num">{formatPercent(r.rest_rate)}</td>
-            <td>
-              {r.flagged ? <Badge tone="red">{t('insight.likelyCause')}</Badge> : <Badge tone="gray">{t('insight.couldBeChance')}</Badge>}
-              <div className="muted text-sm">{r.p_value < 0.001 ? 'p < 0.001' : `p = ${r.p_value.toFixed(2)}`}</div>
-            </td>
           </tr>
         ))}
       </tbody>
