@@ -1,7 +1,7 @@
 # Everest Textile Mills — System Design
 
 > **Summary:** Full design for the textile mill platform: architecture (React + Vite + FastAPI + Postgres), 29-table data model, business rules, per-roll costing, delay/shortage/root-cause engines, vision QC, provider-agnostic LLM layer, screens, API surface, two-track split, testing and demo.
-> **Last updated:** 2026-10-11 07:15 IST (stage "Closed short" and the temporary-password flag added; earlier: §9 vision QC built and live-checked as B8; earlier: §7 costing and §8 intelligence built and live-checked)
+> **Last updated:** 2026-10-11 07:13 IST (stage "Closed short" and the temporary-password flag added; earlier: §9 vision QC built and live-checked as B8; earlier: §7 costing and §8 intelligence built and live-checked)
 > **Status:** Draft for team review
 
 ---

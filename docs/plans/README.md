@@ -1,7 +1,7 @@
 # Implementation Plans
 
 > **Summary:** Ordered list of every implementation plan for both tracks, with status. Plans are written one at a time when a track reaches them; this index is the full backlog.
-> **Last updated:** 2026-10-11 07:15 IST (Ridanshi's branch merged; R11 close-short and R12 forced password change done)
+> **Last updated:** 2026-10-11 07:13 IST (Ridanshi's branch merged; R11 close-short and R12 forced password change done)
 
 Spec: `docs/specs/2026-10-10-textile-mill-design.md`. Mark a plan **done** here (never delete rows) when its "Done when" list is met.
 
