@@ -1,7 +1,7 @@
 # B9 — A Simulated Month Implementation Plan
 
 > **Summary:** Builds `scripts/month/` and `scripts/build_month.py`: a deterministic scheduler that turns a hand-picked set of orders into timed mill events for the 30 days ending an hour before the build, a simulated clock that moves every real-clock timestamp the services write to the simulated moment, a runner that plays the events through the real service functions, and an audit that proves seven stories show up through the real endpoints. The target is a separate database `everest_month`; `everest` is never touched.
-> **Last updated:** 2026-10-11 05:42 IST (Task 1 done)
+> **Last updated:** 2026-10-11 05:47 IST (Tasks 1-2 done)
 
 > **How this plan is executed:** inline, one task at a time (atomic-workflow): test first, the full suite twice at each boundary, the important behaviours mutation-checked. Steps use checkbox (`- [ ]`) syntax.
 
@@ -16,6 +16,8 @@
 ## Status
 
 Task 1 done and verified (2026-10-11 05:42 IST): `scripts/month/clock.py` (`SimClock`: the timestamp mover, the `today_ist` swap, the leak check) and 9 tests; passed first time. **Five of six planned mutations survived at first**, which showed the tests were weaker than the design: the older-value and window mutations needed a row with one old and one real column (the hand-over case) and the one-statement-per-table rule needed a throwaway table whose later column is declared first (a real `production_runs` row cannot show it because `started_at` precedes `ended_at`); both tests were added and every mutation now dies. Full backend suite 1,461 passed (1,452 before), twice. Nothing listening on :8000.
+
+Task 2 done and verified (2026-10-11 05:47 IST): `scripts/month/plan.py` and 21 tests (`test_month_plan.py`, no database). First run found: (1) a real bug, `ZeroDivisionError` in `Roster.operator`: the roster covered 36 days but a late order's pipeline is planned past the end and those dropped events still name an operator, so the roster now covers `days + 90`; (2) my own arithmetic: the twelve orders total **39,500 m** (not 40,000), about 61% of the dyers' capacity, and the plan makes **69 rolls** (not about 150), 66 inspections (73% passed first time), 10 trucks (one still loading at the end), 4 machines running and SPIN-02 down at the end; (3) the in-progress story: orders took 7 to 8 days each, so only O11 was open; fixed by moving O9 to day 22 and O10 to day 25 and adding `OrderSpec.hold` (hours a loaded truck waits for sign-out: O9 holds 20 h so its truck is still loading "now"); (4) only one buyer payment landed in the month because payments came 12 to 25 days after the truck; now 4 to 14 days, and the partial payment is the third payment that really happens. Mutations: nine of ten died at once; the survivor (spinning ignores the machine's free time) showed that the standard month never makes orders compete for the ring frames, so a stress test (three orders arriving together queue for two frames) was added and the mutant now dies. Full backend suite 1,482 passed (1,461 before), twice.
 
 ## Spec corrections found while planning
 
@@ -291,7 +293,7 @@ git commit -m "Add the simulated clock for building a month of mill history"
 
 The event vocabulary (what `Runner` handles, Task 3 and 4): `create_order`, `confirm_order`, `cancel_order`, `receive_lot`, `start_run`, `rework_start`, `issue_yarn`, `load_rolls`, `roll_off`, `handover`, `end_run`, `inspect`, `dispatch_create`, `dispatch_scan`, `dispatch_confirm`, `buyer_payment`, `supplier_payment`, `attendance`, `wage_period`, `breakdown`, `repair`.
 
-- [ ] **Step 1: Write the failing tests.** `services/api/tests/test_month_plan.py`:
+- [x] **Step 1: Write the failing tests.** `services/api/tests/test_month_plan.py`:
 
 ```python
 """B9 Task 2: the scheduler's own invariants, without a database."""
@@ -511,9 +513,9 @@ def test_the_bad_lot_reaches_both_buyers(plan):
     assert bad_rolls and {trucks[e.args["truck"]] for e in plan.events if e.action == "dispatch_scan" and e.args["roll"] in bad_rolls} == buyers
 ```
 
-- [ ] **Step 2: Run to verify it fails.** Expected: collection error, `scripts.month.plan` does not exist.
+- [x] **Step 2: Run to verify it fails.** Expected: collection error, `scripts.month.plan` does not exist.
 
-- [ ] **Step 3: Implement.** `services/api/scripts/month/plan.py`:
+- [x] **Step 3: Implement.** `services/api/scripts/month/plan.py`:
 
 ```python
 """The month as a list of timed events: pure Python, no database, deterministic for a seed.
@@ -882,11 +884,11 @@ def build_plan(end: dt.datetime, seed: int = 11, days: int = 30, orders: list[Or
     return Plan(events=events, end=end, day0=b.day0, roster=b.roster, notes={"trucks": state.get("trucks", [])})
 ```
 
-- [ ] **Step 4: Run it.** `uv run python -m pytest -p no:warnings -o addopts= tests/test_month_plan.py -q`. **Expect some failures on the first run: this code has never been run.** Fix by finding the real cause each time (systematic-debugging), never by weakening a test; record each real finding in the Status line. Likely first findings: the manual-rework `end_run` carries `run_key` while machine runs carry `machine`, which the first test's state machine must handle (`m` is None for a manual rework: skip it there); events at identical times needing the `seq` order; an order whose roll count makes `_split_rolls` return a tiny last roll.
-- [ ] **Step 5: Tune the numbers until every story test passes** (order sizes, deadlines, odds in `ODDS`), recording the final values in the Status line. The in-progress test, the bad-lot test and the late order are the ones most likely to need it.
-- [ ] **Step 6: Mutation checks:** let a machine start while another run is open (the double-booking test fails); give a handover the same operator (the operator-change test fails); schedule `dispatch_scan` for a rolled-over `rework` roll (the dispatch test fails); remove the roster's at-least-one-present rule (the roster test fails); let an event through after `end` (the time-order test fails).
-- [ ] **Step 7: Full suite twice;** both green.
-- [ ] **Step 8: Commit.**
+- [x] **Step 4: Run it.** `uv run python -m pytest -p no:warnings -o addopts= tests/test_month_plan.py -q`. **Expect some failures on the first run: this code has never been run.** Fix by finding the real cause each time (systematic-debugging), never by weakening a test; record each real finding in the Status line. Likely first findings: the manual-rework `end_run` carries `run_key` while machine runs carry `machine`, which the first test's state machine must handle (`m` is None for a manual rework: skip it there); events at identical times needing the `seq` order; an order whose roll count makes `_split_rolls` return a tiny last roll.
+- [x] **Step 5: Tune the numbers until every story test passes** (order sizes, deadlines, odds in `ODDS`), recording the final values in the Status line. The in-progress test, the bad-lot test and the late order are the ones most likely to need it.
+- [x] **Step 6: Mutation checks:** let a machine start while another run is open (the double-booking test fails); give a handover the same operator (the operator-change test fails); schedule `dispatch_scan` for a rolled-over `rework` roll (the dispatch test fails); remove the roster's at-least-one-present rule (the roster test fails); let an event through after `end` (the time-order test fails).
+- [x] **Step 7: Full suite twice;** both green.
+- [x] **Step 8: Commit.**
 
 ```bash
 git add services/api/scripts/month/plan.py services/api/tests/test_month_plan.py
