@@ -80,6 +80,8 @@ def scan_roll(db: Session, code: str, body: s.ScanIn) -> Dispatch:
     roll = get_roll_or_404(db, body.roll_code, for_update=True)
     if roll.order.buyer_id != dispatch.buyer_id:
         raise AppError("WRONG_BUYER", f"Roll {roll.code} belongs to another buyer's order", field="roll_code")
+    if roll.order.closed_short_at is not None:
+        raise AppError("ORDER_CLOSED_SHORT", f"Order {roll.order.code} was closed short: its rolls are not sent", field="roll_code")
     on = db.scalar(select(DispatchItem.dispatch_id).where(DispatchItem.roll_id == roll.id))
     if on is not None:
         where = "this dispatch" if on == dispatch.id else "another dispatch"

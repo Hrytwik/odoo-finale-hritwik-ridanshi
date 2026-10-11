@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
+from app.db.models import User
 from app.db.session import get_db
 from app.modules.insights import service as insights
 from app.modules.orders import schemas as s
@@ -10,6 +11,7 @@ from app.modules.orders import service
 router = APIRouter(prefix="/orders", tags=["orders"])
 readers = require_roles("owner", "accountant", "supervisor", "store")
 writers = require_roles("owner", "accountant")
+owner_only = require_roles("owner")
 
 
 def _dated(db: Session, *orders: s.OrderOut) -> list[s.OrderOut]:
@@ -44,6 +46,14 @@ def confirm_order(order_code: str, db: Session = Depends(get_db)) -> s.OrderOut:
 @router.post("/{order_code}/cancel", response_model=s.OrderOut, dependencies=[Depends(writers)])
 def cancel_order(order_code: str, db: Session = Depends(get_db)) -> s.OrderOut:
     return _dated(db, service.order_out(db, service.cancel_order(db, order_code)))[0]
+
+
+@router.post("/{order_code}/close-short", response_model=s.OrderOut)
+def close_short(order_code: str, body: s.CloseShortIn, user: User = Depends(owner_only),
+                db: Session = Depends(get_db)) -> s.OrderOut:
+    order = service.close_short(db, user, order_code, body)
+    # TODO(Ridanshi): call notices.hooks.after_order_closed_short(db, order.code) here once notify_closed_short exists
+    return _dated(db, service.order_out(db, order))[0]
 
 
 @router.patch("/{order_code}", response_model=s.OrderOut, dependencies=[Depends(writers)])

@@ -81,6 +81,7 @@ export const ml: Partial<Record<Key, string>> = {
   'status.order.ready_to_ship': 'അയയ്ക്കാൻ തയ്യാർ',
   'status.order.partly_dispatched': 'ഭാഗികമായി അയച്ചു',
   'status.order.dispatched': 'അയച്ചു',
+  'status.order.closed_short': 'കുറവോടെ അവസാനിപ്പിച്ചു',
 
   'floor.eyebrow': 'ഉത്പാദനം',
   'floor.title': 'ഫ്ലോർ ബോർഡ്',

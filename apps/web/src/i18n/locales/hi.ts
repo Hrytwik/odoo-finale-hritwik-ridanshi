@@ -81,6 +81,7 @@ export const hi: Partial<Record<Key, string>> = {
   'status.order.ready_to_ship': 'भेजने को तैयार',
   'status.order.partly_dispatched': 'आंशिक रूप से भेजा गया',
   'status.order.dispatched': 'भेजा गया',
+  'status.order.closed_short': 'कम मात्रा पर बंद',
 
   'floor.eyebrow': 'उत्पादन',
   'floor.title': 'फ़्लोर बोर्ड',

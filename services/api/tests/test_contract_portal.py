@@ -49,7 +49,8 @@ def test_nothing_about_money_or_machines_is_sent(client, db):
     order = make_order(db, buyer=buyer)
     buyer_login(client, db, buyer)
     body = client.get(f"/api/portal/orders/{order.code}").json()
-    assert set(body) == {"code", "fabric", "colour", "qty_metres", "stage", "progress_pct", "deadline", "delivery_date", "timeline", "dispatches"}
+    assert set(body) == {"code", "fabric", "colour", "qty_metres", "stage", "progress_pct", "deadline", "delivery_date", "closed_short_at",
+                       "closed_short_reason", "timeline", "dispatches"}
     assert "price" not in str(body).lower() and "machine" not in str(body).lower()
 
 

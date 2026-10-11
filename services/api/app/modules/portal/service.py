@@ -43,13 +43,20 @@ def _share_done(order: Order, progress: orders.s.Progress) -> float:
     return round(100 * (0.5 * part(progress.woven_m) + 0.25 * part(progress.dyed_m) + 0.25 * part(ready)), 1)
 
 
+def _progress_pct(order: Order, out: orders.s.OrderOut) -> float:
+    if out.stage == "closed_short":      # nothing more will be made: how much of the order was actually sent
+        return round(100 * min(out.progress.dispatched_m, float(order.qty_metres)) / float(order.qty_metres), 1)
+    return 100.0 if out.stage == "dispatched" else _share_done(order, out.progress)
+
+
 def _summary(db: Session, order: Order, dates: dict[str, tuple[dt.date, int]]) -> s.PortalOrder:
     """`dates` is the whole mill's delivery schedule (insights); the order service alone cannot see it."""
     out = orders.order_out(db, order)
     return s.PortalOrder(
         code=order.code, fabric=out.fabric_type.name, colour=order.colour, qty_metres=out.qty_metres, stage=out.stage,
-        progress_pct=100.0 if out.stage == "dispatched" else _share_done(order, out.progress),
-        deadline=order.deadline, delivery_date=dates[order.code][0] if order.code in dates else None)
+        progress_pct=_progress_pct(order, out),
+        deadline=order.deadline, delivery_date=dates[order.code][0] if order.code in dates else None,
+        closed_short_at=order.closed_short_at, closed_short_reason=order.closed_short_reason)
 
 
 def my_orders(db: Session, user: User) -> list[s.PortalOrder]:
@@ -77,6 +84,8 @@ def my_order(db: Session, user: User, code: str) -> s.PortalOrderDetail:
                   for r in db.execute(_DISPATCHES, {"oid": order.id}).mappings()]
     for d in dispatches:
         events.append((d.dispatched_at, f"{d.metres:g} m dispatched ({d.code})"))
+    if order.closed_short_at:
+        events.append((order.closed_short_at, "Order closed short: the rest will not be made"))
     events.sort(key=lambda e: e[0])
     return s.PortalOrderDetail(**_summary(db, order, dates).model_dump(), timeline=[s.TimelineEvent(at=at, label=label) for at, label in events],
                                dispatches=dispatches)

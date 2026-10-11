@@ -951,6 +951,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{order_code}/close-short": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close Short */
+        post: operations["close_short_api_orders__order_code__close_short_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{order_code}/confirm": {
         parameters: {
             query?: never;
@@ -1933,6 +1950,11 @@ export interface components {
             /** Recall */
             recall: number | null;
         };
+        /** CloseShortIn */
+        CloseShortIn: {
+            /** Reason */
+            reason: string;
+        };
         /** CostParts */
         CostParts: {
             /** Labour */
@@ -2816,6 +2838,10 @@ export interface components {
         /** OrderOut */
         OrderOut: {
             buyer: components["schemas"]["Ref"];
+            /** Closed Short At */
+            closed_short_at: string | null;
+            /** Closed Short Reason */
+            closed_short_reason: string | null;
             /** Code */
             code: string;
             /** Colour */
@@ -2850,7 +2876,7 @@ export interface components {
              * Stage
              * @enum {string}
              */
-            stage: "draft" | "cancelled" | "waiting_to_start" | "spinning" | "weaving" | "dyeing" | "quality_check" | "ready_to_ship" | "partly_dispatched" | "dispatched";
+            stage: "draft" | "cancelled" | "waiting_to_start" | "spinning" | "weaving" | "dyeing" | "quality_check" | "ready_to_ship" | "partly_dispatched" | "dispatched" | "closed_short";
             /**
              * State
              * @enum {string}
@@ -2972,6 +2998,10 @@ export interface components {
         };
         /** PortalOrder */
         PortalOrder: {
+            /** Closed Short At */
+            closed_short_at: string | null;
+            /** Closed Short Reason */
+            closed_short_reason: string | null;
             /** Code */
             code: string;
             /** Colour */
@@ -2993,10 +3023,14 @@ export interface components {
              * Stage
              * @enum {string}
              */
-            stage: "draft" | "cancelled" | "waiting_to_start" | "spinning" | "weaving" | "dyeing" | "quality_check" | "ready_to_ship" | "partly_dispatched" | "dispatched";
+            stage: "draft" | "cancelled" | "waiting_to_start" | "spinning" | "weaving" | "dyeing" | "quality_check" | "ready_to_ship" | "partly_dispatched" | "dispatched" | "closed_short";
         };
         /** PortalOrderDetail */
         PortalOrderDetail: {
+            /** Closed Short At */
+            closed_short_at: string | null;
+            /** Closed Short Reason */
+            closed_short_reason: string | null;
             /** Code */
             code: string;
             /** Colour */
@@ -3020,7 +3054,7 @@ export interface components {
              * Stage
              * @enum {string}
              */
-            stage: "draft" | "cancelled" | "waiting_to_start" | "spinning" | "weaving" | "dyeing" | "quality_check" | "ready_to_ship" | "partly_dispatched" | "dispatched";
+            stage: "draft" | "cancelled" | "waiting_to_start" | "spinning" | "weaving" | "dyeing" | "quality_check" | "ready_to_ship" | "partly_dispatched" | "dispatched" | "closed_short";
             /** Timeline */
             timeline: components["schemas"]["TimelineEvent"][];
         };
@@ -5661,6 +5695,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_short_api_orders__order_code__close_short_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseShortIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

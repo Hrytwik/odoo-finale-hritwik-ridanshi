@@ -194,6 +194,8 @@ def issue_yarn(db: Session, user: User, body: s.IssueIn) -> YarnMovement:
         raise AppError("LOT_BLOCKED", "This lot is blocked and cannot be issued", field="lot_code")
     run = _run_or_404(db, body.run_id)
     order = db.get(Order, run.order_id)
+    if order.closed_short_at is not None:
+        raise AppError("ORDER_CLOSED_SHORT", "This order was closed short: no more yarn is issued for it", field="run_id")
     if run.stage != "spinning" or run.ended_at is not None or order.state != "confirmed":
         raise AppError("RUN_NOT_OPEN", "Yarn can only be issued to a running spinning job of a confirmed order",
                        field="run_id")

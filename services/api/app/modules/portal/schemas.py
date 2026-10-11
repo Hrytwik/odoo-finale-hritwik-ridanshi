@@ -13,6 +13,8 @@ class PortalOrder(Out):
     progress_pct: float
     deadline: dt.date
     delivery_date: dt.date | None
+    closed_short_at: dt.datetime | None
+    closed_short_reason: str | None
 
 
 class TimelineEvent(Out):

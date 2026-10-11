@@ -81,6 +81,7 @@ export const pa: Partial<Record<Key, string>> = {
   'status.order.ready_to_ship': 'ਭੇਜਣ ਲਈ ਤਿਆਰ',
   'status.order.partly_dispatched': 'ਅੰਸ਼ਕ ਤੌਰ ਤੇ ਭੇਜਿਆ',
   'status.order.dispatched': 'ਭੇਜਿਆ',
+  'status.order.closed_short': 'ਘੱਟ ਮਾਤਰਾ ਨਾਲ ਬੰਦ',
 
   'floor.eyebrow': 'ਉਤਪਾਦਨ',
   'floor.title': 'ਫਲੋਰ ਬੋਰਡ',

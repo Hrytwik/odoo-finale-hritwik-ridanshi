@@ -81,6 +81,7 @@ export const te: Partial<Record<Key, string>> = {
   'status.order.ready_to_ship': 'పంపడానికి సిద్ధం',
   'status.order.partly_dispatched': 'కొంత భాగం పంపబడింది',
   'status.order.dispatched': 'పంపబడింది',
+  'status.order.closed_short': 'తక్కువతో ముగించబడింది',
 
   'floor.eyebrow': 'ఉత్పత్తి',
   'floor.title': 'ఫ్లోర్ బోర్డ్',

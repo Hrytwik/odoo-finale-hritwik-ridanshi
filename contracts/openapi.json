@@ -857,6 +857,21 @@
         "title": "ClassResult",
         "type": "object"
       },
+      "CloseShortIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "CloseShortIn",
+        "type": "object"
+      },
       "CostParts": {
         "properties": {
           "labour": {
@@ -3491,6 +3506,29 @@
           "buyer": {
             "$ref": "#/components/schemas/Ref"
           },
+          "closed_short_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed Short At"
+          },
+          "closed_short_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed Short Reason"
+          },
           "code": {
             "title": "Code",
             "type": "string"
@@ -3577,7 +3615,8 @@
               "quality_check",
               "ready_to_ship",
               "partly_dispatched",
-              "dispatched"
+              "dispatched",
+              "closed_short"
             ],
             "title": "Stage",
             "type": "string"
@@ -3618,7 +3657,9 @@
           "yarn_status",
           "short_kg",
           "delivery_date",
-          "days_late"
+          "days_late",
+          "closed_short_at",
+          "closed_short_reason"
         ],
         "title": "OrderOut",
         "type": "object"
@@ -3937,6 +3978,29 @@
       },
       "PortalOrder": {
         "properties": {
+          "closed_short_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed Short At"
+          },
+          "closed_short_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed Short Reason"
+          },
           "code": {
             "title": "Code",
             "type": "string"
@@ -3985,7 +4049,8 @@
               "quality_check",
               "ready_to_ship",
               "partly_dispatched",
-              "dispatched"
+              "dispatched",
+              "closed_short"
             ],
             "title": "Stage",
             "type": "string"
@@ -3999,13 +4064,38 @@
           "stage",
           "progress_pct",
           "deadline",
-          "delivery_date"
+          "delivery_date",
+          "closed_short_at",
+          "closed_short_reason"
         ],
         "title": "PortalOrder",
         "type": "object"
       },
       "PortalOrderDetail": {
         "properties": {
+          "closed_short_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed Short At"
+          },
+          "closed_short_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed Short Reason"
+          },
           "code": {
             "title": "Code",
             "type": "string"
@@ -4061,7 +4151,8 @@
               "quality_check",
               "ready_to_ship",
               "partly_dispatched",
-              "dispatched"
+              "dispatched",
+              "closed_short"
             ],
             "title": "Stage",
             "type": "string"
@@ -4083,6 +4174,8 @@
           "progress_pct",
           "deadline",
           "delivery_date",
+          "closed_short_at",
+          "closed_short_reason",
           "timeline",
           "dispatches"
         ],
@@ -8860,6 +8953,58 @@
           }
         },
         "summary": "Cancel Order",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/orders/{order_code}/close-short": {
+      "post": {
+        "operationId": "close_short_api_orders__order_code__close_short_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_code",
+            "required": true,
+            "schema": {
+              "title": "Order Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseShortIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Close Short",
         "tags": [
           "orders"
         ]
