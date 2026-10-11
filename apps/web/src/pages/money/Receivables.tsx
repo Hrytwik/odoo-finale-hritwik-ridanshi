@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '@/components/common/EmptyState'
+import { Filtered } from '@/components/common/ListToolbar'
 import { KpiCard } from '@/components/common/KpiCard'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
@@ -39,6 +40,34 @@ export default function Receivables() {
                 <KpiCard label={t('money.toReceive')} value={sum(list, 'balance')} format={formatMoney} tone={sum(list, 'balance') > 0 ? 'danger' : undefined} />
               </AnimatedGroup>
               <Reveal>
+                <Filtered
+                  rows={list}
+                  options={{
+                    text: (r) => `${r.invoice_no} ${r.buyer.name}`,
+                    sorts: [
+                      { key: 'issued', label: t('money.col.issued'), value: (r) => r.issued_at },
+                      { key: 'invoice', label: t('money.col.invoice'), value: (r) => r.invoice_no },
+                      { key: 'buyer', label: t('qc.col.buyer'), value: (r) => r.buyer.name },
+                      { key: 'total', label: t('money.col.total'), value: (r) => r.total },
+                      { key: 'balance', label: t('money.col.balance'), value: (r) => r.balance },
+                    ],
+                    filters: [
+                      {
+                        key: 'status',
+                        label: t('qc.col.status'),
+                        options: [
+                          { value: 'unpaid', label: t('money.unpaid') },
+                          { value: 'part', label: t('money.partPaid') },
+                          { value: 'paid', label: t('money.paid') },
+                        ],
+                        test: (r, v) => (v === 'paid' ? r.balance <= 0 : v === 'part' ? r.paid > 0 && r.balance > 0 : r.paid <= 0 && r.balance > 0),
+                      },
+                    ],
+                    defaultSort: 'issued',
+                    defaultDescending: true,
+                  }}
+                >
+                  {(shown) => (
                 <Table>
                   <thead>
                     <tr>
@@ -55,7 +84,7 @@ export default function Receivables() {
                     </tr>
                   </thead>
                   <tbody>
-                    {list.map((r) => (
+                    {shown.map((r) => (
                       <tr key={r.invoice_no}>
                         <td>
                           <Link to={`/invoices/${r.invoice_no}`} className="code">
@@ -83,6 +112,8 @@ export default function Receivables() {
                     ))}
                   </tbody>
                 </Table>
+                  )}
+                </Filtered>
               </Reveal>
             </div>
           )

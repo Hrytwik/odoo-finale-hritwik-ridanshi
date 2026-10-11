@@ -134,8 +134,8 @@ describe('QcInspect: manual checking works without any AI', () => {
 
 describe('QcInspect: with the photo and the AI suggestion', () => {
   async function analyse() {
+    // choosing the photo sends it to the model straight away
     await userEvent.upload(await screen.findByLabelText(/photo/i), photo())
-    await userEvent.click(screen.getByRole('button', { name: /analy[sz]e photo/i }))
   }
 
   it('uploads the photo, asks the model, and draws its boxes over the photo', async () => {
@@ -157,11 +157,19 @@ describe('QcInspect: with the photo and the AI suggestion', () => {
     setup()
     await analyse()
     await screen.findByTestId('box-0')
-    expect(screen.getByRole('radio', { name: /rework/i })).toBeChecked()
+    expect(screen.getByText(/ai verdict: rework/i)).toBeInTheDocument()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
     const types = screen.getAllByLabelText(/defect type/i).map((s) => (s as HTMLSelectElement).value)
     expect(types.sort()).toEqual(['hole', 'stain'])
     const holeRow = screen.getAllByLabelText(/defect type/i).find((s) => (s as HTMLSelectElement).value === 'hole')!.closest('.defect-row')!
     expect(within(holeRow as HTMLElement).getByLabelText(/how many/i)).toHaveValue(2)
+  })
+
+  it('drafts the remark from what the model found, and keeps it editable', async () => {
+    setup()
+    await analyse()
+    await screen.findByTestId('box-0')
+    expect((screen.getByLabelText(/remark/i) as HTMLTextAreaElement).value).toMatch(/model found 3 defects.*suggests rework/i)
   })
 
   it('sends the photo, the model output and which defects the model found', async () => {
@@ -183,6 +191,7 @@ describe('QcInspect: with the photo and the AI suggestion', () => {
     setup()
     await analyse()
     await screen.findByTestId('box-0')
+    await userEvent.click(screen.getByRole('button', { name: /change the verdict/i }))
     await userEvent.click(screen.getByRole('radio', { name: /pass/i }))
     const notice = await screen.findByText(/you are overriding the ai/i)
     expect(notice).toHaveTextContent(/override is recorded/i)
@@ -199,7 +208,7 @@ describe('QcInspect: with the photo and the AI suggestion', () => {
     setup()
     await analyse()
     await screen.findByTestId('box-0')
-    await userEvent.click(screen.getByRole('button', { name: /analy[sz]e photo/i }))
+    await userEvent.click(screen.getByRole('button', { name: /analy[sz]e photo again/i }))
     await waitFor(() => expect(posted().filter((p) => p === '/api/qc/analyze')).toHaveLength(2))
     expect(posted().filter((p) => p === '/api/uploads')).toHaveLength(1)
   })

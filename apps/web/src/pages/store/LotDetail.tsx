@@ -20,6 +20,8 @@ import { Card } from '@/components/ui/Card'
 import { Dialog } from '@/components/ui/Dialog'
 import { Field, Textarea } from '@/components/ui/Field'
 import { Table } from '@/components/ui/Table'
+import type { Key } from '@/i18n/en'
+import { useI18n } from '@/i18n/I18nContext'
 import { api, call, errorMessage, type components } from '@/lib/api'
 import { useMe } from '@/lib/auth'
 import { useSubmitLock } from '@/lib/forms'
@@ -29,14 +31,15 @@ type Lot = components['schemas']['LotDetail']
 type Movement = components['schemas']['MovementOut']
 type Recall = components['schemas']['RecallOut']
 
-const KIND: Record<Movement['kind'], { label: string; tone: Tone }> = {
-  receipt: { label: 'Receipt', tone: 'green' },
-  issue: { label: 'Issued', tone: 'amber' },
-  return: { label: 'Returned', tone: 'blue' },
-  adjustment: { label: 'Adjustment', tone: 'violet' },
+const KIND: Record<Movement['kind'], { label: Key; tone: Tone }> = {
+  receipt: { label: 'lot.kind.receipt', tone: 'green' },
+  issue: { label: 'lot.kind.issue', tone: 'amber' },
+  return: { label: 'lot.kind.return', tone: 'blue' },
+  adjustment: { label: 'lot.kind.adjustment', tone: 'violet' },
 }
 
 export default function LotDetail() {
+  const { t } = useI18n()
   const { code = '' } = useParams()
   const me = useMe()
   const canBlock = me.data?.role === 'store' || me.data?.role === 'owner'
@@ -53,28 +56,28 @@ export default function LotDetail() {
         <>
           <PageHeader
             title={l.lot_code}
-            description={`${l.yarn_type.name} (${l.yarn_type.colour}) · ${l.supplier.name} · challan ${l.challan_no} · received ${formatDate(l.received_at)}`}
+            description={t('lot.subtitle', { yarn: l.yarn_type.name, colour: l.yarn_type.colour, supplier: l.supplier.name, challan: l.challan_no, date: formatDate(l.received_at) })}
             actions={
               <>
-                {l.is_blocked ? <Badge tone="red">Blocked</Badge> : <Badge tone="green">OK to use</Badge>}
+                {l.is_blocked ? <Badge tone="red">{t('lot.blocked')}</Badge> : <Badge tone="green">{t('lot.ok')}</Badge>}
                 {canBlock && !l.is_blocked && <BlockButton lot={l} />}
                 {!l.is_blocked && !preview && (
                   <Button variant="secondary" onClick={() => setPreview(true)}>
-                    <Radar size={16} aria-hidden /> See what this lot touched
+                    <Radar size={16} aria-hidden /> {t('lot.touched')}
                   </Button>
                 )}
               </>
             }
           />
           <div className="stack">
-            {l.is_blocked && <Alert tone="error">This lot is blocked: {l.blocked_reason}. It cannot be issued to any run.</Alert>}
+            {l.is_blocked && <Alert tone="error">{t('lot.blockedAlert', { reason: l.blocked_reason ?? '' })}</Alert>}
             <AnimatedGroup className="grid-cards">
-              <KpiCard label="Received" value={l.qty_received_kg} format={formatKg} />
-              <KpiCard label="On hand" value={l.on_hand_kg} format={formatKg} />
-              <KpiCard label="Value on hand" value={l.on_hand_kg * l.cost_per_kg} format={formatMoney} hint={`at ${formatMoney(l.cost_per_kg)} per kg`} />
+              <KpiCard label={t('money.received')} value={l.qty_received_kg} format={formatKg} />
+              <KpiCard label={t('store.stock.onHand')} value={l.on_hand_kg} format={formatKg} />
+              <KpiCard label={t('lot.valueOnHand')} value={l.on_hand_kg * l.cost_per_kg} format={formatMoney} hint={t('lot.atPrice', { price: formatMoney(l.cost_per_kg) })} />
             </AnimatedGroup>
             <Reveal>
-              <Disclosure title="Stock ledger" meta={`${l.movements.length} movements`} defaultOpen>
+              <Disclosure title={t('lot.ledger')} meta={t('lot.movements', { count: l.movements.length })} defaultOpen>
                 <Ledger movements={l.movements} />
               </Disclosure>
             </Reveal>
@@ -85,10 +88,10 @@ export default function LotDetail() {
             )}
             {l.is_blocked && canBlock && (
               <Reveal>
-                <section className="card" aria-label="Messages to buyers">
+                <section className="card" aria-label={t('lot.messagesAria')}>
                   <div className="card-body stack-sm">
-                    <h2 className="card-title">Tell the buyers</h2>
-                    <p className="muted text-sm">One message for each buyer who received rolls made from this lot.</p>
+                    <h2 className="card-title">{t('lot.tellBuyers')}</h2>
+                    <p className="muted text-sm">{t('lot.tellBuyersHint')}</p>
                     <RecallDrafts lotCode={l.lot_code} />
                   </div>
                 </section>
@@ -102,16 +105,17 @@ export default function LotDetail() {
 }
 
 function Ledger({ movements }: { movements: Movement[] }) {
-  if (movements.length === 0) return <EmptyState title="No movements yet" />
+  const { t } = useI18n()
+  if (movements.length === 0) return <EmptyState title={t('lot.noMovements')} />
   return (
     <Table>
       <thead>
         <tr>
-          <th>When</th>
-          <th>Kind</th>
-          <th className="num">Quantity</th>
-          <th>Where</th>
-          <th>By</th>
+          <th>{t('lot.col.when')}</th>
+          <th>{t('lot.col.kind')}</th>
+          <th className="num">{t('orders.col.quantity')}</th>
+          <th>{t('lot.col.where')}</th>
+          <th>{t('lot.col.by')}</th>
         </tr>
       </thead>
       <tbody>
@@ -119,7 +123,7 @@ function Ledger({ movements }: { movements: Movement[] }) {
           <tr key={m.id}>
             <td className="nowrap">{formatDateTime(m.at)}</td>
             <td>
-              <Badge tone={KIND[m.kind].tone}>{KIND[m.kind].label}</Badge>
+              <Badge tone={KIND[m.kind].tone}>{t(KIND[m.kind].label)}</Badge>
             </td>
             <td className="num">{formatKg(m.qty_kg)}</td>
             <td>
@@ -136,18 +140,19 @@ function Ledger({ movements }: { movements: Movement[] }) {
 /* ---------- recall ---------- */
 
 function Exposure({ recall }: { recall: Recall }) {
+  const { t } = useI18n()
   const groups: { title: string; rolls: Recall['on_floor'] }[] = [
-    { title: 'On the floor', rolls: recall.on_floor },
-    { title: 'In store', rolls: recall.in_store },
-    { title: 'Loading on a truck', rolls: recall.loading },
-    { title: 'Already dispatched', rolls: recall.dispatched },
+    { title: t('lot.group.floor'), rolls: recall.on_floor },
+    { title: t('lot.group.store'), rolls: recall.in_store },
+    { title: t('lot.group.loading'), rolls: recall.loading },
+    { title: t('lot.group.dispatched'), rolls: recall.dispatched },
   ]
   const total = groups.reduce((n, g) => n + g.rolls.length, 0)
   return (
     <div className="stack">
-      <Card title={`Recall exposure: ${total} ${total === 1 ? 'roll' : 'rolls'}`}>
+      <Card title={t('lot.exposure', { rolls: t(total === 1 ? 'dispatch.rolls.one' : 'dispatch.rolls.many', { count: total }) })}>
         {total === 0 ? (
-          <p className="muted">No roll was made from this lot yet.</p>
+          <p className="muted">{t('lot.noRolls')}</p>
         ) : (
           <div className="stack">
             {groups
@@ -160,12 +165,12 @@ function Exposure({ recall }: { recall: Recall }) {
                   <Table>
                     <thead>
                       <tr>
-                        <th>Roll</th>
-                        <th>Order</th>
-                        <th>Buyer</th>
-                        <th className="num">Metres</th>
-                        <th>Status</th>
-                        <th>Dispatch</th>
+                        <th>{t('qc.col.roll')}</th>
+                        <th>{t('qc.col.order')}</th>
+                        <th>{t('qc.col.buyer')}</th>
+                        <th className="num">{t('dispatch.col.metres')}</th>
+                        <th>{t('qc.col.status')}</th>
+                        <th>{t('lot.col.dispatch')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -191,14 +196,14 @@ function Exposure({ recall }: { recall: Recall }) {
         )}
       </Card>
       {recall.buyers.length > 0 && (
-        <Card title="Buyers to contact">
+        <Card title={t('lot.buyersToContact')}>
           <div className="stack">
             <Table>
               <thead>
                 <tr>
-                  <th>Buyer</th>
-                  <th>Rolls from this lot</th>
-                  <th>Dispatches</th>
+                  <th>{t('qc.col.buyer')}</th>
+                  <th>{t('lot.col.rollsFromLot')}</th>
+                  <th>{t('lot.col.dispatches')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -206,14 +211,14 @@ function Exposure({ recall }: { recall: Recall }) {
                   <tr key={b.buyer_id}>
                     <td>{b.buyer_name}</td>
                     <td>
-                      {b.dispatched_roll_count} of {b.roll_count} already dispatched
+                      {t('lot.alreadySent', { sent: b.dispatched_roll_count, total: b.roll_count })}
                     </td>
-                    <td>{b.dispatch_codes.length ? b.dispatch_codes.join(', ') : <span className="muted">none yet</span>}</td>
+                    <td>{b.dispatch_codes.length ? b.dispatch_codes.join(', ') : <span className="muted">{t('lot.noneYet')}</span>}</td>
                   </tr>
                 ))}
               </tbody>
             </Table>
-            <p className="muted text-sm">A drafted message for each buyer appears here once the AI assistant is set up.</p>
+            <p className="muted text-sm">{t('lot.draftNote')}</p>
           </div>
         </Card>
       )}
@@ -224,6 +229,7 @@ function Exposure({ recall }: { recall: Recall }) {
 /* ---------- block lot ---------- */
 
 function BlockButton({ lot }: { lot: Lot }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -240,12 +246,12 @@ function BlockButton({ lot }: { lot: Lot }) {
   const submit = () =>
     run(async () => {
       const text = reason.trim()
-      if (!text) return setFieldError('Say why the lot is being blocked')
+      if (!text) return setFieldError(t('lot.reasonEnter'))
       setFieldError(undefined)
       setError(null)
       try {
         await call(api.POST('/api/lots/{lot_code}/block', { params: { path: { lot_code: lot.lot_code } }, body: { reason: text } }))
-        toast.success(`${lot.lot_code} blocked`)
+        toast.success(t('lot.blockedToast', { code: lot.lot_code }))
         void queryClient.invalidateQueries({ queryKey: ['lots'] })
         void queryClient.invalidateQueries({ queryKey: ['stock'] })
         close()
@@ -257,23 +263,23 @@ function BlockButton({ lot }: { lot: Lot }) {
   return (
     <>
       <Button variant="danger" onClick={() => setOpen(true)}>
-        <Ban size={16} aria-hidden /> Block this lot
+        <Ban size={16} aria-hidden /> {t('lot.blockButton')}
       </Button>
-      <Dialog open={open} onClose={close} title={`Block ${lot.lot_code}?`}>
+      <Dialog open={open} onClose={close} title={t('lot.blockTitle', { code: lot.lot_code })}>
         <div className="stack">
           <p>
-            No more yarn can be issued from this lot. The roll history shows every roll made from it, so you can recall them. This is meant for a quality problem with the yarn.
+            {t('lot.blockBody')}
           </p>
-          <Field label="Reason" error={fieldError}>
+          <Field label={t('lot.reason')} error={fieldError}>
             {(c) => <Textarea {...c} value={reason} onChange={(e) => setReason(e.target.value)} />}
           </Field>
           {error && <Alert tone="error">{error}</Alert>}
           <div className="row">
             <SubmitButton variant="danger" pending={pending} onClick={submit}>
-              Block lot
+              {t('lot.blockConfirm')}
             </SubmitButton>
             <Button variant="secondary" onClick={close}>
-              Keep using it
+              {t('lot.keepUsing')}
             </Button>
           </div>
         </div>

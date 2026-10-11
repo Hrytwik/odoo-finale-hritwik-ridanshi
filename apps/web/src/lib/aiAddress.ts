@@ -1,16 +1,18 @@
-/** Why an address cannot work, or null. Catches the usual slip: pasting the provider's website instead of its API address. */
-export function addressProblem(address: string): string | null {
+import type { Key } from '@/i18n/en'
+
+/** Why an address cannot work (a translation key), or null. Catches the usual slip: pasting the provider's website instead of its API address. */
+export function addressProblem(address: string): Key | null {
   const text = address.trim()
-  if (!text) return 'Enter the address of the provider'
+  if (!text) return 'aiset.addr.enter'
   let url: URL
   try {
     url = new URL(text)
   } catch {
-    return 'This is not a web address. It should start with https://'
+    return 'aiset.addr.notWeb'
   }
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') return 'This is not a web address. It should start with https://'
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return 'aiset.addr.notWeb'
   if (/^(console|platform|www)\./.test(url.hostname) || /\/(keys|api-keys|settings)\/?$/.test(url.pathname)) {
-    return 'That is a website page, not the API address. Click the Groq or OpenAI button below to fill in the right one.'
+    return 'aiset.addr.page'
   }
   return null
 }

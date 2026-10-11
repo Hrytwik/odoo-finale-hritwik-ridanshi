@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button'
 import { Field, Input, Select } from '@/components/ui/Field'
 import { ApiError, api, call, errorMessage, type components } from '@/lib/api'
 import { addressProblem } from '@/lib/aiAddress'
+import { useI18n } from '@/i18n/I18nContext'
 import { useSubmitLock } from '@/lib/forms'
 
 type Settings = components['schemas']['SettingsOut']
@@ -20,23 +21,24 @@ type Settings = components['schemas']['SettingsOut']
 const PRESETS = [
   { label: 'Groq', url: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
   { label: 'OpenAI', url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
-  { label: 'Ollama on this computer', url: 'http://localhost:11434/v1', model: 'llama3.1' },
+  { label: 'ollama', url: 'http://localhost:11434/v1', model: 'llama3.1' },
 ]
 
 /** True while the model box still holds a name that belongs to a different provider than the chosen preset. */
 const isStarterModel = (model: string) => !model.trim() || model.startsWith('claude-') || PRESETS.some((p) => p.model === model)
 
 export default function AiSettings() {
+  const { t } = useI18n()
   const settings = useQuery({ queryKey: ['ai', 'settings'], queryFn: () => call(api.GET('/api/ai/settings')) })
   return (
     <>
       <PageHeader
         eyebrow="AI"
-        title="AI settings"
-        description="Choose which language model answers questions. The mill works the same without it: every number screen keeps working."
+        title={t('nav.aiSettings')}
+        description={t('aiset.description')}
         actions={
           <Link to="/settings/ai/report-card">
-            <Button variant="secondary">Report card</Button>
+            <Button variant="secondary">{t('aiset.reportCard')}</Button>
           </Link>
         }
       />
@@ -46,6 +48,7 @@ export default function AiSettings() {
 }
 
 function SettingsForm({ current }: { current: Settings }) {
+  const { t } = useI18n()
   const queryClient = useQueryClient()
   const { run, pending } = useSubmitLock()
   const [provider, setProvider] = useState<Settings['provider']>(current.provider)
@@ -61,10 +64,10 @@ function SettingsForm({ current }: { current: Settings }) {
   const save = () =>
     run(async () => {
       const found: Record<string, string> = {}
-      if (!model.trim()) found.model = 'Enter the model name'
+      if (!model.trim()) found.model = t('aiset.enterModel')
       if (provider === 'openai_compatible') {
         const problem = addressProblem(baseUrl)
-        if (problem) found.base_url = problem
+        if (problem) found.base_url = t(problem)
       }
       setErrors(found)
       setFormError(null)
@@ -83,7 +86,7 @@ function SettingsForm({ current }: { current: Settings }) {
             },
           }),
         )
-        toast.success('AI settings saved')
+        toast.success(t('aiset.savedToast'))
         setApiKey('')
         setRemoveKey(false)
         await queryClient.invalidateQueries({ queryKey: ['ai'] })
@@ -101,9 +104,9 @@ function SettingsForm({ current }: { current: Settings }) {
   return (
     <div className="stack">
       <p className="row">
-        {current.configured ? <Badge tone="green">Ready</Badge> : <Badge tone="amber">Not set up</Badge>}
+        {current.configured ? <Badge tone="green">{t('aiset.ready')}</Badge> : <Badge tone="amber">{t('aiset.notSetUp')}</Badge>}
         <span className="muted text-sm">
-          {current.configured ? `Using ${current.model}` : 'Enter a key, or the address of a local model, then save.'}
+          {current.configured ? t('aiset.using', { model: current.model }) : t('aiset.enterKey')}
         </span>
       </p>
       <form
@@ -115,7 +118,7 @@ function SettingsForm({ current }: { current: Settings }) {
         }}
       >
         <div className="card-body stack">
-          <Field label="Provider" error={errors.provider}>
+          <Field label={t('aiset.provider')} error={errors.provider}>
             {(c) => (
               <Select {...c} value={provider} onChange={(e) => setProvider(e.target.value as Settings['provider'])}>
                 <option value="anthropic">Anthropic (Claude)</option>
@@ -123,7 +126,7 @@ function SettingsForm({ current }: { current: Settings }) {
               </Select>
             )}
           </Field>
-          <Field label="Model" error={errors.model} hint={provider === 'anthropic' ? 'For example claude-opus-5-5' : 'The exact name the provider uses, for example llama-3.3-70b-versatile'}>
+          <Field label={t('aiset.model')} error={errors.model} hint={provider === 'anthropic' ? t('aiset.modelHintAnthropic') : t('aiset.modelHintOther')}>
             {(c) => (
               <>
                 <Input {...c} autoComplete="off" value={model} onChange={(e) => setModel(e.target.value)} />
@@ -132,7 +135,7 @@ function SettingsForm({ current }: { current: Settings }) {
             )}
           </Field>
           {provider === 'openai_compatible' && (
-            <Field label="Address" error={errors.base_url} hint="The provider's base address, ending in /v1">
+            <Field label={t('aiset.address')} error={errors.base_url} hint={t('aiset.addressHint')}>
               {(c) => (
                 <>
                   <Input {...c} autoComplete="off" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
@@ -148,7 +151,7 @@ function SettingsForm({ current }: { current: Settings }) {
                           if (isStarterModel(model)) setModel(p.model)
                         }}
                       >
-                        {p.label}
+                        {p.label === 'ollama' ? t('aiset.presetOllama') : p.label}
                       </button>
                     ))}
                   </span>
@@ -157,29 +160,29 @@ function SettingsForm({ current }: { current: Settings }) {
             </Field>
           )}
           <Field
-            label="API key"
+            label={t('aiset.apiKey')}
             error={errors.api_key}
-            hint={current.api_key_set ? 'A key is saved. Leave this empty to keep it. It is stored encrypted and is never shown again.' : provider === 'openai_compatible' ? 'Leave empty for a local model.' : 'It is stored encrypted and is never shown again.'}
+            hint={current.api_key_set ? t('aiset.keyHintSaved') : provider === 'openai_compatible' ? t('aiset.keyHintLocal') : t('aiset.keyHintNew')}
           >
-            {(c) => <Input {...c} type="password" autoComplete="new-password" placeholder={current.api_key_set ? 'Saved' : ''} value={apiKey} disabled={removeKey} onChange={(e) => setApiKey(e.target.value)} />}
+            {(c) => <Input {...c} type="password" autoComplete="new-password" placeholder={current.api_key_set ? t('aiset.saved') : ''} value={apiKey} disabled={removeKey} onChange={(e) => setApiKey(e.target.value)} />}
           </Field>
           {current.api_key_set && (
             <label className="check-row">
-              <input type="checkbox" checked={removeKey} onChange={(e) => setRemoveKey(e.target.checked)} /> Remove the saved key
+              <input type="checkbox" checked={removeKey} onChange={(e) => setRemoveKey(e.target.checked)} /> {t('aiset.removeKey')}
             </label>
           )}
           <fieldset className="recipe">
-            <legend>What this model can do</legend>
+            <legend>{t('aiset.canDo')}</legend>
             <label className="check-row">
-              <input type="checkbox" checked={tools} onChange={(e) => setTools(e.target.checked)} /> It can call tools (needed for the copilot and the buyer assistant)
+              <input type="checkbox" checked={tools} onChange={(e) => setTools(e.target.checked)} /> {t('aiset.canTools')}
             </label>
             <label className="check-row">
-              <input type="checkbox" checked={vision} onChange={(e) => setVision(e.target.checked)} /> It can read images
+              <input type="checkbox" checked={vision} onChange={(e) => setVision(e.target.checked)} /> {t('aiset.canImages')}
             </label>
           </fieldset>
           {formError && <Alert tone="error">{formError}</Alert>}
           <div className="row">
-            <SubmitButton pending={pending}>Save settings</SubmitButton>
+            <SubmitButton pending={pending}>{t('aiset.save')}</SubmitButton>
           </div>
         </div>
       </form>
@@ -190,6 +193,7 @@ function SettingsForm({ current }: { current: Settings }) {
 
 /** Asks the saved provider which models the saved key may use, so the model name is one that exists. */
 function ModelPicker({ enabled, onPick }: { enabled: boolean; onPick: (model: string) => void }) {
+  const { t } = useI18n()
   const { run, pending } = useSubmitLock()
   const [models, setModels] = useState<string[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -207,14 +211,14 @@ function ModelPicker({ enabled, onPick }: { enabled: boolean; onPick: (model: st
     <div className="stack-sm">
       <span className="row">
         <Button variant="secondary" onClick={() => void load()} disabled={!enabled || pending}>
-          {pending ? <span className="spinner" aria-hidden /> : <ListChecks size={16} aria-hidden />} Show the models my key can use
+          {pending ? <span className="spinner" aria-hidden /> : <ListChecks size={16} aria-hidden />} {t('aiset.showModels')}
         </Button>
-        {!enabled && <span className="muted text-sm">Save a key first.</span>}
+        {!enabled && <span className="muted text-sm">{t('aiset.saveKeyFirst')}</span>}
       </span>
       {error && <Alert tone="error">{error}</Alert>}
-      {models && models.length === 0 && <p className="muted text-sm">The provider listed no models.</p>}
+      {models && models.length === 0 && <p className="muted text-sm">{t('aiset.noModels')}</p>}
       {models && models.length > 0 && (
-        <span className="row" role="group" aria-label="Models this key can use">
+        <span className="row" role="group" aria-label={t('aiset.modelsAria')}>
           {models.map((m) => (
             <button key={m} type="button" className="chat-chip" onClick={() => onPick(m)}>
               {m}
@@ -227,6 +231,7 @@ function ModelPicker({ enabled, onPick }: { enabled: boolean; onPick: (model: st
 }
 
 function TestConnection({ disabled }: { disabled: boolean }) {
+  const { t } = useI18n()
   const { run, pending } = useSubmitLock()
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
   const test = () =>
@@ -234,19 +239,19 @@ function TestConnection({ disabled }: { disabled: boolean }) {
       setResult(null)
       try {
         const r = await call(api.POST('/api/ai/copilot', { body: { question: 'Reply with the single word OK.', history: [], language: 'English' } }))
-        setResult({ ok: true, text: `${r.model} answered: ${r.answer}` })
+        setResult({ ok: true, text: t('aiset.answered', { model: r.model, answer: r.answer }) })
       } catch (err) {
         setResult({ ok: false, text: errorMessage(err) })
       }
     })
   return (
-    <section className="card" aria-label="Test the connection">
+    <section className="card" aria-label={t('aiset.test')}>
       <div className="card-body stack-sm">
-        <h2 className="card-title">Test the connection</h2>
-        <p className="muted text-sm">Sends one short question to the saved provider. Save your changes first.</p>
+        <h2 className="card-title">{t('aiset.test')}</h2>
+        <p className="muted text-sm">{t('aiset.testHint')}</p>
         <div className="row">
           <Button variant="secondary" onClick={() => void test()} disabled={disabled || pending}>
-            {pending ? <span className="spinner" aria-hidden /> : <PlugZap size={16} aria-hidden />} Send a test question
+            {pending ? <span className="spinner" aria-hidden /> : <PlugZap size={16} aria-hidden />} {t('aiset.sendTest')}
           </Button>
         </div>
         {result &&

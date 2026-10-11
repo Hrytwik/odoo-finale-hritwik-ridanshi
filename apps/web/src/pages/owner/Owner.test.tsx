@@ -75,8 +75,9 @@ describe('Owner dashboard', () => {
     const chart = await screen.findByRole('img', { name: /revenue and cost for 2 orders/i })
     expect(chart.querySelectorAll('.chart-bar.is-revenue')).toHaveLength(2)
     expect(chart.querySelectorAll('.chart-bar.is-cost')).toHaveLength(2)
-    expect(within(chart as unknown as HTMLElement).getByText('Loss ₹1 L')).toHaveClass('is-loss')
-    expect(within(chart as unknown as HTMLElement).getByText('Profit ₹1.2 L')).not.toHaveClass('is-loss')
+    // the word and the amount sit on two lines so neighbouring labels never run into each other
+    expect(chart.querySelector('.chart-profit.is-loss')).toHaveTextContent(/Loss\s*₹1 L/)
+    expect(chart.querySelector('.chart-profit:not(.is-loss)')).toHaveTextContent(/Profit\s*₹1\.2 L/)
   })
 
   it('gives the chart a table for screen readers', async () => {
@@ -164,7 +165,7 @@ describe('Insights', () => {
     renderPage(<Insights />)
     const card = (await screen.findByRole('link', { name: 'ORD-0012' })).closest('article')!
     expect(card).toHaveTextContent(/Add a third shift on weaving: ready .* on time/)
-    expect(card).toHaveTextContent(/front of every queue: ready .* 1 days late/)
+    expect(card).toHaveTextContent(/front of every queue: ready .* 1 day late/)
   })
 
   it('shows each stage finish date and marks the bottleneck', async () => {
@@ -198,15 +199,16 @@ describe('Insights', () => {
     expect(await screen.findByText(/no supplier set/i)).toBeInTheDocument()
   })
 
-  it('puts the flagged defect cause first and explains the rest could be chance', async () => {
+  it('puts the group least likely to be bad luck first, with no verdict column', async () => {
     insightsApi()
     renderPage(<Insights />)
     await screen.findByText('L-0017')
     const order = [...document.querySelectorAll('tbody .code-text')].map((e) => e.textContent).filter((t) => t === 'L-0017' || t === 'LOOM-05')
     expect(order).toEqual(['L-0017', 'LOOM-05'])
-    expect(screen.getByText('Likely cause')).toBeInTheDocument()
-    expect(screen.getByText('Could be chance')).toBeInTheDocument()
-    expect(screen.getByText('p < 0.001')).toBeInTheDocument()
+    expect(screen.queryByText('Likely cause')).not.toBeInTheDocument()
+    expect(screen.queryByText('Could be chance')).not.toBeInTheDocument()
+    expect(screen.queryByText('p < 0.001')).not.toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: /rest of the mill: defective-roll rate/i })).toBeInTheDocument()
   })
 
   it('shows the defect rate next to the rest of the mill', async () => {

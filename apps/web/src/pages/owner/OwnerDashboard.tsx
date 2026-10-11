@@ -72,7 +72,7 @@ function Report({ report: r, month }: { report: Report; month: string }) {
       <Reveal>
         <section className="card" aria-label={t('owner.revAria')}>
           <div className="card-header">
-            <h2 className="card-title">{t('owner.revTitle')}</h2>
+            <h2 className="card-title">{t('owner.revTitle')}<span className="muted text-sm"> · {monthName(month, formatLocale())}</span></h2>
           </div>
           <div className="card-body">
             {r.orders.length === 0 ? (
@@ -91,7 +91,7 @@ function Report({ report: r, month }: { report: Report; month: string }) {
         <Reveal>
           <section className="card" aria-label={t('owner.moneyWent')}>
             <div className="card-header">
-              <h2 className="card-title">{t('owner.moneyWent')}</h2>
+              <h2 className="card-title">{t('owner.moneyWent')}<span className="muted text-sm"> · {monthName(month, formatLocale())}</span></h2>
             </div>
             <dl className="card-body ledger">
               <Row label={t('owner.invoiced')} value={p.invoiced} />
@@ -106,7 +106,7 @@ function Report({ report: r, month }: { report: Report; month: string }) {
         <Reveal delay={0.05}>
           <section className="card" aria-label={t('owner.cash')}>
             <div className="card-header">
-              <h2 className="card-title">{t('owner.cash')}</h2>
+              <h2 className="card-title">{t('owner.cash')}<span className="muted text-sm"> · {monthName(month, formatLocale())}</span></h2>
             </div>
             <dl className="card-body ledger">
               <Row label={t('owner.received')} value={c.received_from_buyers} />
@@ -122,7 +122,7 @@ function Report({ report: r, month }: { report: Report; month: string }) {
 
       <Reveal>
         <section className="stack-sm" aria-label={t('passport.machines')}>
-          <h2>{t('passport.machines')}</h2>
+          <h2>{t('passport.machines')}<span className="muted text-sm"> · {monthName(month, formatLocale())}</span></h2>
           {r.machines.length === 0 ? (
             <EmptyState title={t('owner.noMachineHours')} />
           ) : (

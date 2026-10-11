@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Badge } from '@/components/ui/Badge'
+import type { Key } from '@/i18n/en'
+import { useI18n } from '@/i18n/I18nContext'
 import { api, call, type components } from '@/lib/api'
 import { useMe } from '@/lib/auth'
 import { formatKg, formatMoney } from '@/lib/format'
@@ -14,49 +16,51 @@ const opt = (v: string | undefined) => (v && v.trim() ? v.trim() : null)
 const dash = (v: string | null) => v ?? <span className="muted">-</span>
 const time = (t: string) => t.slice(0, 5)
 
-const STAGES = [
-  { value: 'spinning', label: 'Spinning' },
-  { value: 'weaving', label: 'Weaving' },
-  { value: 'dyeing', label: 'Dyeing' },
-]
-const WORKER_ROLES = [
-  { value: 'operator', label: 'Operator' },
-  { value: 'inspector', label: 'Inspector' },
-  { value: 'storekeeper', label: 'Storekeeper' },
-  { value: 'supervisor', label: 'Supervisor' },
-  { value: 'dispatch', label: 'Dispatch' },
-  { value: 'helper', label: 'Helper' },
-]
-const stageLabel = (s: string) => STAGES.find((x) => x.value === s)?.label ?? s
-const workerRoleLabel = (r: string) => WORKER_ROLES.find((x) => x.value === r)?.label ?? r
-const active = (a: boolean) => (a ? <Badge tone="green">Active</Badge> : <Badge tone="gray">Inactive</Badge>)
+const STAGE_VALUES = ['spinning', 'weaving', 'dyeing'] as const
+const WORKER_ROLE_VALUES = ['operator', 'inspector', 'storekeeper', 'supervisor', 'dispatch', 'helper'] as const
+
+/** The shared words, in the chosen language. */
+function useWords() {
+  const { t } = useI18n()
+  const stageOptions = STAGE_VALUES.map((value) => ({ value, label: t(`floor.stage.${value}` as Key) }))
+  const workerRoleOptions = WORKER_ROLE_VALUES.map((value) => ({ value, label: t(`worker.role.${value}` as Key) }))
+  return {
+    t,
+    stageOptions,
+    workerRoleOptions,
+    stageLabel: (s: string) => stageOptions.find((x) => x.value === s)?.label ?? s,
+    workerRoleLabel: (r: string) => workerRoleOptions.find((x) => x.value === r)?.label ?? r,
+    active: (a: boolean) => (a ? <Badge tone="green">{t('admin.active')}</Badge> : <Badge tone="gray">{t('admin.inactive')}</Badge>),
+  }
+}
 
 export function Suppliers() {
   type Row = Schemas['SupplierOut']
+  const { t } = useWords()
   return (
     <MasterScreen<Row>
-      eyebrow="Master data"
-      title="Suppliers"
-      description="Yarn suppliers and how many days they take to deliver."
-      singular="supplier"
+      eyebrow={t('nav.group.Master data')}
+      title={t('nav.suppliers')}
+      description={t('admin.supplier.description')}
+      singular={t('admin.supplier.noun')}
       queryKey={['master', 'suppliers']}
       load={() => call(api.GET('/api/suppliers'))}
       columns={[
-        { header: 'Name', cell: (r) => <strong>{r.name}</strong> },
-        { header: 'Phone', cell: (r) => dash(r.phone) },
-        { header: 'Lead time', cell: (r) => `${r.lead_time_days} days`, num: true },
+        { header: t('common.name'), cell: (r) => <strong>{r.name}</strong> },
+        { header: t('admin.col.phone'), cell: (r) => dash(r.phone) },
+        { header: t('admin.supplier.leadTime'), cell: (r) => t('admin.days', { n: r.lead_time_days }), num: true },
       ]}
       fields={[
-        { name: 'name', label: 'Name', required: true },
-        { name: 'phone', label: 'Phone', kind: 'tel' },
-        { name: 'lead_time_days', label: 'Lead time (days)', kind: 'number', required: true },
+        { name: 'name', label: t('common.name'), required: true },
+        { name: 'phone', label: t('admin.col.phone'), kind: 'tel' },
+        { name: 'lead_time_days', label: t('admin.supplier.leadTimeDays'), kind: 'number', required: true },
       ]}
       initial={(r) => ({ name: r?.name ?? '', phone: r?.phone ?? '', lead_time_days: String(r?.lead_time_days ?? 7) })}
       create={(v) => call(api.POST('/api/suppliers', { body: { name: v.name.trim(), phone: opt(v.phone), lead_time_days: num(v.lead_time_days) } }))}
       update={(r, v) =>
         call(api.PATCH('/api/suppliers/{item_id}', { params: { path: { item_id: r.id } }, body: { name: v.name.trim(), phone: opt(v.phone), lead_time_days: num(v.lead_time_days) } }))
       }
-      empty={{ title: 'No suppliers yet', description: 'Add the mills you buy yarn from.' }}
+      empty={{ title: t('admin.supplier.emptyTitle'), description: t('admin.supplier.emptyDescription') }}
       alsoInvalidate={[['stock']]}
     />
   )
@@ -64,62 +68,64 @@ export function Suppliers() {
 
 export function Buyers() {
   type Row = Schemas['BuyerOut']
+  const { t } = useWords()
   const body = (v: Values) => ({ name: v.name.trim(), contact_name: opt(v.contact_name), phone: opt(v.phone), email: opt(v.email) })
   return (
     <MasterScreen<Row>
-      eyebrow="Master data"
-      title="Buyers"
-      description="The companies you sell cloth to, and who to call there."
-      singular="buyer"
+      eyebrow={t('nav.group.Master data')}
+      title={t('nav.buyers')}
+      description={t('admin.buyer.description')}
+      singular={t('admin.buyer.noun')}
       queryKey={['master', 'buyers']}
       load={() => call(api.GET('/api/buyers'))}
       columns={[
-        { header: 'Name', cell: (r) => <strong>{r.name}</strong> },
-        { header: 'Contact', cell: (r) => dash(r.contact_name) },
-        { header: 'Phone', cell: (r) => dash(r.phone) },
-        { header: 'Email', cell: (r) => dash(r.email) },
+        { header: t('common.name'), cell: (r) => <strong>{r.name}</strong> },
+        { header: t('admin.buyer.contact'), cell: (r) => dash(r.contact_name) },
+        { header: t('admin.col.phone'), cell: (r) => dash(r.phone) },
+        { header: t('admin.col.email'), cell: (r) => dash(r.email) },
       ]}
       fields={[
-        { name: 'name', label: 'Name', required: true },
-        { name: 'contact_name', label: 'Contact person' },
-        { name: 'phone', label: 'Phone', kind: 'tel' },
-        { name: 'email', label: 'Email', kind: 'email' },
+        { name: 'name', label: t('common.name'), required: true },
+        { name: 'contact_name', label: t('admin.buyer.contactPerson') },
+        { name: 'phone', label: t('admin.col.phone'), kind: 'tel' },
+        { name: 'email', label: t('admin.col.email'), kind: 'email' },
       ]}
       initial={(r) => ({ name: r?.name ?? '', contact_name: r?.contact_name ?? '', phone: r?.phone ?? '', email: r?.email ?? '' })}
       create={(v) => call(api.POST('/api/buyers', { body: body(v) }))}
       update={(r, v) => call(api.PATCH('/api/buyers/{item_id}', { params: { path: { item_id: r.id } }, body: body(v) }))}
-      empty={{ title: 'No buyers yet', description: 'Add a buyer before creating an order for them.' }}
+      empty={{ title: t('admin.buyer.emptyTitle'), description: t('admin.buyer.emptyDescription') }}
     />
   )
 }
 
 export function YarnTypes() {
   type Row = Schemas['YarnTypeOut']
+  const { t } = useWords()
   const body = (v: Values) => ({ code: v.code.trim(), name: v.name.trim(), colour: v.colour.trim(), reorder_level_kg: num(v.reorder_level_kg || '0') })
   return (
     <MasterScreen<Row>
-      eyebrow="Master data"
-      title="Yarn types"
-      description="Each kind of yarn, and the stock level at which the system suggests reordering."
-      singular="yarn type"
+      eyebrow={t('nav.group.Master data')}
+      title={t('nav.yarnTypes')}
+      description={t('admin.yarn.description')}
+      singular={t('admin.yarn.noun')}
       queryKey={['master', 'yarn-types']}
       load={() => call(api.GET('/api/yarn-types'))}
       columns={[
-        { header: 'Code', cell: (r) => <span className="code-text">{r.code}</span> },
-        { header: 'Name', cell: (r) => r.name },
-        { header: 'Colour', cell: (r) => r.colour },
-        { header: 'Reorder at', cell: (r) => formatKg(r.reorder_level_kg), num: true },
+        { header: t('admin.col.code'), cell: (r) => <span className="code-text">{r.code}</span> },
+        { header: t('common.name'), cell: (r) => r.name },
+        { header: t('admin.col.colour'), cell: (r) => r.colour },
+        { header: t('admin.yarn.reorderAt'), cell: (r) => formatKg(r.reorder_level_kg), num: true },
       ]}
       fields={[
-        { name: 'code', label: 'Code', required: true },
-        { name: 'name', label: 'Name', required: true },
-        { name: 'colour', label: 'Colour', required: true },
-        { name: 'reorder_level_kg', label: 'Reorder level (kg)', kind: 'number', hint: 'Suggest a reorder when free stock falls below this' },
+        { name: 'code', label: t('admin.col.code'), required: true },
+        { name: 'name', label: t('common.name'), required: true },
+        { name: 'colour', label: t('admin.col.colour'), required: true },
+        { name: 'reorder_level_kg', label: t('admin.yarn.reorderLevel'), kind: 'number', hint: t('admin.yarn.reorderHint') },
       ]}
       initial={(r) => ({ code: r?.code ?? '', name: r?.name ?? '', colour: r?.colour ?? '', reorder_level_kg: String(r?.reorder_level_kg ?? 0) })}
       create={(v) => call(api.POST('/api/yarn-types', { body: body(v) }))}
       update={(r, v) => call(api.PATCH('/api/yarn-types/{item_id}', { params: { path: { item_id: r.id } }, body: body(v) }))}
-      empty={{ title: 'No yarn types yet', description: 'Add the yarns you spin and weave with.' }}
+      empty={{ title: t('admin.yarn.emptyTitle'), description: t('admin.yarn.emptyDescription') }}
       alsoInvalidate={[['stock'], ['master', 'fabric-types']]}
     />
   )
@@ -127,6 +133,7 @@ export function YarnTypes() {
 
 export function Machines() {
   type Row = Schemas['MachineOut']
+  const { t, stageOptions, stageLabel, active } = useWords()
   const common = (v: Values) => ({
     code: v.code.trim(),
     name: v.name.trim(),
@@ -136,27 +143,27 @@ export function Machines() {
   })
   return (
     <MasterScreen<Row>
-      eyebrow="Master data"
-      title="Machines"
-      description="Every spinning frame, loom and jigger, with its rated speed and what it costs to run."
-      singular="machine"
+      eyebrow={t('nav.group.Master data')}
+      title={t('nav.machines')}
+      description={t('admin.machine.description')}
+      singular={t('admin.machine.noun')}
       queryKey={['master', 'machines']}
       load={() => call(api.GET('/api/machines'))}
       columns={[
-        { header: 'Code', cell: (r) => <span className="code-text">{r.code}</span> },
-        { header: 'Name', cell: (r) => r.name },
-        { header: 'Stage', cell: (r) => stageLabel(r.stage) },
-        { header: 'Rated output', cell: (r) => `${r.rated_output_per_hour} / hour`, num: true },
-        { header: 'Running cost', cell: (r) => `${formatMoney(r.running_cost_per_hour)} / hour`, num: true },
-        { header: 'Status', cell: (r) => active(r.active) },
+        { header: t('admin.col.code'), cell: (r) => <span className="code-text">{r.code}</span> },
+        { header: t('common.name'), cell: (r) => r.name },
+        { header: t('common.stage'), cell: (r) => stageLabel(r.stage) },
+        { header: t('admin.machine.ratedOutput'), cell: (r) => t('admin.perHour', { n: r.rated_output_per_hour }), num: true },
+        { header: t('admin.machine.runningCost'), cell: (r) => t('admin.perHour', { n: formatMoney(r.running_cost_per_hour) }), num: true },
+        { header: t('qc.col.status'), cell: (r) => active(r.active) },
       ]}
       fields={[
-        { name: 'code', label: 'Code', required: true },
-        { name: 'name', label: 'Name', required: true },
-        { name: 'stage', label: 'Stage', kind: 'select', required: true, options: STAGES, only: 'create', hint: 'A machine keeps its stage for life' },
-        { name: 'rated_output_per_hour', label: 'Rated output per hour', kind: 'number', required: true, hint: 'kg for spinning, metres for weaving and dyeing' },
-        { name: 'running_cost_per_hour', label: 'Running cost per hour (₹)', kind: 'number' },
-        { name: 'active', label: 'In use', kind: 'checkbox' },
+        { name: 'code', label: t('admin.col.code'), required: true },
+        { name: 'name', label: t('common.name'), required: true },
+        { name: 'stage', label: t('common.stage'), kind: 'select', required: true, options: stageOptions, only: 'create', hint: t('admin.machine.stageHint') },
+        { name: 'rated_output_per_hour', label: t('admin.machine.ratedPerHour'), kind: 'number', required: true, hint: t('admin.machine.ratedHint') },
+        { name: 'running_cost_per_hour', label: t('admin.machine.costPerHour'), kind: 'number' },
+        { name: 'active', label: t('admin.machine.inUse'), kind: 'checkbox' },
       ]}
       initial={(r) => ({
         code: r?.code ?? '',
@@ -168,7 +175,7 @@ export function Machines() {
       })}
       create={(v) => call(api.POST('/api/machines', { body: { ...common(v), stage: v.stage as Row['stage'] } }))}
       update={(r, v) => call(api.PATCH('/api/machines/{item_id}', { params: { path: { item_id: r.id } }, body: common(v) }))}
-      empty={{ title: 'No machines yet', description: 'Add the machines on the floor.' }}
+      empty={{ title: t('admin.machine.emptyTitle'), description: t('admin.machine.emptyDescription') }}
       alsoInvalidate={[['floor']]}
     />
   )
@@ -176,28 +183,29 @@ export function Machines() {
 
 export function Shifts() {
   type Row = Schemas['ShiftOut']
+  const { t } = useWords()
   return (
     <MasterScreen<Row>
-      eyebrow="Master data"
-      title="Shifts"
-      description="The names and hours of your shifts. Wages and machine hours are split by shift."
-      singular="shift"
+      eyebrow={t('nav.group.Master data')}
+      title={t('nav.shifts')}
+      description={t('admin.shift.description')}
+      singular={t('admin.shift.noun')}
       queryKey={['master', 'shifts']}
       load={() => call(api.GET('/api/shifts'))}
       columns={[
-        { header: 'Shift', cell: (r) => <span className="code-text">{r.name}</span> },
-        { header: 'Starts', cell: (r) => time(r.start_time) },
-        { header: 'Ends', cell: (r) => time(r.end_time) },
+        { header: t('attendance.shift'), cell: (r) => <span className="code-text">{r.name}</span> },
+        { header: t('admin.shift.starts'), cell: (r) => time(r.start_time) },
+        { header: t('admin.shift.ends'), cell: (r) => time(r.end_time) },
       ]}
       fields={[
-        { name: 'name', label: 'Name', required: true, only: 'create', hint: 'Up to 10 characters, e.g. A or Night' },
-        { name: 'start_time', label: 'Starts at', kind: 'time', required: true },
-        { name: 'end_time', label: 'Ends at', kind: 'time', required: true },
+        { name: 'name', label: t('common.name'), required: true, only: 'create', hint: t('admin.shift.nameHint') },
+        { name: 'start_time', label: t('admin.shift.startsAt'), kind: 'time', required: true },
+        { name: 'end_time', label: t('admin.shift.endsAt'), kind: 'time', required: true },
       ]}
       initial={(r) => ({ name: r?.name ?? '', start_time: r ? time(r.start_time) : '', end_time: r ? time(r.end_time) : '' })}
       create={(v) => call(api.POST('/api/shifts', { body: { name: v.name.trim(), start_time: v.start_time, end_time: v.end_time } }))}
       update={(r, v) => call(api.PATCH('/api/shifts/{item_id}', { params: { path: { item_id: r.id } }, body: { start_time: v.start_time, end_time: v.end_time } }))}
-      empty={{ title: 'No shifts yet', description: 'Add the shifts your mill runs.' }}
+      empty={{ title: t('admin.shift.emptyTitle'), description: t('admin.shift.emptyDescription') }}
     />
   )
 }
@@ -205,69 +213,70 @@ export function Shifts() {
 export function Workers() {
   type Row = Schemas['WorkerOut']
   const me = useMe()
+  const { t, workerRoleOptions, workerRoleLabel, active } = useWords()
   const common = (v: Values) => ({ name: v.name.trim(), role: v.role as Row['role'], daily_wage: num(v.daily_wage), active: v.active === 'true' })
   return (
     <MasterScreen<Row>
-      eyebrow="People"
-      title="Workers"
-      description="Everyone on the payroll, with the daily wage used to work out what each roll really cost."
-      singular="worker"
+      eyebrow={t('attendance.eyebrow')}
+      title={t('nav.workers')}
+      description={t('admin.worker.description')}
+      singular={t('admin.worker.noun')}
       queryKey={['master', 'workers']}
       load={() => call(api.GET('/api/workers'))}
       // supervisors and accountants can look; only the owner changes the payroll
       canEdit={me.data?.role === 'owner'}
       columns={[
-        { header: 'Code', cell: (r) => <span className="code-text">{r.code}</span> },
-        { header: 'Name', cell: (r) => r.name },
-        { header: 'Role', cell: (r) => workerRoleLabel(r.role) },
-        { header: 'Daily wage', cell: (r) => formatMoney(r.daily_wage), num: true },
-        { header: 'Status', cell: (r) => active(r.active) },
+        { header: t('admin.col.code'), cell: (r) => <span className="code-text">{r.code}</span> },
+        { header: t('common.name'), cell: (r) => r.name },
+        { header: t('admin.col.role'), cell: (r) => workerRoleLabel(r.role) },
+        { header: t('wages.col.dailyWage'), cell: (r) => formatMoney(r.daily_wage), num: true },
+        { header: t('qc.col.status'), cell: (r) => active(r.active) },
       ]}
       fields={[
-        { name: 'code', label: 'Code', required: true, only: 'create' },
-        { name: 'name', label: 'Name', required: true },
-        { name: 'role', label: 'Role', kind: 'select', required: true, options: WORKER_ROLES },
-        { name: 'daily_wage', label: 'Daily wage (₹)', kind: 'number', required: true },
-        { name: 'active', label: 'On the payroll', kind: 'checkbox' },
+        { name: 'code', label: t('admin.col.code'), required: true, only: 'create' },
+        { name: 'name', label: t('common.name'), required: true },
+        { name: 'role', label: t('admin.col.role'), kind: 'select', required: true, options: workerRoleOptions },
+        { name: 'daily_wage', label: t('admin.worker.dailyWageRupees'), kind: 'number', required: true },
+        { name: 'active', label: t('admin.worker.onPayroll'), kind: 'checkbox' },
       ]}
       initial={(r) => ({ code: r?.code ?? '', name: r?.name ?? '', role: r?.role ?? '', daily_wage: String(r?.daily_wage ?? ''), active: String(r?.active ?? true) })}
       create={(v) => call(api.POST('/api/workers', { body: { code: v.code.trim(), ...common(v) } }))}
       update={(r, v) => call(api.PATCH('/api/workers/{item_id}', { params: { path: { item_id: r.id } }, body: common(v) }))}
-      empty={{ title: 'No workers yet', description: 'Add the people who work on the floor.' }}
+      empty={{ title: t('admin.worker.emptyTitle'), description: t('admin.worker.emptyDescription') }}
       alsoInvalidate={[['people']]}
       rowActions={(r) => <WorkerLoginCell worker={r} />}
     />
   )
 }
 
-const USER_ROLES = (Object.keys(ROLE_LABEL) as (keyof typeof ROLE_LABEL)[]).map((value) => ({ value, label: ROLE_LABEL[value] }))
-
 export function Users() {
   type Row = Schemas['UserOut']
+  const { t } = useWords()
   const workers = useQuery({ queryKey: ['master', 'workers'], queryFn: () => call(api.GET('/api/workers')) })
   const buyers = useQuery({ queryKey: ['master', 'buyers'], queryFn: () => call(api.GET('/api/buyers')) })
   const workerName = (id: number | null) => workers.data?.find((w) => w.id === id)?.name ?? (id ? `#${id}` : null)
   const buyerName = (id: number | null) => buyers.data?.find((b) => b.id === id)?.name ?? (id ? `#${id}` : null)
+  const roleOptions = (Object.keys(ROLE_LABEL) as (keyof typeof ROLE_LABEL)[]).map((value) => ({ value, label: t(`role.${value}` as Key) }))
   return (
     <MasterScreen<Row>
-      eyebrow="Master data"
-      title="Users"
-      description="Who can log in, and what each login can see. A buyer login belongs to one buyer; a QC login to one inspector."
-      singular="user"
+      eyebrow={t('nav.group.Master data')}
+      title={t('nav.users')}
+      description={t('admin.user.description')}
+      singular={t('admin.user.noun')}
       queryKey={['master', 'users']}
       load={() => call(api.GET('/api/users'))}
       columns={[
-        { header: 'Username', cell: (r) => <span className="code-text">{r.username}</span> },
-        { header: 'Role', cell: (r) => ROLE_LABEL[r.role] },
-        { header: 'Linked to', cell: (r) => dash(r.buyer_id ? buyerName(r.buyer_id) : workerName(r.worker_id)) },
+        { header: t('admin.col.username'), cell: (r) => <span className="code-text">{r.username}</span> },
+        { header: t('admin.col.role'), cell: (r) => t(`role.${r.role}` as Key) },
+        { header: t('admin.col.linked'), cell: (r) => dash(r.buyer_id ? buyerName(r.buyer_id) : workerName(r.worker_id)) },
       ]}
       fields={[
-        { name: 'username', label: 'Username', required: true, only: 'create' },
-        { name: 'role', label: 'Role', kind: 'select', required: true, options: USER_ROLES, only: 'create' },
-        { name: 'password', label: 'Password', kind: 'password', required: true, only: 'create', hint: 'At least 6 characters' },
-        { name: 'new_password', label: 'New password', kind: 'password', only: 'edit', hint: 'Leave empty to keep the current one' },
-        { name: 'worker_id', label: 'Linked worker', kind: 'select', options: (workers.data ?? []).map((w) => ({ value: String(w.id), label: `${w.name} (${w.code})` })) },
-        { name: 'buyer_id', label: 'Linked buyer', kind: 'select', only: 'create', options: (buyers.data ?? []).map((b) => ({ value: String(b.id), label: b.name })) },
+        { name: 'username', label: t('admin.col.username'), required: true, only: 'create' },
+        { name: 'role', label: t('admin.col.role'), kind: 'select', required: true, options: roleOptions, only: 'create' },
+        { name: 'password', label: t('login.password'), kind: 'password', required: true, only: 'create', hint: t('admin.user.passwordHint') },
+        { name: 'new_password', label: t('admin.user.newPassword'), kind: 'password', only: 'edit', hint: t('admin.user.newPasswordHint') },
+        { name: 'worker_id', label: t('admin.user.linkedWorker'), kind: 'select', options: (workers.data ?? []).map((w) => ({ value: String(w.id), label: `${w.name} (${w.code})` })) },
+        { name: 'buyer_id', label: t('admin.user.linkedBuyer'), kind: 'select', only: 'create', options: (buyers.data ?? []).map((b) => ({ value: String(b.id), label: b.name })) },
       ]}
       initial={(r) => ({ username: r?.username ?? '', role: r?.role ?? '', password: '', new_password: '', worker_id: r?.worker_id ? String(r.worker_id) : '', buyer_id: '' })}
       create={(v) =>
@@ -291,7 +300,7 @@ export function Users() {
           }),
         )
       }
-      empty={{ title: 'No users yet', description: 'Add a login for each person who uses the system.' }}
+      empty={{ title: t('admin.user.emptyTitle'), description: t('admin.user.emptyDescription') }}
     />
   )
 }

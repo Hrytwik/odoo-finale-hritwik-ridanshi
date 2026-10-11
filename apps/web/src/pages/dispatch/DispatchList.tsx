@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Alert } from '@/components/common/Alert'
+import { Filtered } from '@/components/common/ListToolbar'
 import { EmptyState } from '@/components/common/EmptyState'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
@@ -57,6 +58,30 @@ function DispatchTable({ list }: { list: Dispatch[] }) {
   // trucks still being loaded come first: that is where the clerk is working
   const sorted = [...list].sort((a, b) => Number(b.state === 'loading') - Number(a.state === 'loading') || b.created_at.localeCompare(a.created_at))
   return (
+    <Filtered
+      rows={sorted}
+      options={{
+        text: (d) => `${d.code} ${d.buyer.name} ${d.vehicle_no} ${d.driver_name ?? ''} ${d.invoice_no ?? ''} ${d.rolls.map((r) => r.code).join(' ')}`,
+        sorts: [
+          { key: 'date', label: t('list.date'), value: (d) => d.dispatched_at ?? d.created_at },
+          { key: 'code', label: t('dispatch.col.dispatch'), value: (d) => d.code },
+          { key: 'buyer', label: t('qc.col.buyer'), value: (d) => d.buyer.name },
+          { key: 'metres', label: t('dispatch.col.metres'), value: (d) => d.total_metres },
+        ],
+        filters: [
+          {
+            key: 'state',
+            label: t('dispatch.col.state'),
+            options: [
+              { value: 'loading', label: t('status.roll.loading') },
+              { value: 'dispatched', label: t('status.roll.dispatched') },
+            ],
+            test: (d, v) => d.state === v,
+          },
+        ],
+      }}
+    >
+      {(shown) => (
     <Table>
       <thead>
         <tr>
@@ -70,7 +95,7 @@ function DispatchTable({ list }: { list: Dispatch[] }) {
         </tr>
       </thead>
       <tbody>
-        {sorted.map((d) => (
+        {shown.map((d) => (
           <tr key={d.code}>
             <td>
               <Link to={`/dispatch/${d.code}`}>{d.code}</Link>
@@ -91,6 +116,8 @@ function DispatchTable({ list }: { list: Dispatch[] }) {
         ))}
       </tbody>
     </Table>
+      )}
+    </Filtered>
   )
 }
 

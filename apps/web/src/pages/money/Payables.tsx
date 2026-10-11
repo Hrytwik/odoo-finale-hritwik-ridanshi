@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '@/components/common/EmptyState'
+import { Filtered } from '@/components/common/ListToolbar'
 import { KpiCard } from '@/components/common/KpiCard'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryBoundary } from '@/components/common/QueryBoundary'
@@ -39,6 +40,31 @@ export default function Payables() {
                 <KpiCard label={t('money.overdue')} value={overdue} format={formatMoney} tone={overdue > 0 ? 'danger' : undefined} hint={overdue > 0 ? t('money.payFirst') : t('money.none')} />
               </AnimatedGroup>
               <Reveal>
+                <Filtered
+                  rows={sorted}
+                  options={{
+                    text: (r) => `${r.bill_no} ${r.supplier.name} ${r.lot_code}`,
+                    sorts: [
+                      { key: 'due', label: t('money.col.due'), value: (r) => r.due_date },
+                      { key: 'bill', label: t('money.col.bill'), value: (r) => r.bill_no },
+                      { key: 'supplier', label: t('money.col.supplier'), value: (r) => r.supplier.name },
+                      { key: 'amount', label: t('common.amount'), value: (r) => r.amount },
+                      { key: 'balance', label: t('money.col.balance'), value: (r) => r.balance },
+                    ],
+                    filters: [
+                      {
+                        key: 'state',
+                        label: t('qc.col.status'),
+                        options: [
+                          { value: 'overdue', label: t('money.overdue') },
+                          { value: 'open', label: t('money.open') },
+                        ],
+                        test: (r, v) => (v === 'overdue' ? r.overdue : !r.overdue),
+                      },
+                    ],
+                  }}
+                >
+                  {(shown) => (
                 <Table>
                   <thead>
                     <tr>
@@ -55,7 +81,7 @@ export default function Payables() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sorted.map((r) => (
+                    {shown.map((r) => (
                       <tr key={r.bill_id}>
                         <td>
                           <span className="code-text">{r.bill_no}</span>
@@ -91,6 +117,8 @@ export default function Payables() {
                     ))}
                   </tbody>
                 </Table>
+                  )}
+                </Filtered>
               </Reveal>
             </div>
           )

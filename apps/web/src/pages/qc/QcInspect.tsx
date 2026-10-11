@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, ScanSearch, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Alert } from '@/components/common/Alert'
@@ -73,6 +73,8 @@ export function Inspection({ roll, embedded = false, onRecorded }: { roll: compo
   const [verdict, setVerdict] = useState<Verdict | ''>('')
   const [defects, setDefects] = useState<DefectRow[]>([])
   const [notes, setNotes] = useState('')
+  const [changing, setChanging] = useState(false) // the inspector chose to disagree with the model's verdict
+  const draftRef = useRef('') // the last remark the model wrote, so a new analysis never overwrites what the inspector typed
   const [errors, setErrors] = useState<{ verdict?: string; defects?: string }>({})
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -85,27 +87,36 @@ export function Inspection({ roll, embedded = false, onRecorded }: { roll: compo
 
   const suggestion = analysis?.suggestion ?? null
   const overriding = !!suggestion && !!verdict && verdict !== suggestion.verdict
+  /** A remark the inspector can edit: what the model found, in the chosen language. */
+  function draftRemark(s: Suggestion) {
+    if (s.boxes.length === 0) return t('qc.draft.clean')
+    const found = t(s.boxes.length === 1 ? 'defect.count.one' : 'defect.count.many', { count: s.boxes.length })
+    const types = [...new Set(s.boxes.map((b) => defectLabel(b.defect_type)))].join(', ')
+    return t('qc.draft.found', { found, types, verdict: t(VERDICT_WORD[s.verdict]) })
+  }
   const waiting = roll.status === 'awaiting_qc'
 
   function choosePhoto(file: File | null) {
     setPhoto(file)
     setPhotoPath(null) // a new photo must be uploaded again
     setAnalysis(null)
+    setChanging(false)
     setAnalysisError(null)
     setPreview(file ? URL.createObjectURL(file) : null)
+    if (file) void analyse(file)
   }
 
   /** Uploads the photo once, then asks the model. A failure here never blocks the inspector: checking works without it. */
-  async function analyse() {
-    if (!photo) return
+  async function analyse(file: File | null = photo) {
+    if (!file) return
     setAnalysing(true)
     setAnalysisError(null)
     try {
       let path = photoPath
       if (!path) {
         const data = new FormData()
-        data.append('file', photo)
-        path = (await call(api.POST('/api/uploads', { body: { file: photo as unknown as string }, bodySerializer: () => data }))).path
+        data.append('file', file)
+        path = (await call(api.POST('/api/uploads', { body: { file: file as unknown as string }, bodySerializer: () => data }))).path
         setPhotoPath(path)
       }
       const result = await call(api.POST('/api/qc/analyze', { body: { photo_path: path } }))
@@ -113,6 +124,9 @@ export function Inspection({ roll, embedded = false, onRecorded }: { roll: compo
       if (result.suggestion) {
         setVerdict(result.suggestion.verdict)
         setDefects(rowsFromSuggestion(result.suggestion))
+        const draft = draftRemark(result.suggestion)
+        setNotes((current) => (current.trim() === '' || current === draftRef.current ? draft : current))
+        draftRef.current = draft
       }
     } catch {
       setAnalysisError(t('qc.inspect.analyseFailed'))
@@ -174,7 +188,7 @@ export function Inspection({ roll, embedded = false, onRecorded }: { roll: compo
               <>
                 <PhotoWithBoxes src={preview} boxes={suggestion?.boxes ?? []} alt={t('qc.inspect.photoAlt')} />
                 <div>
-                  <Button variant="secondary" onClick={analyse} disabled={analysing}>
+                  <Button variant="secondary" onClick={() => void analyse()} disabled={analysing}>
                     <ScanSearch size={16} aria-hidden /> {analysing ? t('qc.inspect.analysing') : analysis ? t('qc.inspect.analyseAgain') : t('qc.inspect.analyse')}
                   </Button>
                 </div>
@@ -193,17 +207,31 @@ export function Inspection({ roll, embedded = false, onRecorded }: { roll: compo
             void submit()
           }}
         >
-          <Card title={t('qc.inspect.step2')}>
+          <Card title={suggestion && !changing ? t('qc.inspect.aiVerdictTitle') : t('qc.inspect.step2')}>
             <div className="stack">
-              <div role="radiogroup" aria-label={t('qc.inspect.verdictGroup')} className="verdicts">
-                {VERDICTS.map((v) => (
-                  <label key={v.value} className={`verdict verdict-${v.value}${verdict === v.value ? ' is-picked' : ''}`}>
-                    <input type="radio" name="verdict" value={v.value} checked={verdict === v.value} onChange={() => setVerdict(v.value)} className="sr-only" aria-label={t(v.label)} />
-                    <strong>{t(v.label)}</strong>
-                    <span className="text-sm">{t(v.hint)}</span>
-                  </label>
-                ))}
-              </div>
+              {suggestion && !changing ? (
+                <div className="stack-sm">
+                  <div className={`verdict verdict-${suggestion.verdict} is-picked`}>
+                    <strong>{t('qc.inspect.aiVerdict', { verdict: t(VERDICT_WORD[suggestion.verdict]) })}</strong>
+                    <span className="text-sm">{t(VERDICTS.find((v) => v.value === suggestion.verdict)!.hint)}</span>
+                  </div>
+                  <div>
+                    <Button variant="ghost" onClick={() => setChanging(true)}>
+                      {t('qc.inspect.changeVerdict')}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div role="radiogroup" aria-label={t('qc.inspect.verdictGroup')} className="verdicts">
+                  {VERDICTS.map((v) => (
+                    <label key={v.value} className={`verdict verdict-${v.value}${verdict === v.value ? ' is-picked' : ''}`}>
+                      <input type="radio" name="verdict" value={v.value} checked={verdict === v.value} onChange={() => setVerdict(v.value)} className="sr-only" aria-label={t(v.label)} />
+                      <strong>{t(v.label)}</strong>
+                      <span className="text-sm">{t(v.hint)}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
               {errors.verdict && <p className="field-error">{errors.verdict}</p>}
               {overriding && suggestion && (
                 <Alert tone="info">

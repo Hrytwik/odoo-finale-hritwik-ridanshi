@@ -77,10 +77,10 @@ describe('ModelCard with a model', () => {
     mockApi({ GET: { '/api/qc/model-card': GOOD } })
     renderPage(<ModelCard />)
     const matrix = (await screen.findAllByRole('table'))[1]
-    expect(within(matrix).getAllByText('clean').length).toBeGreaterThan(0)
+    expect(within(matrix).getAllByText(/clean/i).length).toBeGreaterThan(0)
     // the first cell of each data row names the real defect; the numbers after it are what the model said
-    expect(within(matrix).getByRole('rowheader', { name: 'hole' }).closest('tr')).toHaveTextContent('34')
-    expect(within(matrix).getByRole('rowheader', { name: 'stain' }).closest('tr')).toHaveTextContent('20')
+    expect(within(matrix).getByRole('rowheader', { name: /hole/i }).closest('tr')).toHaveTextContent('34')
+    expect(within(matrix).getByRole('rowheader', { name: /stain/i }).closest('tr')).toHaveTextContent('20')
   })
 })
 

@@ -182,8 +182,8 @@ function ScanLoad({ d }: { d: Dispatch }) {
             void load(text)
           }}
         >
-          <Field label={t('dispatch.rollCode')} error={error}>
-            {(c) => <Input {...c} ref={input} autoFocus autoComplete="off" autoCapitalize="characters" readOnly={busy} value={text} onChange={(e) => setText(e.target.value)} />}
+          <Field label={t('dispatch.rollCode')} error={error} hint={t('dispatch.rollCodeHint')}>
+            {(c) => <Input {...c} ref={input} autoFocus autoComplete="off" autoCapitalize="characters" placeholder="R-0084" readOnly={busy} value={text} onChange={(e) => setText(e.target.value)} />}
           </Field>
           <Button type="submit" disabled={busy}>
             <Truck size={16} aria-hidden /> {t('dispatch.loadRoll')}
