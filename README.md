@@ -116,13 +116,6 @@ The defect detector's code and its measured results are in `services/api/ml` and
 - **A new login can't open any page.** It must choose its own password first (see Logins).
 - **The roll dropdown in "Check a photo" is empty.** Only rolls waiting for quality check appear: a roll must finish dyeing first.
 
-## Not built
-
-- Sending WhatsApp messages automatically (needs a paid WhatsApp Business account).
-- Waste and yield tracking, and a floor TV view.
-- Translating text that comes from the server (API error messages, some timeline labels).
-- A clean-cloth test set for the vision model.
-
 ## Team
 
 Built by Ridanshi Agarwal (the web app, the buyer portal, the assistant and its languages) and Hritwik Bali (the data model, the rules and calculations, the vision model, the simulated month).
