@@ -94,6 +94,14 @@ On a phone the photo box opens the camera; on a laptop it opens the file picker.
 
 The defect detector's code and its measured results are in `services/api/ml` and on the Vision model screen, which reports precision, recall, false alarms and a confusion matrix on photos the model never saw. `npm run dev` installs the optional `ml` group (Ultralytics). The first photo analysed loads the model; after that a photo is analysed in well under a second. Without the `ml` group the rest of the app works as normal.
 
+## Deploying (Render + Vercel)
+
+The API and its database go on **Render**, the web app on **Vercel**. Both read this repository.
+
+1. **Render:** New > Blueprint > this repository (it reads `render.yaml`). Set `DATABASE_URL` to the new database's connection string, changing its start from `postgresql://` to `postgresql+psycopg://`. Migrations run on every start. Then open the service's Shell once and load the demo data: `uv run python -m scripts.seed_dev && uv run python -m scripts.seed_demo`.
+2. **Vercel:** New Project > this repository, set the **Root Directory** to `apps/web`. In `apps/web/vercel.json` replace `REPLACE-WITH-YOUR-RENDER-URL` with the API's address (for example `everest-api.onrender.com`), commit, and deploy. The web app then calls `/api/...` on its own address and Vercel forwards it to Render, so the login cookie stays on one site.
+3. The deployed API runs without the vision model (it needs a large library); quality checks work by hand and the screen says the model is not available. Free Render instances sleep when idle, so open the site a minute before showing it.
+
 ## Useful commands
 
 | Command | What it does |

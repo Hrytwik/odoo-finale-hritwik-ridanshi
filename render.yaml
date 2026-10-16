@@ -1,0 +1,34 @@
+# Render blueprint: the API and its PostgreSQL database. The web app is deployed separately on Vercel (apps/web/vercel.json).
+# Create it from the Render dashboard: New > Blueprint > pick this repository.
+databases:
+  - name: everest-db
+    plan: free
+    databaseName: everest
+
+services:
+  - type: web
+    name: everest-api
+    runtime: python
+    plan: free
+    rootDir: services/api
+    # uv installs exactly what uv.lock says; the optional vision group (ultralytics) is left out, it is too big for a free instance.
+    buildCommand: pip install uv && uv sync --frozen --no-dev
+    # migrations run on every start (safe to repeat), then the API listens on the port Render gives us
+    startCommand: uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      # paste the database's connection string here, but start it with postgresql+psycopg:// (Render gives postgresql://)
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: LLM_KEY_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: DEMO_DATA
+        value: "true"
+      - key: UPLOAD_DIR
+        value: /tmp/uploads
