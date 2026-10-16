@@ -13,8 +13,8 @@ services:
     rootDir: services/api
     # uv installs exactly what uv.lock says; the optional vision group (ultralytics) is left out, it is too big for a free instance.
     buildCommand: pip install uv && uv sync --frozen --no-dev
-    # migrations, the starter data (safe to repeat) and the demo mill (only loads into an empty database), then the API
-    startCommand: uv run alembic upgrade head && uv run python -m scripts.seed_dev && (uv run python -m scripts.seed_demo || true) && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # migrations, the starter data (safe to repeat), the demo mill (only loads into an empty database) and the read-only demo logins, then the API
+    startCommand: uv run alembic upgrade head && uv run python -m scripts.seed_dev && (uv run python -m scripts.seed_demo || true) && (uv run python -m scripts.show_piece || true) && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION

@@ -2,6 +2,7 @@ from fastapi import APIRouter, FastAPI
 from pydantic import BaseModel
 
 from app.config import settings
+from app.core.demo_readonly import DemoReadOnly
 from app.core.errors import install_error_handlers
 from app.core.security_headers import SecurityHeaders
 from app.modules.auth.router import router as auth_router
@@ -34,6 +35,7 @@ def create_app() -> FastAPI:
     application = FastAPI(title="Everest Textile Mills API", version="0.1.0")
     install_error_handlers(application)
     application.add_middleware(SecurityHeaders)
+    application.add_middleware(DemoReadOnly)
     api = APIRouter(prefix="/api")
 
     @api.get("/health", response_model=Health, tags=["system"])
