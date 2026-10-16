@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     root_cause_alpha: float = 0.05
     reorder_round_kg: int = 50
 
+    @field_validator("database_url", "test_database_url")
+    @classmethod
+    def _driver_prefix(cls, value: str) -> str:
+        """Hosts such as Render hand out postgres:// or postgresql://; the app needs the psycopg driver named in the address."""
+        for plain in ("postgres://", "postgresql://"):
+            if value.startswith(plain):
+                return "postgresql+psycopg://" + value[len(plain):]
+        return value
+
     @field_validator("stage_shifts")
     @classmethod
     def _check_stage_shifts(cls, value: str) -> str:

@@ -19,9 +19,11 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.8
-      # paste the database's connection string here, but start it with postgresql+psycopg:// (Render gives postgresql://)
+      # Render fills this in from the database above; the app adds the driver name to the address itself
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: everest-db
+          property: connectionString
       - key: JWT_SECRET
         generateValue: true
       - key: LLM_KEY_SECRET
