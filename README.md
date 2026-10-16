@@ -31,6 +31,21 @@ Public pages need no login: the landing page, sign-in, buyer sign-up, and the **
 - **Buyer notices.** An in-app bell with an unread count and delay notices for buyers, and a `wa.me` button that opens a ready-made WhatsApp message to the buyer.
 - **True costing.** Cost and profit are computed from what was actually recorded: yarn used, wages, idle labour and machine time, per roll, per order and per month. Orders still in progress are shown with their cost so far.
 
+## Try it online
+
+**https://everest-textile-mills-two.vercel.app** (the web app on Vercel; its API and database run on Render).
+
+Sign in with any of these logins, password `everest123`: `owner` (everything), `accountant`, `store`, `supervisor`, `qc`, `dispatch` or `buyer` (a customer's view of their own orders). Each role sees only its own screens.
+
+Things to try:
+- As `owner`: **Month-end** (profit, cash, machines), **Insights**, **Orders**, **Floor board**, and the language switcher (ten languages).
+- As `qc`: **Quality check**, open a roll and add a photo.
+- As `dispatch`: **Dispatch**, create a truck, load a roll by typing its code (`R-0001` and so on) and confirm it to create the invoice.
+- As `buyer`: **My orders** to follow an order's progress.
+- Ask the Copilot a question (the owner sets the language model on the **AI settings** page).
+
+The first request after a quiet spell can take about a minute, because the free server sleeps when idle. The online demo is a small mill with starter data, without the vision model (it needs a large library, so photos are checked by hand there). The full 30-day demo and the vision model run on a local setup, as described below. It is a public demo, so do not enter real data.
+
 ## Setup
 
 PostgreSQL 14 or newer works (the backend tests pass on 14, 16 and 18).
