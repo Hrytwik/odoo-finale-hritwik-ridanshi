@@ -99,7 +99,7 @@ The defect detector's code and its measured results are in `services/api/ml` and
 The API and its database go on **Render**, the web app on **Vercel**. Both read this repository.
 
 1. **Render:** New > Blueprint > this repository (it reads `render.yaml`). It creates the API and its database and connects them. Migrations run on every start. The starter data and the demo mill load by themselves on the first start.
-2. **Vercel:** New Project > this repository, set the **Root Directory** to `apps/web`. In `apps/web/vercel.json` replace `REPLACE-WITH-YOUR-RENDER-URL` with the API's address (for example `everest-api.onrender.com`), commit, and deploy. The web app then calls `/api/...` on its own address and Vercel forwards it to Render, so the login cookie stays on one site.
+2. **Vercel:** New Project > this repository, set the **Root Directory** to `apps/web`. In `apps/web/vercel.json` replace `REPLACE-WITH-YOUR-RENDER-URL` with the API's address (this repository already points at `everest-api-x1f0.onrender.com`), commit, and deploy. The web app then calls `/api/...` on its own address and Vercel forwards it to Render, so the login cookie stays on one site.
 3. The deployed API runs without the vision model (it needs a large library); quality checks work by hand and the screen says the model is not available. Free Render instances sleep when idle, so open the site a minute before showing it.
 
 ## Useful commands
