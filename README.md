@@ -35,16 +35,21 @@ Public pages need no login: the landing page, sign-in, buyer sign-up, and the **
 
 **https://everest-textile-mills-two.vercel.app** (the web app on Vercel; its API and database run on Render).
 
-Sign in with any of these logins, password `everest123`: `owner` (everything), `accountant`, `store`, `supervisor`, `qc`, `dispatch` or `buyer` (a customer's view of their own orders). Each role sees only its own screens.
+It's a show-piece: you can sign in as every role and look at every screen, but nothing can be changed. Use the read-only demo logins, password `everest123`:
 
-Things to try:
-- As `owner`: **Month-end** (profit, cash, machines), **Insights**, **Orders**, **Floor board**, and the language switcher (ten languages).
-- As `qc`: **Quality check**, open a roll and add a photo.
-- As `dispatch`: **Dispatch**, create a truck, load a roll by typing its code (`R-0001` and so on) and confirm it to create the invoice.
-- As `buyer`: **My orders** to follow an order's progress.
-- Ask the Copilot a question (the owner sets the language model on the **AI settings** page).
+| Login | Sees |
+|---|---|
+| `owner-demo` | everything: month-end profit, insights, orders, floor board, quality log, master data |
+| `accountant-demo` | receivables, payables, wages |
+| `store-demo` | yarn stock and lots |
+| `supervisor-demo` | floor board, attendance |
+| `qc-demo` | the quality-check queue |
+| `dispatch-demo` | trucks and invoices |
+| `buyer-demo` | a customer's own orders and notices |
 
-The first request after a quiet spell can take about a minute, because the free server sleeps when idle. The online demo is a small mill with starter data, without the vision model (it needs a large library, so photos are checked by hand there). The full 30-day demo and the vision model run on a local setup, as described below. It is a public demo, so do not enter real data.
+Things to try: the **Month-end** and **Insights** screens as `owner-demo`, the language switcher (ten languages), the **Floor board**, and a buyer's order progress as `buyer-demo`. Any attempt to save something is refused with a clear message.
+
+The first request after a quiet spell can take about a minute, because the free server sleeps when idle. The online demo is a small mill with starter data and no vision model (it needs a large library). The full 30-day demo and the vision model run on a local setup, as described below.
 
 ## Setup
 
